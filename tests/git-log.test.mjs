@@ -14,7 +14,7 @@ import {
   gitShowUncommitted,
   gitShowStashUntracked,
 } from '../lib/index.mjs'
-import { makeRepo } from './fixtures/repo.mjs'
+import { makeRepo, makeConflictedRepo } from './fixtures/repo.mjs'
 
 // ---------- parseDecorations：%D 装饰串分类 ----------
 
@@ -201,21 +201,39 @@ test('gitShow: 首个 commit 走 --root diff', async (t) => {
   assert.deepEqual(detail.files, [{ path: 'a.txt', adds: 1, dels: 0 }])
 })
 
-test('gitShowUncommitted: 未跟踪文件进 files 列表（status ??），patch 只含已跟踪改动', async (t) => {
+test('gitShowUncommitted: 未跟踪进未暂存组（status ??），两组 patch 各含各自改动', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
   await repo.write('a.txt', 'dirty')
   await repo.write('u.txt', 'new')
   const detail = await gitShowUncommitted(repo.root)
-  const files = detail.files
-  const a = files.find((f) => f.path === 'a.txt')
-  const u = files.find((f) => f.path === 'u.txt')
-  assert.ok(a !== undefined)
-  assert.ok(u !== undefined)
-  assert.equal(u.status, '??') // 未跟踪文件 git diff 无输出，只进列表
   assert.equal(detail.meta.hash, UNCOMMITTED)
-  assert.ok(detail.patch.includes('a.txt'))
-  assert.ok(!detail.patch.includes('u.txt'))
+  // 未暂存组：已修改 a.txt + 未跟踪 u.txt（?? 徽标数据）
+  assert.ok(detail.unstaged.files.some((f) => f.path === 'a.txt'))
+  const u = detail.unstaged.files.find((f) => f.path === 'u.txt')
+  assert.ok(u !== undefined)
+  assert.equal(u.status, '??') // 未跟踪文件 git diff 无输出，只进未暂存组
+  assert.ok(detail.unstaged.patch.includes('a.txt'))
+  assert.ok(!detail.unstaged.patch.includes('u.txt'))
+  // 暂存组为空
+  assert.deepEqual(detail.staged.files, [])
+  assert.equal(detail.staged.patch, '')
+})
+
+test('gitShowUncommitted: 暂存进 staged 组；MM 部分暂存两组各出现一次', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1', { files: { 'b.txt': 'base\n' } })
+  await repo.write('b.txt', 'staged\n')
+  await repo.git(['add', 'b.txt'])        // 已暂存
+  await repo.write('b.txt', 'unstaged\n') // 再改 → MM
+  await repo.write('u.txt', 'new')        // 未跟踪
+  const detail = await gitShowUncommitted(repo.root)
+  assert.ok(detail.staged.files.some((f) => f.path === 'b.txt'))
+  assert.ok(detail.unstaged.files.some((f) => f.path === 'b.txt'))
+  assert.ok(detail.staged.patch.includes('b.txt'))
+  assert.ok(detail.unstaged.patch.includes('b.txt'))
+  assert.ok(!detail.staged.files.some((f) => f.path === 'u.txt'))
+  assert.ok(detail.unstaged.files.some((f) => f.path === 'u.txt'))
 })
 
 test('gitShowStashUntracked: 第三父快照文件', async (t) => {
@@ -227,4 +245,28 @@ test('gitShowStashUntracked: 第三父快照文件', async (t) => {
   const extra = await gitShowStashUntracked(repo.root, stashes[0].untrackedFilesHash)
   assert.deepEqual(extra.files, [{ path: 'u.txt', adds: 1, dels: 0 }])
   assert.ok(extra.patch.includes('u.txt'))
+})
+
+// ---------- gitLogV2：冲突 / 进行中操作状态（2.3） ----------
+
+test('gitLogV2: 未解决冲突计数 + MERGE_HEAD 标记，abort 后清零', async (t) => {
+  const repo = await makeConflictedRepo(t)
+  const result = await gitLogV2(repo.root, { scope: 'head' })
+  assert.equal(result.conflicts, 1)
+  assert.equal(result.operation, 'MERGE_HEAD')
+  assert.equal(result.operationInProgress, true)
+  await repo.git(['merge', '--abort'])
+  const clean = await gitLogV2(repo.root, { scope: 'head' })
+  assert.equal(clean.conflicts, 0)
+  assert.equal(clean.operation, null)
+  assert.equal(clean.operationInProgress, false)
+})
+
+test('gitLogV2: 干净仓库无冲突无操作', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  const result = await gitLogV2(repo.root, { scope: 'head' })
+  assert.equal(result.conflicts, 0)
+  assert.equal(result.operation, null)
+  assert.equal(result.operationInProgress, false)
 })

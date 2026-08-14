@@ -12,16 +12,22 @@
   同名本地/远程分支合并为一个 pill：`⎇ main [gitee]`（多远程依次内嵌）；
   远程 HEAD 符号引用（`gitee/HEAD`）默认过滤
 - **未提交改动虚拟行**：工作区有改动时图顶部插入虚拟行（空心圆 + 灰色虚线连 HEAD），
-  分类显示未暂存/已暂存处数；点击展开 diff HEAD 详情（含未跟踪/已删除文件）
+  分类显示未暂存/已暂存处数；点击展开按「更改 / 暂存的更改」分组的详情
+  （VS Code 语义：部分暂存文件两组各出现一次，未跟踪文件带徽标）
 - **stash 显示**：`git reflog refs/stash` 插入图中（双层圆 + `stash@{n}` 徽标），
   展开详情（base 显式两树 diff + untracked 第三父快照追加）
 - **行内展开详情**：点击 commit 行 → 展开提交信息 + 变更文件（+/- 行数）+ 逐文件 diff
   （256KB 截断）；详情盒高度自适应内容（≤340px 上限），点开 patch 不引起图跳动
 - **分支操作**：
-  - 右键分支徽标：本地「切换到 x」/ 远程「创建本地分支 x 并检出」
+  - 右键本地分支徽标：切换到 x / 合并 x 到当前分支 / 重命名 x / 删除 x / 强制删除 x（未合并二次确认）
+  - 右键远程分支徽标：「创建本地分支 x 并检出」；右键 tag 徽标：「在 x 创建分支并检出」
   - 头部「＋ 新分支」对话框：客户端即时校验 + 服务端 `check-ref-format` 权威校验双保险
   - 切换守卫：未解决冲突 / 进行中操作（MERGE_HEAD 等标记）/ 目标分支在其他 worktree 检出 → 稳定错误码
-- 范围切换：所有分支 / 当前分支；10s 自动刷新 + 手动刷新；非 git 仓库提示
+  - 合并冲突后：头部徽标 + 合并条提供「中止合并 / 继续合并」（解决冲突后 `git add` 再继续）
+- **冲突/进行中状态徽标**：头部实时显示「N 个未解决冲突」「合并/rebase 进行中」（`MERGE_HEAD` 等标记）
+- **SSE 即时刷新**：`/git/events` 订阅（2s 服务端状态键对比 + 变化推送 + 15s 心跳），
+  其他终端 checkout/提交时图即时刷新；10s 轮询保留作断连兜底
+- 范围切换：所有分支 / 当前分支；自动刷新 + 手动刷新；非 git 仓库提示
 
 ## 安装指南
 
@@ -50,10 +56,11 @@ dsh plugin --profile web add /path/to/dsh-git-status
 
 1. 进入任意聊天视图（对话界面）；
 2. 点击左缘的 **⎇** 按钮，右侧弹出「Git 状态」浮窗（浮窗可拖拽，位置自动记忆）；
-3. 浮窗头部可切换「所有分支 / 当前分支」、手动刷新（↻）；打开期间每 10s 自动刷新；
+3. 浮窗头部可切换「所有分支 / 当前分支」、手动刷新（↻）；打开期间 SSE 即时刷新（断连时 10s 轮询兜底）；
 4. 点击 commit 行展开详情（提交信息 / 变更文件 / 逐文件 diff）；点击文件行查看该文件 patch；
-5. 右键分支徽标：本地分支「切换到 x」；远程分支「创建本地分支 x 并检出」；
-6. 头部「＋ 新分支」：输入名称创建并检出新分支（非法名称即时拦截）。
+5. 右键分支徽标：本地「切换到 x / 合并 x / 重命名 x / 删除 x（可强删）」；远程「创建本地分支 x 并检出」；
+6. 右键 tag 徽标「在 x 创建分支并检出」；头部「＋ 新分支」：输入名称创建并检出新分支（非法名称即时拦截）；
+7. 头部徽标提示未解决冲突 / 进行中操作；合并冲突时合并条提供「中止合并 / 继续合并」。
 
 > 提示：当前会话工作区不是 git 仓库时，浮窗内会显示提示，切换到 git 仓库所在会话即可。
 
@@ -75,18 +82,21 @@ dsh-git-status/
 ├── package.json          # dsh.bundle.patch + dsh.client.inject + platform: web
 ├── cordis.patch.yml      # 挂载 Node half
 ├── lib/
-│   ├── index.mjs         # Node half：git log/show/branch 三个路由（末尾导出测试用纯函数）
+│   ├── index.mjs         # Node half：git log/show/branch/events 四路由（末尾导出测试用纯函数）
 │   └── client.js         # client bundle（构建产物，__ModuleLoader__ 契约）
 ├── src/client/index.js   # client 源码（手写 CJS，单模块）
 ├── scripts/build-client.js  # 零依赖构建脚本（纯 Node）
 └── tests/
     ├── fixtures/repo.mjs     # 造仓库辅助（mkdtemp 真实 git 仓库，t.after 自动清理）
-    ├── git-log.test.mjs      # 装饰解析/未提交分类/虚拟行组装/stash/show 详情
-    └── git-branch.test.mjs   # 分支名校验/守卫/失败分类/写路由（伪造 ctx，含 CSRF）
+    ├── git-log.test.mjs      # 装饰解析/未提交分类/虚拟行组装/stash/show/冲突状态
+    ├── git-branch.test.mjs   # 分支名校验/守卫/失败分类/增删改合/写路由（含 CSRF）
+    └── git-events.test.mjs   # SSE 订阅：初始推送/变化检测/心跳/断连清理
 ```
 
-- **数据通道**：Node half 注册 `/plugins/dsh-git-status/*` 路由（webServer），客户端 10s 轮询
-- **git 执行**：spawn 系统 `git`（`-C 工作区 --no-pager -c color.ui=false`、`GIT_OPTIONAL_LOCKS=0`、15s 超时强杀）
+- **数据通道**：Node half 注册 `/plugins/dsh-git-status/*` 路由（webServer），
+  客户端 SSE 订阅 `/git/events` 即时刷新 + 10s 轮询兜底
+- **git 执行**：spawn 系统 `git`（`-C 工作区 --no-pager -c color.ui=false`、`GIT_OPTIONAL_LOCKS=0`、
+  `LC_ALL=C` 强制英文输出、`GIT_EDITOR=true` 禁编辑器、15s 超时强杀）
 - **布局锚点**：官方 DOM 属性（`data-chat-flow`），不依赖 React 内部结构
 - **安全**：路由根限定**会话权威工作区**（请求带 `session=`，优先 `ctx.sessions.get(id).header.cwd`；
   缺省回退注册表/进程 cwd），拒绝 `..` 分量与越界路径；只读命令白名单；
@@ -97,21 +107,23 @@ dsh-git-status/
 
 ```sh
 node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js）
-npm test                       # node:test 套件（46 用例，真实 git fixture，零依赖）
+npm test                       # node:test 套件（65 用例，真实 git fixture，零依赖）
 ```
 
 改 Node half 直接改 `lib/index.mjs`（无构建步骤），改完跑 `npm test` 回归。
 测试链覆盖：装饰串分类、未提交改动 XY 位分类、UNCOMMITTED/stash 虚拟行组装、
-stash 第三父、show 详情、分支名校验、切换守卫（冲突/进行中/其他 worktree）、
-失败 stderr 分类、写路由 CSRF（content-type 强校验）与全链路。
+stash 第三父、show 详情、冲突/进行中状态、分支名校验、切换守卫
+（冲突/进行中/其他 worktree）、增删改合全路径（含合并冲突 abort/continue）、
+失败 stderr 分类、写路由 CSRF（content-type 强校验）与全链路、SSE 订阅
+（初始推送/变化检测/心跳/断连清理）。
 
-重新打包 client 后**刷新浏览器页面**即可看到效果（无需重启 web 服务）。
+重新打包 client 后**刷新浏览器页面**即可看到效果（无需重启 web 服务）；
+改 Node half 后需**重启 web 服务**生效。
 
 ## 路线
 
-- 分支操作扩展：删除/重命名/合并
-- git 状态 SSE 推送（/git/events 订阅，替代 10s 轮询）
-- tag 右键「在此提交创建分支」
+- git 状态变化推送降级优化：fs.watch 检测（当前为 2s 轮询对比状态键）
+- 发布形态：npm 发布（@wzx_sj scope）、Gitee Topics/tag/Release
 
 ## 许可
 
