@@ -1,6 +1,5 @@
 // dsh-git-status 浏览器端 half：自渲染 DOM，零 React 依赖（greeter 模式）。
-// 单模块：Git Graph（commit DAG 泳道图 + 行内详情 diff + 分支操作），自
-// dsh-companion 抽离独立。
+// 单模块：Git 状态（commit DAG 泳道图 + 行内详情 diff + 分支操作）。
 // 数据通道：Node half 自造路由（/plugins/dsh-git-status/*）；
 // 布局锚点：官方 DOM 属性（data-chat-flow 等），不依赖 React 内部结构。
 // 构建：scripts/build-client.js 包成 __ModuleLoader__.load 契约（CJS）。
@@ -11,7 +10,7 @@ const I18N = {
     copied: '已复制到剪贴板',
     copyFailed: '复制失败',
     close: '关闭',
-    gitGraph: 'Git 图',
+    gitStatus: 'Git 状态',
     gitAll: '所有分支',
     gitHead: '当前分支',
     gitNotRepo: '当前工作区不是 git 仓库',
@@ -53,7 +52,7 @@ const I18N = {
     copied: 'Copied to clipboard',
     copyFailed: 'Copy failed',
     close: 'Close',
-    gitGraph: 'Git Graph',
+    gitStatus: 'Git Status',
     gitAll: 'All branches',
     gitHead: 'Current branch',
     gitNotRepo: 'Current workspace is not a git repository',
@@ -502,7 +501,7 @@ module.exports = {
     gitToggle.type = 'button'
     gitToggle.setAttribute('data-dsc-toggle', '')
     gitToggle.textContent = '⎇'
-    gitToggle.title = t('gitGraph')
+    gitToggle.title = t('gitStatus')
     gitToggle.style.top = 'calc(50% + 38px)'
     gitToggle.style.transform = 'translateY(-50%)'
     body.appendChild(gitToggle)
@@ -513,7 +512,7 @@ module.exports = {
     const gitHead = document.createElement('div')
     gitHead.setAttribute('data-dsc-git-head', '')
     const gitTitle = document.createElement('span')
-    gitTitle.textContent = t('gitGraph')
+    gitTitle.textContent = t('gitStatus')
     // 范围切换：自绘下拉（原生 select 的弹出面板是浏览器级 UI，CSS 无法定制；
     // 改为按钮 + 复用右键菜单组件，样式完全统一）
     let gitScopeValue = 'all'

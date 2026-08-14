@@ -1,6 +1,6 @@
 {
   "name": "dsh-git-status",
-  "description": "Git 状态（Git Graph）：commit DAG 泳道图 + 未提交改动虚拟行/stash + 行内详情 diff + 分支操作（checkout/新建）。从 dsh-companion 抽离独立。",
+  "description": "Git 状态（Git Graph）：commit DAG 泳道图 + 未提交改动虚拟行/stash + 行内详情 diff + 分支操作（checkout/新建）。",
   "version": "0.4.0",
   "private": true,
   "type": "module",
