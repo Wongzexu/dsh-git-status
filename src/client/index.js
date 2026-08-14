@@ -938,9 +938,22 @@ module.exports = {
       }
     }
 
+    // 渲染防重入：showGitDetail 的缓存命中路径会同步执行测量并触发 renderGitGraph，
+    // 若此时外层 renderGitGraph 的 forEach 尚未跑完，内层渲染会清空重建一遍，外层
+    // 随后又把剩余行追加一遍 —— 造成"选中行之下的行在列表末尾重复"（本 bug 根因）。
+    // 重入时置 dirty 标记，外层渲染结束后补一次完整渲染（此时测量已更新 gitExpandY，
+    // 补渲染一次收敛，不会无限循环）。
+    let gitRendering = false
+    let gitRenderDirty = false
     const renderGitGraph = () => {
-      gitRowsWrap.querySelectorAll('[data-dsc-git-row], [data-dsc-git-inline], [data-dsc-git-more]').forEach((el) => el.remove())
-      gitSvg.replaceChildren()
+      if (gitRendering) {
+        gitRenderDirty = true
+        return
+      }
+      gitRendering = true
+      try {
+        gitRowsWrap.querySelectorAll('[data-dsc-git-row], [data-dsc-git-inline], [data-dsc-git-more]').forEach((el) => el.remove())
+        gitSvg.replaceChildren()
       if (gitRows.length === 0) {
         gitSelected = null
         renderGitNote(t('gitNoCommits'))
@@ -1144,6 +1157,13 @@ module.exports = {
         more.style.fontSize = '11px'
         more.textContent = t('gitMore', { n: gitRows.length })
         gitRowsWrap.appendChild(more)
+      }
+      } finally {
+        gitRendering = false
+        if (gitRenderDirty) {
+          gitRenderDirty = false
+          renderGitGraph()
+        }
       }
     }
 
