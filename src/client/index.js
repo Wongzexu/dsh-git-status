@@ -78,6 +78,12 @@ const I18N = {
     gitMergeAborted: '已中止合并',
     gitMergeContinued: '合并已完成',
     gitCreateFromTag: '在 {tag} 创建分支并检出',
+    gitFetch: '从远程拉取',
+    gitFetching: '拉取中…',
+    gitFetchOk: '已从远程拉取',
+    gitErrNetworkError: '网络或认证错误',
+    gitErrRemoteNotFound: '远程不存在',
+    gitErrRemoteUnreachable: '远程仓库不存在或不可达',
     gitErrUncommittedChangesPresent: '工作区有未提交改动',
     gitSwitchUncommitted: '工作区有未提交改动（已暂存 {staged} 处 · 未暂存 {unstaged} 处），切换到 {branch} 会把这些改动一起带过去。',
     gitSwitchUncommittedUntracked: '（另有 {untracked} 个未跟踪文件）',
@@ -160,6 +166,12 @@ const I18N = {
     gitMergeAborted: 'Merge aborted',
     gitMergeContinued: 'Merge completed',
     gitCreateFromTag: 'Create branch from {tag} and check out',
+    gitFetch: 'Fetch from Remote(s)',
+    gitFetching: 'Fetching…',
+    gitFetchOk: 'Fetched from remote(s)',
+    gitErrNetworkError: 'Network or authentication error',
+    gitErrRemoteNotFound: 'Remote not found',
+    gitErrRemoteUnreachable: 'Remote repository not found or unreachable',
     gitErrUncommittedChangesPresent: 'Working tree has uncommitted changes',
     gitSwitchUncommitted: 'The working tree has uncommitted changes ({staged} staged · {unstaged} unstaged); switching to {branch} will carry them along.',
     gitSwitchUncommittedUntracked: '({untracked} untracked file(s))',
@@ -195,6 +207,8 @@ module.exports = {
   background: rgba(255,255,255,.08); font-family: system-ui;
 }
 [data-dsc-btn]:hover { background: rgba(255,255,255,.16); }
+[data-dsc-btn]:disabled { opacity: .45; cursor: default; }
+[data-dsc-btn]:disabled:hover { background: rgba(255,255,255,.08); }
 [data-dsc-btn].danger:hover { background: rgba(255,69,58,.85); }
 [data-dsc-btn].armed { background: rgba(255,69,58,.85); }
 [data-dsc-toggle] {
@@ -660,6 +674,34 @@ module.exports = {
     gitHead.appendChild(gitScopeBtn)
     gitHead.appendChild(gitRefresh)
     gitHead.appendChild(gitClose)
+    // 拉取远程按钮（上游 Git Graph 工具栏 Fetch from Remote(s) 移植）：有 remote
+    // 才显示（gitFetch 加载后按响应 remotes 显隐，初始隐藏）；点击直接 fetch --all
+    // （上游工具栏形态，无对话框），prune 默认关（同上游 fetchAndPrune 默认）；
+    // 完成后显式刷新图（SSE 状态键不含 refs/remotes，fetch 只更新远程跟踪 ref）。
+    const gitFetchBtn = document.createElement('button')
+    gitFetchBtn.type = 'button'
+    gitFetchBtn.setAttribute('data-dsc-btn', '')
+    gitFetchBtn.textContent = '⇣'
+    gitFetchBtn.title = t('gitFetch')
+    gitFetchBtn.style.display = 'none'
+    gitFetchBtn.addEventListener('click', async () => {
+      gitFetchBtn.disabled = true
+      gitFetchBtn.title = t('gitFetching')
+      try {
+        await gitPost('/git/fetch', { remote: '', prune: false })
+        flash(t('gitFetchOk'))
+      } catch (err) {
+        flash(gitErrText(err))
+      } finally {
+        gitFetchBtn.disabled = false
+        gitFetchBtn.title = t('gitFetch')
+      }
+      // 无论成败都刷新图：--all 多远程可能部分成功（git 会继续尝试其余远程），
+      // 已更新的跟踪 ref 要立即上屏；单远程失败时刷新也无害。
+      gitFetch(true)
+    })
+    // 插到刷新按钮之前：头部顺序 标题 / 状态徽标 / 范围▾ / ⇣拉取 / ↻ / ＋新分支 / 关闭
+    gitHead.insertBefore(gitFetchBtn, gitRefresh)
     const gitBody = document.createElement('div')
     gitBody.setAttribute('data-dsc-git-body', '')
     // 合并进行中条（2.4）：中止 / 继续
@@ -1107,6 +1149,8 @@ module.exports = {
 
     let gitRows = []
     let gitMoreAvailable = false
+    // 远程名列表（/git/log 响应 remotes）：有 remote 才显示「⇣ 拉取远程」按钮。
+    let gitRemotes = []
     // 静默刷新去抖：上次 /git/log 响应的签名。内容未变时跳过重渲染，避免 10s 轮询 /
     // SSE 反复整体重建行 DOM —— 重建会替换行元素，扩大用户点击与渲染竞争的陈旧行窗口。
     let gitLastSig = null
@@ -1176,6 +1220,8 @@ module.exports = {
         if (data.isRepo === false) {
           gitRows = []
           gitMoreAvailable = false
+          gitRemotes = []
+          gitFetchBtn.style.display = 'none'
           gitState = { conflicts: 0, operation: null }
           gitLastSig = 'no-repo'
           renderGitGraph()
@@ -1190,6 +1236,8 @@ module.exports = {
         gitLastSig = sig
         gitRows = data.commits
         gitMoreAvailable = data.moreAvailable
+        gitRemotes = Array.isArray(data.remotes) ? data.remotes : []
+        gitFetchBtn.style.display = gitRemotes.length > 0 ? '' : 'none'
         gitState = {
           conflicts: typeof data.conflicts === 'number' ? data.conflicts : 0,
           operation: typeof data.operation === 'string' ? data.operation : null,
@@ -1237,8 +1285,11 @@ module.exports = {
     }
 
     /** 分支操作 POST（写路由）；resolve { ok, branch }，reject { code, message, paths? }。 */
-    const gitBranchAction = async (payload) => {
-      const r = await fetch(`${BASE}/git/branch`, {
+    const gitBranchAction = (payload) => gitPost('/git/branch', payload)
+
+    /** 写路由 POST（/git/branch、/git/fetch 共用）；resolve { ok, ... }，reject { code, message, paths? }。 */
+    const gitPost = async (path, payload) => {
+      const r = await fetch(`${BASE}${path}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ ...payload, session: currentSessionId() }),
