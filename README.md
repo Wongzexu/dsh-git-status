@@ -1,6 +1,6 @@
 # dsh-git-status
 
-独立 Git 状态（Git Graph）插件：DSH Web 右缘 **⎇ 浮窗**，commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。
+独立 Git 状态（Git Graph）插件：DSH Web 右缘 **Git 状态浮窗**，commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。
 
 > 状态：v0.4.0 · 纯前端自渲染 DOM（greeter 模式，零 React 依赖、零构建链）+ Node half 只读/写路由。
 
@@ -55,7 +55,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 ### 使用
 
 1. 进入任意聊天视图（对话界面）；
-2. 点击左缘的 **⎇** 按钮，右侧弹出「Git 状态」浮窗（浮窗可拖拽，位置自动记忆）；
+2. 点击左缘的 **分支图标** 按钮，右侧弹出「Git 状态」浮窗（浮窗可拖拽，位置自动记忆）；
 3. 浮窗头部可切换「所有分支 / 当前分支」、手动刷新（↻）；打开期间 SSE 即时刷新（断连时 10s 轮询兜底）；
 4. 点击 commit 行展开详情（提交信息 / 变更文件 / 逐文件 diff）；点击文件行查看该文件 patch；
 5. 右键分支徽标：本地「切换到 x / 合并 x / 重命名 x / 删除 x（可强删）」；远程「创建本地分支 x 并检出」；
