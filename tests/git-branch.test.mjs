@@ -154,6 +154,38 @@ test('gitGuardBlock: 干净仓库不拦截', async (t) => {
   assert.equal(await gitGuardBlock(repo.root, 'main'), null)
 })
 
+// ---------- gitGuardBlock：未提交改动守卫（方案 A） ----------
+
+test('gitGuardBlock: checkUncommitted 有已跟踪改动 → uncommitted-changes-present + 三组计数', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1', { files: { 'f.txt': 'A\n' } })
+  await repo.branch('other')
+  await repo.write('f.txt', 'B\n')        // 未暂存
+  await repo.git(['add', 'f.txt'])        // 暂存
+  await repo.write('f.txt', 'C\n')        // 再改 → MM：staged=1、跟踪未暂存=1
+  await repo.write('u.txt', 'untracked')  // 未跟踪（不计入 unstaged）
+  const blocked = await gitGuardBlock(repo.root, 'other', { checkUncommitted: true })
+  assert.equal(blocked.code, 'uncommitted-changes-present')
+  assert.equal(blocked.staged, 1)
+  assert.equal(blocked.unstaged, 1)
+  assert.equal(blocked.untracked, 1)
+})
+
+test('gitGuardBlock: checkUncommitted 仅未跟踪文件 → 放行', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('other')
+  await repo.write('u.txt', 'untracked')
+  assert.equal(await gitGuardBlock(repo.root, 'other', { checkUncommitted: true }), null)
+})
+
+test('gitGuardBlock: checkUncommitted 默认关闭（delete/rename/merge 等调用点不受影响）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1', { files: { 'f.txt': 'A\n' } })
+  await repo.write('f.txt', 'dirty') // 已跟踪改动
+  assert.equal(await gitGuardBlock(repo.root, 'main'), null)
+})
+
 // ---------- gitBranchAction：create / checkout ----------
 
 test('gitBranchAction.create: 合法名成功并检出', async (t) => {
@@ -218,11 +250,48 @@ test('gitBranchAction.checkout: 本地改动会被覆盖 → 稳定错误码 + �
   await repo.git(['commit', '-m', 'other change'])
   await repo.checkout('main')
   await repo.write('f.txt', 'C\n') // 未提交改动
-  const result = await gitBranchAction(repo.root, 'checkout', { branch: 'other' })
+  // 带 force 旁路未提交守卫（不带 force 时先被 uncommitted-changes-present 拦截，
+  // 见「有已跟踪改动 → 拒绝且不切换」用例），才会轮到 git 的 overwrite 错误。
+  const result = await gitBranchAction(repo.root, 'checkout', { branch: 'other', force: true })
   assert.equal(result.ok, false)
   assert.equal(result.error.code, 'tracked-changes-would-be-overwritten')
   assert.deepEqual(result.error.paths, ['f.txt'])
   await repo.git(['checkout', '--', 'f.txt']) // 清理
+})
+
+test('gitBranchAction.checkout: 有已跟踪改动 → 拒绝且不切换（改动保留）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('other')
+  await repo.write('a.txt', 'dirty')
+  const result = await gitBranchAction(repo.root, 'checkout', { branch: 'other' })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'uncommitted-changes-present')
+  assert.equal(result.error.staged, 0)
+  assert.equal(result.error.unstaged, 1)
+  assert.equal(await repo.currentBranch(), 'main') // 未切换
+  assert.equal((await repo.git(['status', '--porcelain'])).trim(), 'M a.txt') // 改动保留
+})
+
+test('gitBranchAction.checkout: force 旁路 → 带改动切换成功', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('other')
+  await repo.write('a.txt', 'dirty')
+  const result = await gitBranchAction(repo.root, 'checkout', { branch: 'other', force: true })
+  assert.deepEqual(result, { ok: true, branch: 'other' })
+  assert.equal(await repo.currentBranch(), 'other')
+  assert.equal((await repo.git(['status', '--porcelain'])).trim(), 'M a.txt') // 改动带到新分支
+})
+
+test('gitBranchAction.checkout: 仅未跟踪文件 → 直接切换（不弹确认）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('other')
+  await repo.write('u.txt', 'untracked')
+  const result = await gitBranchAction(repo.root, 'checkout', { branch: 'other' })
+  assert.deepEqual(result, { ok: true, branch: 'other' })
+  assert.equal((await repo.git(['status', '--porcelain'])).trim(), '?? u.txt')
 })
 
 // ---------- gitBranchAction：tag 起始点（2.2） ----------
@@ -506,4 +575,26 @@ test('写路由: 非 git 仓库 → 稳定错误', async (t) => {
   )
   assert.equal(res.status, 200)
   assert.equal(JSON.parse(res.payload).error.code, 'internal')
+})
+
+test('写路由: checkout 脏仓库 → uncommitted-changes-present；force 全链路成功', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('other')
+  await repo.write('a.txt', 'dirty')
+  const route = fakeCtx(repo.root).get('/plugins/dsh-git-status/git/branch')
+  const res1 = fakeRes()
+  await route.handler(
+    fakeReq({ method: 'POST', contentType: 'application/json', body: '{"action":"checkout","branch":"other"}' }),
+    res1,
+  )
+  assert.equal(res1.status, 200)
+  assert.equal(JSON.parse(res1.payload).error.code, 'uncommitted-changes-present')
+  const res2 = fakeRes()
+  await route.handler(
+    fakeReq({ method: 'POST', contentType: 'application/json', body: '{"action":"checkout","branch":"other","force":true}' }),
+    res2,
+  )
+  assert.deepEqual(JSON.parse(res2.payload), { ok: true, branch: 'other' })
+  assert.equal(await repo.currentBranch(), 'other')
 })

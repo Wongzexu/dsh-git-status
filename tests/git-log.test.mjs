@@ -71,21 +71,21 @@ test('parseNumstat: 常规 / 二进制（-）/ 空行', () => {
 test('gitUncommittedCount: 干净仓库 → 0', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
-  assert.deepEqual(await gitUncommittedCount(repo.root), { total: 0, staged: 0, unstaged: 0 })
+  assert.deepEqual(await gitUncommittedCount(repo.root), { total: 0, staged: 0, unstaged: 0, untracked: 0 })
 })
 
 test('gitUncommittedCount: 未跟踪文件归未暂存', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
   await repo.write('u.txt', 'u')
-  assert.deepEqual(await gitUncommittedCount(repo.root), { total: 1, staged: 0, unstaged: 1 })
+  assert.deepEqual(await gitUncommittedCount(repo.root), { total: 1, staged: 0, unstaged: 1, untracked: 1 })
 })
 
 test('gitUncommittedCount: 未暂存修改', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
   await repo.write('a.txt', 'changed')
-  assert.deepEqual(await gitUncommittedCount(repo.root), { total: 1, staged: 0, unstaged: 1 })
+  assert.deepEqual(await gitUncommittedCount(repo.root), { total: 1, staged: 0, unstaged: 1, untracked: 0 })
 })
 
 test('gitUncommittedCount: 已暂存修改', async (t) => {
@@ -93,7 +93,7 @@ test('gitUncommittedCount: 已暂存修改', async (t) => {
   await repo.commit('c1')
   await repo.write('a.txt', 'changed')
   await repo.git(['add', 'a.txt'])
-  assert.deepEqual(await gitUncommittedCount(repo.root), { total: 1, staged: 1, unstaged: 0 })
+  assert.deepEqual(await gitUncommittedCount(repo.root), { total: 1, staged: 1, unstaged: 0, untracked: 0 })
 })
 
 test('gitUncommittedCount: MM 部分暂存两边各计一处', async (t) => {
@@ -102,7 +102,7 @@ test('gitUncommittedCount: MM 部分暂存两边各计一处', async (t) => {
   await repo.write('a.txt', 'v2')
   await repo.git(['add', 'a.txt'])
   await repo.write('a.txt', 'v3')
-  assert.deepEqual(await gitUncommittedCount(repo.root), { total: 1, staged: 1, unstaged: 1 })
+  assert.deepEqual(await gitUncommittedCount(repo.root), { total: 1, staged: 1, unstaged: 1, untracked: 0 })
 })
 
 // ---------- gitLogV2：虚拟行组装 ----------

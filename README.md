@@ -22,7 +22,8 @@
   - 右键本地分支徽标：切换到 x / 合并 x 到当前分支 / 重命名 x / 删除 x / 强制删除 x（未合并二次确认）
   - 右键远程分支徽标：「创建本地分支 x 并检出」；右键 tag 徽标：「在 x 创建分支并检出」
   - 头部「＋ 新分支」对话框：客户端即时校验 + 服务端 `check-ref-format` 权威校验双保险
-  - 切换守卫：未解决冲突 / 进行中操作（MERGE_HEAD 等标记）/ 目标分支在其他 worktree 检出 → 稳定错误码
+  - 切换守卫：未解决冲突 / 进行中操作（MERGE_HEAD 等标记）/ 目标分支在其他 worktree 检出 → 稳定错误码；
+    存在**已跟踪**未提交改动时弹「仍然切换」确认框（确认后带 `force` 旁路；仅未跟踪文件不拦）
   - 合并冲突后：头部徽标 + 合并条提供「中止合并 / 继续合并」（解决冲突后 `git add` 再继续）
 - **冲突/进行中状态徽标**：头部实时显示「N 个未解决冲突」「合并/rebase 进行中」（`MERGE_HEAD` 等标记）
 - **SSE 即时刷新**：`/git/events` 订阅（2s 服务端状态键对比 + 变化推送 + 15s 心跳），
@@ -107,13 +108,14 @@ dsh-git-status/
 
 ```sh
 node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js）
-npm test                       # node:test 套件（65 用例，真实 git fixture，零依赖）
+npm test                       # node:test 套件（73 用例，真实 git fixture，零依赖）
 ```
 
 改 Node half 直接改 `lib/index.mjs`（无构建步骤），改完跑 `npm test` 回归。
 测试链覆盖：装饰串分类、未提交改动 XY 位分类、UNCOMMITTED/stash 虚拟行组装、
 stash 第三父、show 详情、冲突/进行中状态、分支名校验、切换守卫
-（冲突/进行中/其他 worktree）、增删改合全路径（含合并冲突 abort/continue）、
+（冲突/进行中/其他 worktree/**未提交改动确认**：staged/未暂存/未跟踪三组计数、
+仅未跟踪放行、force 旁路带改动切换）、增删改合全路径（含合并冲突 abort/continue）、
 失败 stderr 分类、写路由 CSRF（content-type 强校验）与全链路、SSE 订阅
 （初始推送/变化检测/心跳/断连清理）。
 
