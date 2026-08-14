@@ -28,7 +28,8 @@
     "cordis": "^4.0.0-rc.7"
   },
   "scripts": {
-    "build": "node scripts/build-client.js"
+    "build": "node scripts/build-client.js",
+    "test": "node --test \"tests/*.test.mjs\""
   },
   "license": "MIT"
 }

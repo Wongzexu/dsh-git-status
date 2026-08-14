@@ -32,10 +32,14 @@ dsh-git-status/
 ├── package.json          # dsh.bundle.patch + dsh.client.inject + platform: web
 ├── cordis.patch.yml      # 挂载 Node half
 ├── lib/
-│   ├── index.mjs         # Node half：git log/show/branch 三个路由
+│   ├── index.mjs         # Node half：git log/show/branch 三个路由（末尾导出测试用纯函数）
 │   └── client.js         # client bundle（构建产物，__ModuleLoader__ 契约）
 ├── src/client/index.js   # client 源码（手写 CJS，单模块）
-└── scripts/build-client.js  # 零依赖构建脚本（纯 Node）
+├── scripts/build-client.js  # 零依赖构建脚本（纯 Node）
+└── tests/
+    ├── fixtures/repo.mjs     # 造仓库辅助（mkdtemp 真实 git 仓库，t.after 自动清理）
+    ├── git-log.test.mjs      # 装饰解析/未提交分类/虚拟行组装/stash/show 详情
+    └── git-branch.test.mjs   # 分支名校验/守卫/失败分类/写路由（伪造 ctx，含 CSRF）
 ```
 
 - **数据通道**：Node half 注册 `/plugins/dsh-git-status/*` 路由（webServer），客户端 10s 轮询
@@ -57,9 +61,13 @@ dsh plugin --profile web add /home/maoyi-yewu/Desktop/系统/dsh-git-status
 
 ```sh
 node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client
+npm test                       # node:test 套件（46 用例，真实 git fixture，零依赖）
 ```
 
-改 Node half 直接改 `lib/index.mjs`（无构建步骤）。
+改 Node half 直接改 `lib/index.mjs`（无构建步骤），改完跑 `npm test` 回归。
+测试链覆盖：装饰串分类、未提交改动 XY 位分类、UNCOMMITTED/stash 虚拟行组装、
+stash 第三父、show 详情、分支名校验、切换守卫（冲突/进行中/其他 worktree）、
+失败 stderr 分类、写路由 CSRF（content-type 强校验）与全链路。
 
 ## 路线
 
