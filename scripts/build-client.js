@@ -1,4 +1,4 @@
-// dsh-git-status client bundle 构建：把 src/client/index.js 包装成官方
+// @wongzexu/dsh-git-status client bundle 构建：把 src/client/index.js 包装成官方
 // __ModuleLoader__.load 契约（CJS + ModuleLoader 包装，同 greeter 模式）。
 // 零依赖：纯 Node 脚本，无需 tsdown/pnpm install。
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const src = readFileSync(join(root, 'src', 'client', 'index.js'), 'utf8')
-const out = `window.__ModuleLoader__.load({ id: "dsh-git-status", factory: (require) => {
+const out = `window.__ModuleLoader__.load({ id: "@wongzexu/dsh-git-status", factory: (require) => {
 var module = { exports: {} }; var exports = module.exports;
 ${src}
 return module.exports; } });

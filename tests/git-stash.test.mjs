@@ -259,7 +259,7 @@ test('stash 路由: 合法 drop 全链路成功', async (t) => {
 })
 
 test('stash 路由: 非 git 仓库 → 稳定错误', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dsh-git-status-nogit-'))
+  const root = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-nogit-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   const route = fakeCtx(root).get(GIT_STASH_PATH)
   const res = fakeRes()

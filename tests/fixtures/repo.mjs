@@ -50,7 +50,7 @@ let counter = 0
  * - git(args)：裸跑任意命令
  */
 export async function makeRepo(t, opts = {}) {
-  const root = await mkdtemp(join(tmpdir(), `dsh-git-status-${++counter}-`))
+  const root = await mkdtemp(join(tmpdir(), `dsh-gitstatus-${++counter}-`))
   t.after(() => rm(root, { recursive: true, force: true }))
   await runGit(root, ['init', '-b', 'main'])
   await runGit(root, ['config', 'user.name', opts.userName ?? 'Test User'])

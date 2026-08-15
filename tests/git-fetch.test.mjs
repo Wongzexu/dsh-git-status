@@ -20,7 +20,7 @@ import { makeRepo, runGit } from './fixtures/repo.mjs'
 
 /** 建一个裸仓库（t.after 自动清理）。 */
 async function makeBareRepo(t) {
-  const root = await mkdtemp(join(tmpdir(), 'dsh-git-status-bare-'))
+  const root = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-bare-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   await runGit(root, ['init', '--bare'])
   return root
@@ -154,7 +154,7 @@ test('gitFetchAction: remote 名存在但 URL 仓库不可达 → remote-unreach
   const repo = await makeRepo(t)
   await repo.commit('c1')
   // remote 名存在（通过权威校验），但指向的仓库路径不存在
-  await repo.git(['remote', 'add', 'origin', join(tmpdir(), 'dsh-git-status-does-not-exist')])
+  await repo.git(['remote', 'add', 'origin', join(tmpdir(), 'dsh-gitstatus-does-not-exist')])
   const result = await gitFetchAction(repo.root, { remote: 'origin' })
   assert.equal(result.ok, false)
   assert.equal(result.error.code, 'remote-unreachable')
@@ -165,7 +165,7 @@ test('gitFetchAction: fetch --all 某远程仓库不可达 → remote-unreachabl
   const repo = await makeRepo(t)
   await repo.commit('local')
   await repo.git(['remote', 'add', 'origin', bare])
-  await repo.git(['remote', 'add', 'dead', join(tmpdir(), 'dsh-git-status-does-not-exist')])
+  await repo.git(['remote', 'add', 'dead', join(tmpdir(), 'dsh-gitstatus-does-not-exist')])
   const result = await gitFetchAction(repo.root)
   assert.equal(result.ok, false)
   assert.equal(result.error.code, 'remote-unreachable')
@@ -273,7 +273,7 @@ test('fetch 路由: 合法请求全链路成功（fetch --all）', async (t) => 
 })
 
 test('fetch 路由: 非 git 仓库 → 稳定错误', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dsh-git-status-nogit-'))
+  const root = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-nogit-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   const route = fakeCtx(root).get(GIT_FETCH_PATH)
   const res = fakeRes()

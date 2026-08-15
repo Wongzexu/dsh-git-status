@@ -1,9 +1,9 @@
-// dsh-git-status 浏览器端 half：自渲染 DOM，零 React 依赖（greeter 模式）。
+// @wongzexu/dsh-git-status 浏览器端 half：自渲染 DOM，零 React 依赖（greeter 模式）。
 // 单模块：Git 状态（commit DAG 泳道图 + 行内详情 diff + 分支操作）。
-// 数据通道：Node half 自造路由（/plugins/dsh-git-status/*）；
+// 数据通道：Node half 自造路由（/plugins/dsh-gitstatus/*）；
 // 布局锚点：官方 DOM 属性（data-chat-flow 等），不依赖 React 内部结构。
 // 构建：scripts/build-client.js 包成 __ModuleLoader__.load 契约（CJS）。
-const BASE = '/plugins/dsh-git-status'
+const BASE = '/plugins/dsh-gitstatus'
 
 const I18N = {
   zh: {
@@ -342,7 +342,7 @@ module.exports = {
     }
 
     // ---------- 样式 ----------
-    const STYLE_ID = 'dsh-git-status-style'
+    const STYLE_ID = 'dsh-gitstatus-style'
     if (document.getElementById(STYLE_ID) === null) {
       const style = document.createElement('style')
       style.id = STYLE_ID

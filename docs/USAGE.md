@@ -1,27 +1,35 @@
-# dsh-git-status 使用指南 · Usage Guide
+# @wongzexu/dsh-git-status 使用指南 · Usage Guide
 
-> 中英双语（Bilingual）：上方为中文版，下方为 [English version](#dsh-git-status-usage-guide)。与 [README](../README.md) 配套的详细文字版操作指南，覆盖从打开浮窗到分支操作、冲突处理、远程拉取的全流程。适用版本：v0.4.0+。
+> 中英双语（Bilingual）：上方为中文版，下方为 [English version](#wongzexudsh-git-status-usage-guide)。与 [README](../README.md) 配套的详细文字版操作指南，覆盖从打开浮窗到分支操作、冲突处理、远程拉取的全流程。适用版本：v0.4.0+。
 
 ## 中文版
 
 ### 1. 安装与启用
 
-**方式一：从 GitHub 安装（发布版）**
+**方式一：npm 安装（推荐，发布版）**
+
+```sh
+dsh plugin --profile web add @wongzexu/dsh-git-status
+```
+
+**方式二：从 GitHub 安装（源码版）**
 
 ```sh
 dsh plugin --profile web add github:Wongzexu/dsh-git-status
 ```
 
-**方式二：本地目录安装（开发/自用）**
+**方式三：本地目录安装（开发/自用）**
 
 ```sh
 dsh plugin --profile web add /path/to/dsh-git-status
 ```
 
+> ⚠️ npm 上另有同名（无作用域）包 `dsh-git-status`（其他作者的 React 实现，与本插件无关）；安装请认准 **`@wongzexu/dsh-git-status`**。
+
 然后：
 
 1. 重启 DSH web 服务，使插件加载生效；
-2. 打开 DSH web 页面 → 设置页「插件」面板，确认 `dsh-git-status` 已启用（可随时停用/启用）。
+2. 打开 DSH web 页面 → 设置页「插件」面板，确认 `@wongzexu/dsh-git-status` 已启用（可随时停用/启用）。
 
 ### 2. 打开 / 关闭浮窗
 
@@ -152,33 +160,41 @@ dsh plugin --profile web add /path/to/dsh-git-status
 ### 10. 卸载
 
 ```sh
-dsh plugin --profile web remove dsh-git-status
+dsh plugin --profile web remove @wongzexu/dsh-git-status
 ```
 
 ---
 
-# dsh-git-status Usage Guide
+# @wongzexu/dsh-git-status Usage Guide
 
 > Bilingual companion: English below, [中文版](#中文版) above. A detailed text-based usage guide for the [README](../README_EN.md), covering everything from opening the drawer to branch operations, conflict handling, and fetching from remotes. Applies to v0.4.0+.
 
 ## 1. Install & enable
 
-**Option 1: install from GitHub (release)**
+**Option 1: install from npm (recommended, release)**
+
+```sh
+dsh plugin --profile web add @wongzexu/dsh-git-status
+```
+
+**Option 2: install from GitHub (source)**
 
 ```sh
 dsh plugin --profile web add github:Wongzexu/dsh-git-status
 ```
 
-**Option 2: install from a local directory (development / personal use)**
+**Option 3: install from a local directory (development / personal use)**
 
 ```sh
 dsh plugin --profile web add /path/to/dsh-git-status
 ```
 
+> ⚠️ There is a *different*, unscoped package named `dsh-git-status` on npm (a React implementation by another author, unrelated to this plugin); make sure you install **`@wongzexu/dsh-git-status`**.
+
 Then:
 
 1. Restart the DSH web service for the plugin to load;
-2. Open the DSH web page → Settings → "Plugins" panel, confirm `dsh-git-status` is enabled (can be disabled/enabled anytime).
+2. Open the DSH web page → Settings → "Plugins" panel, confirm `@wongzexu/dsh-git-status` is enabled (can be disabled/enabled anytime).
 
 ## 2. Opening / closing the drawer
 
@@ -300,5 +316,5 @@ With **tracked** uncommitted changes, a "switch anyway" confirmation dialog appe
 ## 10. Uninstall
 
 ```sh
-dsh plugin --profile web remove dsh-git-status
+dsh plugin --profile web remove @wongzexu/dsh-git-status
 ```

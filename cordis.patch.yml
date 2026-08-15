@@ -1,4 +1,4 @@
-# dsh-git-status bundle：向组合挂 Node half（git 服务路由），行为在 client
+# @wongzexu/dsh-git-status bundle：向组合挂 Node half（git 服务路由），行为在 client
 - insert:
-    - id: dsh-git-status
-      name: 'dsh-git-status'
+    - id: '@wongzexu/dsh-git-status'
+      name: '@wongzexu/dsh-git-status'

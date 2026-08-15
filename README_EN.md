@@ -1,14 +1,14 @@
 <div align="center">
 
-# dsh-git-status
+# @wongzexu/dsh-git-status
 
-[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com) [![dshfind](https://dshfind.com/api/badge/Wongzexu/dsh-git-status?lang=en)](https://dshfind.com/zh/plugins/Wongzexu/dsh-git-status)
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com) [![npm](https://img.shields.io/npm/v/@wongzexu/dsh-git-status?color=cb3837&label=npm)](https://www.npmjs.com/package/@wongzexu/dsh-git-status) [![dshfind](https://dshfind.com/api/badge/Wongzexu/dsh-git-status?lang=en)](https://dshfind.com/zh/plugins/Wongzexu/dsh-git-status)
 
 **English** · [**简体中文**](README.md)
 
 A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations.
 
-🔖 **v0.4.0** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT
+🔖 **v0.4.0** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -41,13 +41,19 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 
 ### Install the plugin
 
-**Option 1: install from GitHub (release)**
+**Option 1: install from npm (recommended, release)**
+
+```sh
+dsh plugin --profile web add @wongzexu/dsh-git-status
+```
+
+**Option 2: install from GitHub (source)**
 
 ```sh
 dsh plugin --profile web add github:Wongzexu/dsh-git-status
 ```
 
-**Option 2: install from a local directory (development / personal use)**
+**Option 3: install from a local directory (development / personal use)**
 
 ```sh
 dsh plugin --profile web add /path/to/dsh-git-status
@@ -55,14 +61,16 @@ dsh plugin --profile web add /path/to/dsh-git-status
 
 Replace `/path/to/dsh-git-status` with the actual plugin directory path (e.g. this repository root).
 
+> ⚠️ Note: there is a *different*, unscoped package named `dsh-git-status` on npm (a React implementation by another author, unrelated to this plugin); make sure you install **`@wongzexu/dsh-git-status`**.
+
 ### Enable
 
 1. Restart the DSH web service for the plugin to load;
-2. Open the DSH web page → Settings → "Plugins" panel, confirm `dsh-git-status` is enabled (can be disabled/enabled anytime).
+2. Open the DSH web page → Settings → "Plugins" panel, confirm `@wongzexu/dsh-git-status` is enabled (can be disabled/enabled anytime).
 
 ### Usage
 
-> 📖 Full usage guide (bilingual, text version): [docs/USAGE.md#dsh-git-status-usage-guide](docs/USAGE.md#dsh-git-status-usage-guide) — UI overview, reading the graph, branch operations, conflict handling, and fetching from remotes.
+> 📖 Full usage guide (bilingual, text version): [docs/USAGE.md#wongzexudsh-git-status-usage-guide](docs/USAGE.md#wongzexudsh-git-status-usage-guide) — UI overview, reading the graph, branch operations, conflict handling, and fetching from remotes.
 
 1. Enter any chat view;
 2. Click the **branch icon** button outside the panel's top-right corner — the "Git status" drawer expands (draggable, position remembered; the button stays glued to the panel's top-right corner, and floats at that spot to reopen once the panel is closed; a one-time hint guides first use);
@@ -78,7 +86,7 @@ Replace `/path/to/dsh-git-status` with the actual plugin directory path (e.g. th
 ### Uninstall
 
 ```sh
-dsh plugin --profile web remove dsh-git-status
+dsh plugin --profile web remove @wongzexu/dsh-git-status
 ```
 
 ### FAQ
@@ -105,7 +113,7 @@ dsh-git-status/
     └── git-events.test.mjs   # SSE subscription: initial push/change detection/heartbeat/disconnect cleanup
 ```
 
-- **Data channel**: the Node half registers `/plugins/dsh-git-status/*` routes (webServer); the client subscribes to SSE `/git/events` for live refresh with a 10s poll fallback
+- **Data channel**: the Node half registers `/plugins/dsh-gitstatus/*` routes (webServer); the client subscribes to SSE `/git/events` for live refresh with a 10s poll fallback
 - **git execution**: spawns the system `git` (`-C workspace --no-pager -c color.ui=false`, `GIT_OPTIONAL_LOCKS=0`, `LC_ALL=C` for stable English output, `GIT_EDITOR=true` to disable editors, 15s timeout hard kill; fetch relaxed to 120s)
 - **Layout anchor**: official DOM attributes (`data-chat-flow`), no dependency on React internals
 - **Security**: routes are rooted at the session's authoritative workspace (request carries `session=`, preferring `ctx.sessions.get(id).header.cwd`; falls back to registry/process cwd), rejecting `..` components and out-of-bounds paths; read-only command whitelist; write routes (branch operations + fetch) are POST with enforced `application/json` content-type (CSRF protection), authoritative branch-name validation + argv arrays (no shell) + pre-switch guards; fetch timeout relaxed (120s for slow networks and large repos)
@@ -114,7 +122,7 @@ dsh-git-status/
 
 ```sh
 node scripts/build-client.js   # rebuild the client bundle (lib/client.js) after editing src/client/index.js
-npm test                       # node:test suite (92 cases, real git fixtures, zero dependencies)
+npm test                       # node:test suite (150 cases, real git fixtures, zero dependencies)
 ```
 
 Edit the Node half directly in `lib/index.mjs` (no build step); run `npm test` after changes.
@@ -122,10 +130,19 @@ Test coverage: decoration string classification, uncommitted XY status classific
 
 After rebuilding the client, **refresh the browser page** to see changes (no web service restart needed); after editing the Node half, **restart the web service**.
 
+### Publishing a new version
+
+```sh
+npm version patch          # or minor / major — syncs package.json version
+npm publish --access=public --registry=https://registry.npmjs.org
+```
+
+> Note: publishing requires 2FA on the npm account (security key / browser authorization); if your global registry is a mirror (e.g. npmmirror), always pass `--registry=https://registry.npmjs.org` explicitly.
+
 ## Roadmap
 
 - Optimize git status change push: fs.watch detection (currently 2s polling with state-key comparison)
-- Release form: GitHub releases (tag/Release)
+- Release form: npm live (`@wongzexu/dsh-git-status`); GitHub releases (tag/Release) planned
 
 ## License
 

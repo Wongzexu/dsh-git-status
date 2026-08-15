@@ -17,7 +17,7 @@ import { makeRepo, runGit } from './fixtures/repo.mjs'
 
 /** 建一个裸仓库（t.after 自动清理）。 */
 async function makeBareRepo(t) {
-  const root = await mkdtemp(join(tmpdir(), 'dsh-git-status-bare-'))
+  const root = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-bare-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   await runGit(root, ['init', '--bare'])
   return root
@@ -132,7 +132,7 @@ test('gitPushAction: 多远程顺序推，某远程失败即停（前面已成�
   const repo = await makeRepo(t)
   await repo.commit('c1')
   await repo.git(['remote', 'add', 'origin', bare1])
-  await repo.git(['remote', 'add', 'dead', join(tmpdir(), 'dsh-git-status-does-not-exist')])
+  await repo.git(['remote', 'add', 'dead', join(tmpdir(), 'dsh-gitstatus-does-not-exist')])
   const result = await gitPushAction(repo.root, { branch: 'main', remotes: ['origin', 'dead'] })
   assert.equal(result.ok, false)
   assert.equal(result.error.code, 'remote-unreachable')
@@ -225,7 +225,7 @@ test('push 路由: 合法请求全链路成功', async (t) => {
 })
 
 test('push 路由: 非 git 仓库 → 稳定错误', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dsh-git-status-nogit-'))
+  const root = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-nogit-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   const route = fakeCtx(root).get(GIT_PUSH_PATH)
   const res = fakeRes()
