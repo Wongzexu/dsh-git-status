@@ -281,8 +281,12 @@ module.exports = {
   margin-left: 5px; padding: 0 4px; border-radius: 3px;
   background: rgba(76,154,255,.22); color: #7ab8ff; font-size: 9px; line-height: 14px;
 }
-/* 当前 checkout 分支名加粗（同上游 gitRef.active .gitRefName，仅本地分支文字） */
-.dsc-gref-current { font-weight: 800; }
+/* 当前 checkout 分支 pill 高亮（同上游 gitRef.active 语义，强化为一眼可辨认）：
+   背景加浓 + 金色内描边 + 加粗；类挂在本地分支 pill 上（.dsc-gref-branch） */
+.dsc-gref-branch.dsc-gref-current {
+  background: rgba(245,166,35,.36); color: #ffe3a8; font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(245,166,35,.5);
+}
 /* 分支徽标可右键操作（context-menu 光标提示） */
 .dsc-gref-branch, .dsc-gref-remote, .dsc-gref-remote-sub { cursor: context-menu; }
 /* 分支操作右键菜单 / 创建分支对话框 / 切换确认框（浮层卡片，同 hovercard 风格） */
@@ -698,7 +702,7 @@ module.exports = {
       }
       // 无论成败都刷新图：--all 多远程可能部分成功（git 会继续尝试其余远程），
       // 已更新的跟踪 ref 要立即上屏；单远程失败时刷新也无害。
-      gitFetch(true)
+      gitFetch(true, true)
     })
     // 插到刷新按钮之前：头部顺序 标题 / 状态徽标 / 范围▾ / ⇣拉取 / ↻ / ＋新分支 / 关闭
     gitHead.insertBefore(gitFetchBtn, gitRefresh)
@@ -1060,8 +1064,12 @@ module.exports = {
           b.className = 'dsc-gref dsc-gref-branch'
           const name = document.createElement('span')
           name.textContent = r
-          // 当前 checkout 分支名加粗（同上游 gitRef.active .gitRefName，仅本地分支文字）
-          if (r === currentBranch) name.className = 'dsc-gref-current'
+          // 当前 checkout 分支：pill 级高亮（亮金背景 + 描边 + 加粗，见样式区），
+          // 悬停 title 提示（同上游 gitRef.active 语义，仅本地分支 pill）
+          if (r === currentBranch) {
+            b.classList.add('dsc-gref-current')
+            b.title = t('gitCurrentBranch')
+          }
           b.appendChild(name)
           const remotes = remotesOfHead.get(r)
           if (remotes !== undefined) {
@@ -1175,11 +1183,13 @@ module.exports = {
     // SSE 反复整体重建行 DOM —— 重建会替换行元素，扩大用户点击与渲染竞争的陈旧行窗口。
     let gitLastSig = null
     // 响应签名：覆盖所有影响 UI 的字段（commit 集合 / stash 位置 / 未提交计数 /
-    // HEAD 与分支名 / 冲突数 / 进行中操作 / 远程列表）。任一变化都触发重渲染。
+    // HEAD 与分支名 / 每行 refs 装饰（分支/远程/tag，排序拼接防顺序抖动）/
+    // 冲突数 / 进行中操作 / 远程列表）。任一变化都触发重渲染。
     const gitSigOf = (data) => {
       let s = `${data.moreAvailable}|${data.conflicts ?? 0}|${data.operation ?? ''}|${(data.remotes ?? []).join(',')}`
       for (const c of data.commits ?? []) {
-        s += `|${c.hash}${c.stash !== null ? '@' + c.stash.selector : ''}${c.uncommitted !== undefined ? '#u' + c.uncommitted.staged + '/' + c.uncommitted.unstaged : ''}${c.refs.isHead ? '^' + (c.refs.headName ?? '') : ''}`
+        const refsKey = [...c.refs.heads, ...c.refs.remotes, ...c.refs.tags].sort().join(',')
+        s += `|${c.hash}${c.stash !== null ? '@' + c.stash.selector : ''}${c.uncommitted !== undefined ? '#u' + c.uncommitted.staged + '/' + c.uncommitted.unstaged : ''}${c.refs.isHead ? '^' + (c.refs.headName ?? '') : ''}r:${refsKey}`
       }
       return s
     }
@@ -1217,7 +1227,7 @@ module.exports = {
       try {
         await gitBranchAction({ action: 'merge-abort' })
         flash(t('gitMergeAborted'))
-        gitFetch(true)
+        gitFetch(true, true)
       } catch (err) {
         flash(gitErrText(err))
       }
@@ -1226,12 +1236,12 @@ module.exports = {
       try {
         await gitBranchAction({ action: 'merge-continue' })
         flash(t('gitMergeContinued'))
-        gitFetch(true)
+        gitFetch(true, true)
       } catch (err) {
         flash(gitErrText(err))
       }
     })
-    const gitFetch = async (silent) => {
+    const gitFetch = async (silent, force) => {
       if (!silent) renderGitNote(t('gitLoading'))
       try {
         const r = await fetch(`${BASE}/git/log?n=500&scope=${gitScopeValue}${sessionQuery()}`)
@@ -1250,9 +1260,10 @@ module.exports = {
           return
         }
         // 静默刷新（10s 轮询 / SSE）且响应签名未变：列表与状态均无变化，跳过重建。
+        // force（本地写操作成功后）：结果确定变化，跳过签名比较直接重渲染；
         // 手动刷新（↻）与切换范围仍强制重渲染。
         const sig = gitSigOf(data)
-        if (silent && sig === gitLastSig) return
+        if (silent && !force && sig === gitLastSig) return
         gitLastSig = sig
         gitRows = data.commits
         gitMoreAvailable = data.moreAvailable
@@ -1425,7 +1436,7 @@ module.exports = {
       try {
         const result = await gitBranchAction({ action: 'checkout', ...payload })
         flash(t('gitSwitchOk', { branch: result.branch }))
-        gitFetch(true)
+        gitFetch(true, true)
       } catch (err) {
         if (err.code === 'uncommitted-changes-present') {
           let text = t('gitSwitchUncommitted', {
@@ -1499,7 +1510,7 @@ module.exports = {
               try {
                 const result = await gitBranchAction({ action: 'merge', branch: branchName })
                 flash(t('gitMergeOk', { branch: result.branch }))
-                gitFetch(true)
+                gitFetch(true, true)
               } catch (err) {
                 flash(gitErrText(err))
               }
@@ -1517,7 +1528,7 @@ module.exports = {
               try {
                 await gitBranchAction({ action: 'delete', branch: branchName })
                 flash(t('gitDeleteOk', { branch: branchName }))
-                gitFetch(true)
+                gitFetch(true, true)
               } catch (err) {
                 flash(gitErrText(err))
               }
@@ -1531,7 +1542,7 @@ module.exports = {
               try {
                 await gitBranchAction({ action: 'delete', branch: branchName, force: true })
                 flash(t('gitDeleteOk', { branch: branchName }))
-                gitFetch(true)
+                gitFetch(true, true)
               } catch (err) {
                 flash(gitErrText(err))
               }
@@ -1625,7 +1636,7 @@ module.exports = {
           gitCreateClose()
           flash(t('gitCreateOk', { name: result.branch }))
         }
-        gitFetch(true)
+        gitFetch(true, true)
       } catch (err) {
         gitCreateErr.textContent = gitErrText(err)
         gitCreateErr.classList.remove('hint')
