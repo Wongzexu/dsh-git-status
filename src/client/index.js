@@ -75,6 +75,8 @@ const I18N = {
     gitDeleteConfirm: '确定删除分支 {branch}？',
     gitDeleteForceConfirm: '确定强制删除未合并分支 {branch}？此操作不可恢复。',
     gitDeleteOk: '已删除分支 {branch}',
+    gitDeleteBtn: '删除',
+    gitDeleteForceBtn: '强制删除',
     gitMergeOk: '已合并 {branch}',
     gitMergeAborted: '已中止合并',
     gitMergeContinued: '合并已完成',
@@ -85,6 +87,37 @@ const I18N = {
     gitErrNetworkError: '网络或认证错误',
     gitErrRemoteNotFound: '远程不存在',
     gitErrRemoteUnreachable: '远程仓库不存在或不可达',
+    gitPush: '推送到远程…',
+    gitPushTitle: '推送分支 {branch}',
+    gitPushRemote: '推送目标远程',
+    gitPushSetUpstream: '设置上游（--set-upstream）',
+    gitPushMode: '推送模式',
+    gitPushModeNormal: '普通',
+    gitPushModeForceWithLease: 'Force with lease',
+    gitPushModeForce: 'Force 强制',
+    gitPushOk: '已推送 {branch} → {remote}',
+    gitErrPushRejected: '推送被拒绝（远程有本地没有的提交，先拉取或改用 force 模式）',
+    gitErrRemoteRejected: '远程拒绝推送（服务端规则/hook）',
+    gitErrInvalidPushMode: '无效的推送模式',
+    gitStashApply: '应用 stash {selector}',
+    gitStashPop: '弹出 stash {selector}',
+    gitStashDrop: '删除 stash {selector}',
+    gitStashDropConfirm: '确定删除 stash {selector}？此操作不可恢复。',
+    gitStashBranch: '从 stash {selector} 创建分支并检出',
+    gitStashBranchTitle: '从 stash 创建分支',
+    gitStashUncommitted: '暂存未提交改动…',
+    gitStashUncommittedTitle: '暂存未提交改动',
+    gitStashMessage: '说明（可选）',
+    gitStashIncludeUntracked: '包含未跟踪文件',
+    gitStashOk: '已暂存未提交改动',
+    gitStashApplyOk: '已应用 {selector}',
+    gitStashPopOk: '已弹出 {selector}',
+    gitStashDropOk: '已删除 {selector}',
+    gitStashBranchOk: '已从 {selector} 创建分支 {branch}',
+    gitErrStashConflicts: 'stash 应用冲突，请解决后继续',
+    gitErrStashNotFound: 'stash 不存在',
+    gitErrInvalidStashSelector: '无效的 stash 引用',
+    gitErrStashNothingToSave: '没有可暂存的改动',
     gitErrUncommittedChangesPresent: '工作区有未提交改动',
     gitSwitchUncommitted: '工作区有未提交改动（已暂存 {staged} 处 · 未暂存 {unstaged} 处），切换到 {branch} 会把这些改动一起带过去。',
     gitSwitchUncommittedUntracked: '（另有 {untracked} 个未跟踪文件）',
@@ -164,6 +197,8 @@ const I18N = {
     gitDeleteConfirm: 'Delete branch {branch}?',
     gitDeleteForceConfirm: 'Force-delete unmerged branch {branch}? This cannot be undone.',
     gitDeleteOk: 'Branch {branch} deleted',
+    gitDeleteBtn: 'Delete',
+    gitDeleteForceBtn: 'Force delete',
     gitMergeOk: 'Merged {branch}',
     gitMergeAborted: 'Merge aborted',
     gitMergeContinued: 'Merge completed',
@@ -174,6 +209,37 @@ const I18N = {
     gitErrNetworkError: 'Network or authentication error',
     gitErrRemoteNotFound: 'Remote not found',
     gitErrRemoteUnreachable: 'Remote repository not found or unreachable',
+    gitPush: 'Push to remote…',
+    gitPushTitle: 'Push branch {branch}',
+    gitPushRemote: 'Push to remote',
+    gitPushSetUpstream: 'Set upstream (--set-upstream)',
+    gitPushMode: 'Push mode',
+    gitPushModeNormal: 'Normal',
+    gitPushModeForceWithLease: 'Force with lease',
+    gitPushModeForce: 'Force',
+    gitPushOk: 'Pushed {branch} → {remote}',
+    gitErrPushRejected: 'Push rejected (remote has commits you lack — pull first or use a force mode)',
+    gitErrRemoteRejected: 'Push rejected by the remote (server rules/hook)',
+    gitErrInvalidPushMode: 'Invalid push mode',
+    gitStashApply: 'Apply stash {selector}',
+    gitStashPop: 'Pop stash {selector}',
+    gitStashDrop: 'Drop stash {selector}',
+    gitStashDropConfirm: 'Drop stash {selector}? This cannot be undone.',
+    gitStashBranch: 'Create branch from stash {selector} and check out',
+    gitStashBranchTitle: 'Create branch from stash',
+    gitStashUncommitted: 'Stash uncommitted changes…',
+    gitStashUncommittedTitle: 'Stash uncommitted changes',
+    gitStashMessage: 'Message (optional)',
+    gitStashIncludeUntracked: 'Include untracked files',
+    gitStashOk: 'Uncommitted changes stashed',
+    gitStashApplyOk: 'Applied {selector}',
+    gitStashPopOk: 'Popped {selector}',
+    gitStashDropOk: 'Dropped {selector}',
+    gitStashBranchOk: 'Created branch {branch} from {selector}',
+    gitErrStashConflicts: 'Stash apply conflicts — resolve them first',
+    gitErrStashNotFound: 'Stash not found',
+    gitErrInvalidStashSelector: 'Invalid stash reference',
+    gitErrStashNothingToSave: 'No local changes to stash',
     gitErrUncommittedChangesPresent: 'Working tree has uncommitted changes',
     gitSwitchUncommitted: 'The working tree has uncommitted changes ({staged} staged · {unstaged} unstaged); switching to {branch} will carry them along.',
     gitSwitchUncommittedUntracked: '({untracked} untracked file(s))',
@@ -224,13 +290,17 @@ module.exports = {
 }
 [data-dsc-toggle]:hover { background: var(--dsw-alias-button-floating-hover, rgba(255,255,255,.22)); color: var(--dsw-alias-text-accent, #4c9aff); }
 [data-dsc-toggle].on { outline: 1px solid var(--dsw-alias-text-accent, #4c9aff); }
+/* 操作反馈提示（切换/删除分支等）：位置由 flash() 动态定位到面板框外正上方
+   居中（tooltip 式，贴顶时 fallback 面板下方）；成功绿底 / 错误红底，与面板
+   背景明显区分。 */
 [data-dsc-msg] {
-  position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%);
-  z-index: 930; padding: 6px 14px; border-radius: 999px; font-size: 12px;
-  font-family: system-ui; color: var(--dsw-alias-text-1, #eee);
-  background: var(--dsw-hovercard-bg, #2C2C2E); box-shadow: var(--dsw-shadow-lv3);
-  border: 1px solid rgba(255,255,255,.08); display: none; pointer-events: none;
+  position: fixed; z-index: 932; max-width: 260px; padding: 6px 14px;
+  border-radius: 999px; font-size: 12px;
+  font-family: system-ui; color: #fff; background: rgba(56,142,60,.95);
+  box-shadow: var(--dsw-shadow-lv3); border: 1px solid rgba(255,255,255,.18);
+  display: none; pointer-events: none;
 }
+[data-dsc-msg].error { background: rgba(211,47,47,.95); }
 /* 首次使用提示气泡（跟随开关按钮，只显示一次） */
 [data-dsc-hint] {
   position: fixed; z-index: 931; max-width: 240px; padding: 6px 10px;
@@ -324,6 +394,45 @@ module.exports = {
 [data-dsc-git-confirm] .dsc-git-confirm-title { font-weight: 600; margin-bottom: 6px; }
 [data-dsc-git-confirm] .dsc-git-confirm-text { opacity: .85; line-height: 1.5; }
 [data-dsc-git-confirm] .dsc-git-confirm-actions { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; }
+/* 危险操作确认按钮（删除分支等不可恢复操作）：红色实底，与普通确认（仍然切换）区分 */
+[data-dsc-git-confirm] .dsc-git-confirm-ok-danger {
+  background: rgba(232,73,73,.92); color: #fff;
+}
+[data-dsc-git-confirm] .dsc-git-confirm-ok-danger:hover { background: rgba(255,92,92,1); }
+/* push/stash 对话框（浮层卡片，同 confirm/create 框风格）：选项行 + toggle 按钮 */
+[data-dsc-git-push], [data-dsc-git-stash] {
+  position: fixed; z-index: 930; min-width: 250px; max-width: 340px;
+  border-radius: 8px; padding: 10px 12px; display: none; font-size: 12px;
+  box-sizing: border-box; color: var(--dsw-alias-text-1, #eee);
+  background: var(--dsw-hovercard-bg, #2C2C2E);
+  border: 1px solid rgba(255,255,255,.08); box-shadow: var(--dsw-shadow-lv3);
+}
+[data-dsc-git-push] .dsc-git-push-title, [data-dsc-git-stash] .dsc-git-stash-title {
+  font-weight: 600; margin-bottom: 8px;
+}
+.dsc-git-opt-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 6px; font-size: 11px;
+}
+.dsc-git-opt-row label { opacity: .85; flex: 1; min-width: 0; }
+.dsc-git-opt-group { display: flex; gap: 4px; flex: none; }
+[data-dsc-git-stash] input[type='text'] {
+  width: 100%; box-sizing: border-box; padding: 4px 6px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.25);
+  color: inherit; font-size: 11px; outline: none; margin-bottom: 6px;
+}
+[data-dsc-git-stash] input[type='text']:focus { border-color: var(--dsw-alias-text-accent, #4c9aff); }
+/* toggle 按钮（Set Upstream / Include Untracked / Push Mode 互斥组）：on 高亮 accent */
+.dsc-git-toggle {
+  border: 1px solid rgba(255,255,255,.14); border-radius: 6px; padding: 2px 8px;
+  font-size: 11px; cursor: pointer; background: rgba(255,255,255,.05); color: inherit;
+}
+.dsc-git-toggle.on {
+  border-color: var(--dsw-alias-text-accent, #4c9aff);
+  color: var(--dsw-alias-text-accent, #4c9aff);
+  background: rgba(76,154,255,.12);
+}
+.dsc-git-opt-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
 [data-dsc-git-create] { padding: 8px 10px; display: none; }
 [data-dsc-git-create] .dsc-git-create-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;
@@ -391,11 +500,25 @@ module.exports = {
     // ---------- 共享工具 ----------
     const flowOf = () => document.querySelector('[data-chat-flow=""]')
     const isChatView = () => flowOf() !== null
-    // 提示气泡（分支操作成功/失败等）。
+    // 提示气泡（分支操作成功/失败等）：定位在面板框外正上方居中（tooltip 式，
+    // 操作反馈就近且不遮挡面板内容）；面板贴顶放不下时 fallback 到面板下方。
+    // kind：'success'（绿底）| 'error'（红底），与面板背景明显区分。
     let msgTimer = null
-    const flash = (text) => {
+    const flash = (text, kind = 'success') => {
       msg.textContent = text
+      msg.classList.toggle('error', kind === 'error')
       msg.style.display = 'block'
+      msg.style.visibility = 'hidden' // 先测量实际尺寸再定位
+      const w = msg.offsetWidth
+      const h = msg.offsetHeight
+      msg.style.visibility = ''
+      const panelRect = gitPanel.getBoundingClientRect()
+      let left = panelRect.left + (panelRect.width - w) / 2
+      left = Math.min(Math.max(8, left), window.innerWidth - w - 8)
+      let top = panelRect.top - h - 8
+      if (top < 8) top = Math.min(panelRect.bottom + 8, window.innerHeight - h - 8)
+      msg.style.left = `${left}px`
+      msg.style.top = `${top}px`
       if (msgTimer !== null) clearTimeout(msgTimer)
       msgTimer = setTimeout(() => { msg.style.display = 'none' }, 1400)
     }
@@ -705,7 +828,7 @@ module.exports = {
         await gitPost('/git/fetch', { remote: '', prune: false })
         flash(t('gitFetchOk'))
       } catch (err) {
-        flash(gitErrText(err))
+        flash(gitErrText(err), 'error')
       } finally {
         gitFetchBtn.disabled = false
         gitFetchBtn.title = t('gitFetch')
@@ -857,7 +980,7 @@ module.exports = {
           copyBtn.textContent = '⧉'
           copyBtn.title = t('gitCopyHash')
           copyBtn.addEventListener('click', () => {
-            navigator.clipboard?.writeText(data.meta.hash).then(() => flash(t('copied')), () => flash(t('copyFailed')))
+            navigator.clipboard?.writeText(data.meta.hash).then(() => flash(t('copied')), () => flash(t('copyFailed'), 'error'))
           })
           dTitle.appendChild(hashTag)
           dTitle.appendChild(copyBtn)
@@ -1076,6 +1199,7 @@ module.exports = {
         // 行
         const row = document.createElement('div')
         row.setAttribute('data-dsc-git-row', '')
+        row.dataset.hash = commit.hash
         row.style.height = `${GIT_GRID.y}px`
         row.style.paddingLeft = `${clipW}px`
         if (idx === expandAt) row.classList.add('sel')
@@ -1133,6 +1257,7 @@ module.exports = {
           const b = document.createElement('span')
           b.className = 'dsc-gref dsc-gref-stash'
           b.textContent = commit.stash.selector.replace(/^refs\//, '')
+          b.dataset.selector = commit.stash.selector
           b.title = t('gitStash')
           row.appendChild(b)
         }
@@ -1164,7 +1289,7 @@ module.exports = {
           copyBtn.title = t('gitCopyHash')
           copyBtn.addEventListener('click', (ev) => {
             ev.stopPropagation()
-            navigator.clipboard?.writeText(commit.hash).then(() => flash(t('copied')), () => flash(t('copyFailed')))
+            navigator.clipboard?.writeText(commit.hash).then(() => flash(t('copied')), () => flash(t('copyFailed'), 'error'))
           })
           row.appendChild(copyBtn)
         }
@@ -1262,7 +1387,7 @@ module.exports = {
         flash(t('gitMergeAborted'))
         gitFetch(true, true)
       } catch (err) {
-        flash(gitErrText(err))
+        flash(gitErrText(err), 'error')
       }
     })
     gitMergeContinue.addEventListener('click', async () => {
@@ -1271,7 +1396,7 @@ module.exports = {
         flash(t('gitMergeContinued'))
         gitFetch(true, true)
       } catch (err) {
-        flash(gitErrText(err))
+        flash(gitErrText(err), 'error')
       }
     })
     const gitFetch = async (silent, force) => {
@@ -1399,7 +1524,10 @@ module.exports = {
         btn.type = 'button'
         btn.textContent = item.checked === true ? `✓ ${item.label}` : item.label
         btn.disabled = item.disabled === true
-        if (item.disabled !== true) btn.addEventListener('click', () => { gitCtxClose(); item.onClick() })
+        // stopPropagation：菜单项可能同步弹出确认框（删除分支），若不阻断冒泡，
+        // document 级「点击外部关闭」监听会把刚弹出的确认框当作外部点击立即关掉
+        // （异步弹出如切换确认不受影响——点击事件早已结束）。
+        if (item.disabled !== true) btn.addEventListener('click', (ev) => { ev.stopPropagation(); gitCtxClose(); item.onClick() })
         gitCtxMenu.appendChild(btn)
       }
       gitCtxMenu.style.display = 'block'
@@ -1444,6 +1572,8 @@ module.exports = {
       gitConfirmText.textContent = opts.text
       gitConfirmOk.textContent = opts.okText ?? t('gitSwitchAnyway')
       gitConfirmCancel.textContent = opts.cancelText ?? t('gitCancel')
+      // danger：确认按钮红色实底（删除分支等不可恢复操作）
+      gitConfirmOk.classList.toggle('dsc-git-confirm-ok-danger', opts.danger === true)
       gitConfirmOnOk = opts.onOk ?? null
       gitConfirmBox.style.display = 'block'
       // 定位：面板头部下方（同 create 框）；确认框在异步 POST 返回后弹出，
@@ -1487,7 +1617,7 @@ module.exports = {
           })
           return
         }
-        flash(gitErrText(err))
+        flash(gitErrText(err), 'error')
       }
     }
 
@@ -1508,11 +1638,55 @@ module.exports = {
         }])
         return
       }
+      const stashBadge = ev.target.closest('[data-dsc-git-rows] .dsc-gref-stash')
+      if (stashBadge !== null) {
+        ev.preventDefault()
+        ev.stopPropagation()
+        const selector = stashBadge.dataset.selector ?? ''
+        const shortSel = selector.replace(/^refs\//, '')
+        gitCtxOpen(ev.clientX, ev.clientY, [
+          {
+            label: t('gitStashApply', { selector: shortSel }),
+            onClick: () => gitStashRun('apply', selector),
+          },
+          {
+            label: t('gitStashPop', { selector: shortSel }),
+            onClick: () => gitStashRun('pop', selector),
+          },
+          {
+            label: t('gitStashBranch', { selector: shortSel }),
+            onClick: () => gitCreateOpen({ mode: 'stash', selector }),
+          },
+          {
+            label: t('gitStashDrop', { selector: shortSel }),
+            onClick: () => gitConfirmOpen({
+              title: t('gitStashDrop', { selector: shortSel }),
+              text: t('gitStashDropConfirm', { selector: shortSel }),
+              okText: t('gitDeleteBtn'),
+              danger: true,
+              onOk: () => gitStashRun('drop', selector),
+            }),
+          },
+        ])
+        return
+      }
       const sub = ev.target.closest('[data-dsc-git-rows] .dsc-gref-remote-sub')
       const local = ev.target.closest('[data-dsc-git-rows] .dsc-gref-branch')
       const remote = ev.target.closest('[data-dsc-git-rows] .dsc-gref-remote')
       const target = sub ?? (local === null ? remote : local)
-      if (target === null) return
+      if (target === null) {
+        // 未提交改动虚拟行右键：暂存未提交改动（上游 Uncommitted Context Menu 核心项）
+        const row = ev.target.closest('[data-dsc-git-rows] [data-dsc-git-row]')
+        if (row !== null && row.dataset.hash === 'UNCOMMITTED') {
+          ev.preventDefault()
+          ev.stopPropagation()
+          gitCtxOpen(ev.clientX, ev.clientY, [{
+            label: t('gitStashUncommitted'),
+            onClick: () => gitStashBoxOpen(),
+          }])
+        }
+        return
+      }
       ev.preventDefault()
       ev.stopPropagation()
       const currentBranch = gitRows.find((c) => c.refs.isHead)?.refs.headName ?? null
@@ -1537,6 +1711,11 @@ module.exports = {
             onClick: () => gitCheckout({ branch: branchName }),
           },
           {
+            label: t('gitPush', { branch: branchName }),
+            disabled: gitRemotes.length === 0,
+            onClick: () => gitPushOpen(branchName),
+          },
+          {
             label: t('gitMergeInto', { branch: branchName }),
             disabled: isCurrent,
             onClick: async () => {
@@ -1545,7 +1724,7 @@ module.exports = {
                 flash(t('gitMergeOk', { branch: result.branch }))
                 gitFetch(true, true)
               } catch (err) {
-                flash(gitErrText(err))
+                flash(gitErrText(err), 'error')
               }
             },
           },
@@ -1556,30 +1735,40 @@ module.exports = {
           {
             label: t('gitDeleteBranch', { branch: branchName }),
             disabled: isCurrent,
-            onClick: async () => {
-              if (!window.confirm(t('gitDeleteConfirm', { branch: branchName }))) return
-              try {
-                await gitBranchAction({ action: 'delete', branch: branchName })
-                flash(t('gitDeleteOk', { branch: branchName }))
-                gitFetch(true, true)
-              } catch (err) {
-                flash(gitErrText(err))
-              }
-            },
+            onClick: () => gitConfirmOpen({
+              title: t('gitDeleteBranch', { branch: branchName }),
+              text: t('gitDeleteConfirm', { branch: branchName }),
+              okText: t('gitDeleteBtn'),
+              danger: true,
+              onOk: async () => {
+                try {
+                  await gitBranchAction({ action: 'delete', branch: branchName })
+                  flash(t('gitDeleteOk', { branch: branchName }))
+                  gitFetch(true, true)
+                } catch (err) {
+                  flash(gitErrText(err), 'error')
+                }
+              },
+            }),
           },
           {
             label: t('gitDeleteBranchForce', { branch: branchName }),
             disabled: isCurrent,
-            onClick: async () => {
-              if (!window.confirm(t('gitDeleteForceConfirm', { branch: branchName }))) return
-              try {
-                await gitBranchAction({ action: 'delete', branch: branchName, force: true })
-                flash(t('gitDeleteOk', { branch: branchName }))
-                gitFetch(true, true)
-              } catch (err) {
-                flash(gitErrText(err))
-              }
-            },
+            onClick: () => gitConfirmOpen({
+              title: t('gitDeleteBranchForce', { branch: branchName }),
+              text: t('gitDeleteForceConfirm', { branch: branchName }),
+              okText: t('gitDeleteForceBtn'),
+              danger: true,
+              onOk: async () => {
+                try {
+                  await gitBranchAction({ action: 'delete', branch: branchName, force: true })
+                  flash(t('gitDeleteOk', { branch: branchName }))
+                  gitFetch(true, true)
+                } catch (err) {
+                  flash(gitErrText(err), 'error')
+                }
+              },
+            }),
           },
         ])
       }
@@ -1617,15 +1806,17 @@ module.exports = {
     gitCreateBox.appendChild(gitCreateErr)
     gitCreateBox.appendChild(gitCreateActions)
     const gitCreateClose = () => { gitCreateBox.style.display = 'none' }
-    // 对话框模式（2.2/2.4）：create（含 start=tag）| rename
+    // 对话框模式（2.2/2.4）：create（含 start=tag）| rename | stash（从 stash 建分支）
     let gitCreateMode = 'create'
     let gitCreateStart = ''
     let gitCreateRenameFrom = ''
+    let gitCreateStashSelector = ''
     const gitCreateOpen = (opts = {}) => {
       gitCreateMode = opts.mode ?? 'create'
       gitCreateStart = opts.start ?? ''
       gitCreateRenameFrom = opts.branch ?? ''
-      gitCreateTitle.textContent = gitCreateMode === 'rename' ? t('gitRenameTitle') : t('gitCreateTitle')
+      gitCreateStashSelector = opts.selector ?? ''
+      gitCreateTitle.textContent = gitCreateMode === 'rename' ? t('gitRenameTitle') : gitCreateMode === 'stash' ? t('gitStashBranchTitle') : t('gitCreateTitle')
       gitCreateSubmit.textContent = gitCreateMode === 'rename' ? t('gitRenameSubmit') : t('gitCreateSubmit')
       // 初始态：提示输入分支名（弱化样式），空输入时提交按钮禁用
       gitCreateErr.textContent = t('gitCreatePrompt')
@@ -1662,6 +1853,10 @@ module.exports = {
           const result = await gitBranchAction({ action: 'rename', branch: gitCreateRenameFrom, name })
           gitCreateClose()
           flash(t('gitRenameOk', { from: gitCreateRenameFrom, name: result.branch }))
+        } else if (gitCreateMode === 'stash') {
+          const result = await gitPost('/git/stash', { action: 'branch', selector: gitCreateStashSelector, branch: name })
+          gitCreateClose()
+          flash(t('gitStashBranchOk', { selector: gitCreateStashSelector.replace(/^refs\//, ''), branch: result.branch }))
         } else {
           const payload = { action: 'create', name }
           if (gitCreateStart !== '') payload.start = gitCreateStart
@@ -1690,6 +1885,222 @@ module.exports = {
     gitCreateBtn.addEventListener('click', gitCreateOpen)
     // 插到关闭按钮之前：头部按钮顺序为 标题 / 范围▾ / ↻ / ＋新分支 / 关闭（关闭最右）
     gitHead.insertBefore(gitCreateBtn, gitClose)
+
+    // ---------- 推送分支对话框（上游 Push Branch 对话框移植，本地简化版） ----------
+    // remote 单选（默认 origin/首个，同上游 getPushRemote 简化）+ Set Upstream toggle
+    // （默认开）+ Push Mode 三选一（normal / force-with-lease / force，同上游枚举）。
+    const gitPushBox = document.createElement('div')
+    gitPushBox.setAttribute('data-dsc-git-push', '')
+    body.appendChild(gitPushBox)
+    const gitPushTitle = document.createElement('div')
+    gitPushTitle.className = 'dsc-git-push-title'
+    const gitPushRemoteRow = document.createElement('div')
+    gitPushRemoteRow.className = 'dsc-git-opt-row'
+    const gitPushRemoteLabel = document.createElement('label')
+    gitPushRemoteLabel.textContent = t('gitPushRemote')
+    const gitPushRemoteBtn = document.createElement('button')
+    gitPushRemoteBtn.type = 'button'
+    gitPushRemoteBtn.className = 'dsc-git-toggle on'
+    gitPushRemoteRow.appendChild(gitPushRemoteLabel)
+    gitPushRemoteRow.appendChild(gitPushRemoteBtn)
+    const gitPushUpstreamRow = document.createElement('div')
+    gitPushUpstreamRow.className = 'dsc-git-opt-row'
+    const gitPushUpstreamLabel = document.createElement('label')
+    gitPushUpstreamLabel.textContent = t('gitPushSetUpstream')
+    const gitPushUpstreamToggle = document.createElement('button')
+    gitPushUpstreamToggle.type = 'button'
+    gitPushUpstreamToggle.className = 'dsc-git-toggle on'
+    gitPushUpstreamToggle.textContent = '✓'
+    gitPushUpstreamRow.appendChild(gitPushUpstreamLabel)
+    gitPushUpstreamRow.appendChild(gitPushUpstreamToggle)
+    const gitPushModeRow = document.createElement('div')
+    gitPushModeRow.className = 'dsc-git-opt-row'
+    const gitPushModeLabel = document.createElement('label')
+    gitPushModeLabel.textContent = t('gitPushMode')
+    const gitPushModeGroup = document.createElement('div')
+    gitPushModeGroup.className = 'dsc-git-opt-group'
+    const PUSH_MODE_KEYS = ['normal', 'force-with-lease', 'force']
+    const PUSH_MODE_TEXTS = ['gitPushModeNormal', 'gitPushModeForceWithLease', 'gitPushModeForce']
+    const gitPushModeBtns = PUSH_MODE_KEYS.map((mode, i) => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'dsc-git-toggle' + (mode === 'normal' ? ' on' : '')
+      btn.textContent = t(PUSH_MODE_TEXTS[i])
+      btn.dataset.mode = mode
+      btn.addEventListener('click', () => {
+        for (const b of gitPushModeBtns) b.classList.toggle('on', b === btn)
+      })
+      gitPushModeGroup.appendChild(btn)
+      return btn
+    })
+    gitPushModeRow.appendChild(gitPushModeLabel)
+    gitPushModeRow.appendChild(gitPushModeGroup)
+    const gitPushActions = document.createElement('div')
+    gitPushActions.className = 'dsc-git-opt-actions'
+    const gitPushSubmit = document.createElement('button')
+    gitPushSubmit.type = 'button'
+    gitPushSubmit.setAttribute('data-dsc-btn', '')
+    gitPushSubmit.textContent = t('gitPush')
+    const gitPushCancel = document.createElement('button')
+    gitPushCancel.type = 'button'
+    gitPushCancel.setAttribute('data-dsc-btn', '')
+    gitPushCancel.textContent = t('gitCancel')
+    gitPushActions.appendChild(gitPushSubmit)
+    gitPushActions.appendChild(gitPushCancel)
+    gitPushBox.appendChild(gitPushTitle)
+    gitPushBox.appendChild(gitPushRemoteRow)
+    gitPushBox.appendChild(gitPushUpstreamRow)
+    gitPushBox.appendChild(gitPushModeRow)
+    gitPushBox.appendChild(gitPushActions)
+    let gitPushBranch = ''
+    let gitPushRemote = ''
+    const gitPushClose = () => { gitPushBox.style.display = 'none' }
+    const gitPushOpen = (branchName) => {
+      gitPushBranch = branchName
+      gitPushRemote = gitRemotes.includes('origin') ? 'origin' : gitRemotes[0] ?? ''
+      if (gitPushRemote === '') return // 无远程不应触发（菜单项已按 remotes>0 显示）
+      gitPushTitle.textContent = t('gitPushTitle', { branch: branchName })
+      gitPushRemoteBtn.textContent = gitPushRemote
+      gitPushUpstreamToggle.classList.add('on')
+      for (const b of gitPushModeBtns) b.classList.toggle('on', b.dataset.mode === 'normal')
+      gitPushBox.style.display = 'block'
+      const headRect = gitHead.getBoundingClientRect()
+      gitPushBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`
+      gitPushBox.style.top = `${headRect.bottom + 6}px`
+    }
+    gitPushRemoteBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation()
+      const rect = gitPushRemoteBtn.getBoundingClientRect()
+      gitCtxOpen(rect.left, rect.bottom + 4, gitRemotes.map((r) => ({
+        label: r,
+        checked: r === gitPushRemote,
+        onClick: () => { gitPushRemote = r; gitPushRemoteBtn.textContent = r },
+      })))
+    })
+    gitPushUpstreamToggle.addEventListener('click', () => {
+      gitPushUpstreamToggle.classList.toggle('on')
+    })
+    const gitPushRun = async () => {
+      gitPushSubmit.disabled = true
+      const mode = gitPushModeBtns.find((b) => b.classList.contains('on'))?.dataset.mode ?? 'normal'
+      try {
+        await gitPost('/git/push', {
+          branch: gitPushBranch,
+          remote: gitPushRemote,
+          setUpstream: gitPushUpstreamToggle.classList.contains('on'),
+          mode,
+        })
+        gitPushClose()
+        flash(t('gitPushOk', { branch: gitPushBranch, remote: gitPushRemote }))
+        gitFetch(true, true)
+      } catch (err) {
+        // 失败保留对话框：用户可改 mode（如 force-with-lease）后重试
+        flash(gitErrText(err), 'error')
+        gitPushSubmit.disabled = false
+      }
+    }
+    gitPushSubmit.addEventListener('click', gitPushRun)
+    gitPushCancel.addEventListener('click', gitPushClose)
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && gitPushBox.style.display !== 'none') gitPushClose()
+    })
+    document.addEventListener('click', (ev) => {
+      if (gitPushBox.style.display === 'none') return
+      if (!gitPushBox.contains(ev.target)) gitPushClose()
+    })
+
+    // ---------- stash 对话框（未提交行右键「暂存未提交改动」） ----------
+    // message（可选）+ include untracked toggle（上游 stashUncommittedChanges 对话框简化）。
+    const gitStashBox = document.createElement('div')
+    gitStashBox.setAttribute('data-dsc-git-stash', '')
+    body.appendChild(gitStashBox)
+    const gitStashTitle = document.createElement('div')
+    gitStashTitle.className = 'dsc-git-stash-title'
+    gitStashTitle.textContent = t('gitStashUncommittedTitle')
+    const gitStashMsgInput = document.createElement('input')
+    gitStashMsgInput.type = 'text'
+    gitStashMsgInput.placeholder = t('gitStashMessage')
+    const gitStashUntrackedRow = document.createElement('div')
+    gitStashUntrackedRow.className = 'dsc-git-opt-row'
+    const gitStashUntrackedLabel = document.createElement('label')
+    gitStashUntrackedLabel.textContent = t('gitStashIncludeUntracked')
+    const gitStashUntrackedToggle = document.createElement('button')
+    gitStashUntrackedToggle.type = 'button'
+    gitStashUntrackedToggle.className = 'dsc-git-toggle'
+    gitStashUntrackedToggle.textContent = '✓'
+    gitStashUntrackedRow.appendChild(gitStashUntrackedLabel)
+    gitStashUntrackedRow.appendChild(gitStashUntrackedToggle)
+    const gitStashActions = document.createElement('div')
+    gitStashActions.className = 'dsc-git-opt-actions'
+    const gitStashSubmit = document.createElement('button')
+    gitStashSubmit.type = 'button'
+    gitStashSubmit.setAttribute('data-dsc-btn', '')
+    gitStashSubmit.textContent = t('gitStashUncommitted')
+    const gitStashCancel = document.createElement('button')
+    gitStashCancel.type = 'button'
+    gitStashCancel.setAttribute('data-dsc-btn', '')
+    gitStashCancel.textContent = t('gitCancel')
+    gitStashActions.appendChild(gitStashSubmit)
+    gitStashActions.appendChild(gitStashCancel)
+    gitStashBox.appendChild(gitStashTitle)
+    gitStashBox.appendChild(gitStashMsgInput)
+    gitStashBox.appendChild(gitStashUntrackedRow)
+    gitStashBox.appendChild(gitStashActions)
+    const gitStashBoxClose = () => { gitStashBox.style.display = 'none' }
+    const gitStashBoxOpen = () => {
+      gitStashMsgInput.value = ''
+      gitStashUntrackedToggle.classList.remove('on')
+      gitStashBox.style.display = 'block'
+      const headRect = gitHead.getBoundingClientRect()
+      gitStashBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`
+      gitStashBox.style.top = `${headRect.bottom + 6}px`
+      gitStashMsgInput.focus()
+    }
+    gitStashUntrackedToggle.addEventListener('click', () => {
+      gitStashUntrackedToggle.classList.toggle('on')
+    })
+    const gitStashBoxRun = async () => {
+      gitStashSubmit.disabled = true
+      try {
+        await gitPost('/git/stash', {
+          action: 'push',
+          message: gitStashMsgInput.value.trim(),
+          includeUntracked: gitStashUntrackedToggle.classList.contains('on'),
+        })
+        gitStashBoxClose()
+        flash(t('gitStashOk'))
+        gitFetch(true, true)
+      } catch (err) {
+        flash(gitErrText(err), 'error')
+        gitStashSubmit.disabled = false
+      }
+    }
+    gitStashSubmit.addEventListener('click', gitStashBoxRun)
+    gitStashCancel.addEventListener('click', gitStashBoxClose)
+    gitStashMsgInput.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') gitStashBoxRun()
+      if (ev.key === 'Escape') gitStashBoxClose()
+    })
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && gitStashBox.style.display !== 'none') gitStashBoxClose()
+    })
+    document.addEventListener('click', (ev) => {
+      if (gitStashBox.style.display === 'none') return
+      if (!gitStashBox.contains(ev.target)) gitStashBoxClose()
+    })
+
+    /** stash 徽标右键统一入口（apply/pop/drop）：成功 flash + 刷新。 */
+    const gitStashRun = async (action, selector) => {
+      const shortSel = selector.replace(/^refs\//, '')
+      const okKey = action === 'apply' ? 'gitStashApplyOk' : action === 'pop' ? 'gitStashPopOk' : 'gitStashDropOk'
+      try {
+        await gitPost('/git/stash', { action, selector })
+        flash(t(okKey, { selector: shortSel }))
+        gitFetch(true, true)
+      } catch (err) {
+        flash(gitErrText(err), 'error')
+      }
+    }
 
     gitToggle.addEventListener('click', () => {
       hideGitHint() // 首次提示：点过即不再显示
@@ -1788,6 +2199,9 @@ module.exports = {
       gitPanel.remove()
       gitCtxMenu.remove()
       gitCreateBox.remove()
+      gitConfirmBox.remove()
+      gitPushBox.remove()
+      gitStashBox.remove()
       msg.remove()
       gitHint.remove()
       document.getElementById(STYLE_ID)?.remove()
