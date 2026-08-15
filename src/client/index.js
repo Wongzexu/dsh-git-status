@@ -1671,24 +1671,28 @@ module.exports = {
             label: t('gitCreateFromTag', { tag: tagName }),
             onClick: () => gitCreateOpen({ start: tagName }),
           },
-          // 推送 tag：每个远程一项直接展开（上游单远程确认框 / 多远程选择简化）
-          ...gitRemotes.map((r) => ({
-            label: t('gitPushTagTo', { tag: tagName, remote: r }),
-            onClick: () => gitConfirmOpen({
-              title: t('gitPushTag', { tag: tagName }),
-              text: t('gitPushTagTo', { tag: tagName, remote: r }),
-              okText: t('gitPushBtn'),
-              onOk: async () => {
-                try {
-                  await gitPost('/git/remote', { action: 'push-tag', tag: tagName, remote: r })
-                  flash(t('gitPushTagOk', { tag: tagName, remote: r }))
-                  gitFetch(true, true)
-                } catch (err) {
-                  flash(gitErrText(err))
-                }
-              },
-            }),
-          })),
+          // 推送 tag：二级选择（每远程一项，与删除 tag 交互一致；无远程时禁用）
+          {
+            label: t('gitPushTag', { tag: tagName }),
+            disabled: gitRemotes.length === 0,
+            onClick: () => gitCtxOpen(ev.clientX, ev.clientY, gitRemotes.map((r) => ({
+              label: t('gitPushTagTo', { tag: tagName, remote: r }),
+              onClick: () => gitConfirmOpen({
+                title: t('gitPushTag', { tag: tagName }),
+                text: t('gitPushTagTo', { tag: tagName, remote: r }),
+                okText: t('gitPushBtn'),
+                onOk: async () => {
+                  try {
+                    await gitPost('/git/remote', { action: 'push-tag', tag: tagName, remote: r })
+                    flash(t('gitPushTagOk', { tag: tagName, remote: r }))
+                    gitFetch(true, true)
+                  } catch (err) {
+                    flash(gitErrText(err))
+                  }
+                },
+              }),
+            }))),
+          },
           // 删除 tag：二级选择（仅本地 / 各远程同步）→ 确认框
           {
             label: t('gitDeleteTag', { tag: tagName }),
