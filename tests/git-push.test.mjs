@@ -65,6 +65,32 @@ test('classifyPushFailure: fetch first → push-rejected；remote rejected → r
   assert.equal(classifyPushFailure(hookReject).code, 'remote-rejected')
 })
 
+test('classifyPushFailure: 跳过 "To <url>" 首行，取第一行真实错误', () => {
+  // git push 的 stderr 首行是推送目标（To <url>），真实拒绝信息从第二行开始
+  const withToLine = [
+    'To /tmp/bare',
+    ' ! [rejected]        main -> main (fetch first)',
+    "error: failed to push some refs to '/tmp/bare'",
+  ].join('\n')
+  const result = classifyPushFailure(withToLine)
+  assert.equal(result.code, 'push-rejected')
+  assert.ok(!result.message.includes('To /tmp/bare'), `message 不应含推送目标行: ${result.message}`)
+  assert.match(result.message, /\[rejected\]/)
+})
+
+test('classifyPushFailure: tag 同名冲突 already exists → remote-tag-exists', () => {
+  const stderr = [
+    'To /tmp/bare',
+    ' ! [rejected]        v1.0 -> v1.0 (already exists)',
+    "error: failed to push some refs to '/tmp/bare'",
+    'hint: Updates were rejected because the tag already exists in the destination.',
+  ].join('\n')
+  const result = classifyPushFailure(stderr)
+  assert.equal(result.code, 'remote-tag-exists')
+  assert.match(result.message, /already exists/)
+  assert.ok(!result.message.includes('To /tmp/bare'), `message 不应含推送目标行: ${result.message}`)
+})
+
 test('classifyPushFailure: 网络/认证 → network-error；兜底 internal', () => {
   assert.equal(classifyPushFailure("fatal: unable to access 'https://x/': Could not resolve host: x").code, 'network-error')
   assert.equal(classifyPushFailure('fatal: unknown switch `q`').code, 'internal')

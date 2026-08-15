@@ -106,6 +106,21 @@ test('gitRemoteAction.push-tag: tag 不存在 / 非法名 / 远程不存在', as
   assert.equal(noRemote.error.code, 'remote-not-found')
 })
 
+test('gitRemoteAction.push-tag: 远程已有同名 tag 且指向不同提交 → remote-tag-exists', async (t) => {
+  const { repo } = await makeRepoWithRemote(t)
+  await repo.git(['tag', 'v1.0'])
+  const first = await gitRemoteAction(repo.root, 'push-tag', { tag: 'v1.0', remote: 'origin' })
+  assert.deepEqual(first, { ok: true })
+  // 本地新提交并强制移动 tag（远程仍指向旧提交）→ 再推送应被拒
+  await repo.commit('c2')
+  await repo.git(['tag', '-f', 'v1.0'])
+  const result = await gitRemoteAction(repo.root, 'push-tag', { tag: 'v1.0', remote: 'origin' })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'remote-tag-exists')
+  assert.match(result.error.message, /already exists/)
+  assert.ok(!result.error.message.includes('To '), `message 不应含推送目标行: ${result.error.message}`)
+})
+
 // ---------- gitRemoteAction：add-tag（创建 tag，镜像上游 Add Tag 对话框） ----------
 
 test('gitRemoteAction.add-tag: 轻量 tag 创建（起点 = 目标提交，不切分支）', async (t) => {
