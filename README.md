@@ -1,14 +1,21 @@
+<div align="center">
+
 # dsh-git-status
 
-独立 Git 状态（Git Graph）插件：DSH Web 右缘 **Git 状态浮窗**，commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。
+[**English**](README_EN.md) · **简体中文**
 
-> 状态：v0.4.0 · 纯前端自渲染 DOM（greeter 模式，零 React 依赖、零构建链）+ Node half 只读/写路由。
+独立 Git 状态（Git Graph）插件：DSH Web 右缘 **Git 状态浮窗** —— commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。
+
+🔖 **v0.4.0** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT
+
+</div>
 
 ## 功能
 
 - **commit DAG 泳道图**：第一父链成线、列分配贪心最左、泳道复用、合并提交连线；
   网格制 SVG 渲染（shadow + 彩色双 path、折角过渡、右缘渐变淡出、HEAD 加粗圆点）
-- **行内 refs 徽标**：HEAD（红）/ 分支（金）/ 远程（蓝）/ 标签（绿）；当前 checkout 分支名加粗；
+- **行内 refs 徽标**：HEAD（红）/ 分支（金）/ 远程（蓝）/ 标签（绿）；当前 checkout 分支 pill 亮金高亮
+  （背景加浓 + 金色内描边 + 加粗，悬停提示「当前分支」）；
   同名本地/远程分支合并为一个 pill：`⎇ main [gitee]`（多远程依次内嵌）；
   远程 HEAD 符号引用（`gitee/HEAD`）默认过滤
 - **未提交改动虚拟行**：工作区有改动时图顶部插入虚拟行（空心圆 + 灰色虚线连 HEAD），
@@ -60,7 +67,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 ### 使用
 
 1. 进入任意聊天视图（对话界面）；
-2. 点击左缘的 **分支图标** 按钮，右侧弹出「Git 状态」浮窗（浮窗可拖拽，位置自动记忆）；
+2. 点击面板右上角外侧的 **分支图标** 按钮，展开「Git 状态」浮窗（浮窗可拖拽，位置自动记忆；按钮始终贴在浮窗右上角，关闭后留在原位悬浮，点击重新展开；首次使用有引导提示）；
 3. 浮窗头部可切换「所有分支 / 当前分支」、手动刷新（↻）；打开期间 SSE 即时刷新（断连时 10s 轮询兜底）；
 4. 点击 commit 行展开详情（提交信息 / 变更文件 / 逐文件 diff）；点击文件行查看该文件 patch；
 5. 右键分支徽标：本地「切换到 x / 合并 x / 重命名 x / 删除 x（可强删）」；远程「创建本地分支 x 并检出」；
@@ -114,7 +121,7 @@ dsh-git-status/
 
 ```sh
 node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js）
-npm test                       # node:test 套件（92 用例，真实 git fixture，零依赖）
+npm test                       # node:test 套件（94 用例，真实 git fixture，零依赖）
 ```
 
 改 Node half 直接改 `lib/index.mjs`（无构建步骤），改完跑 `npm test` 回归。
@@ -123,7 +130,7 @@ stash 第三父、show 详情、冲突/进行中状态、分支名校验、切�
 （冲突/进行中/其他 worktree/**未提交改动确认**：staged/未暂存/未跟踪三组计数、
 仅未跟踪放行、force 旁路带改动切换）、增删改合全路径（含合并冲突 abort/continue）、
 失败 stderr 分类、写路由 CSRF（content-type 强校验）与全链路、SSE 订阅
-（初始推送/变化检测/心跳/断连清理）、fetch 全链路
+（初始推送/变化检测/心跳/断连清理/删分支与 stash 变化推送）、fetch 全链路
 （--all/单远程/prune 语义/失败分类/CSRF，file:// 裸仓库真实拉取）。
 
 重新打包 client 后**刷新浏览器页面**即可看到效果（无需重启 web 服务）；

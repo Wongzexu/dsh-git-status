@@ -98,6 +98,47 @@ test('events: 断连后清理订阅，不再推送', async (t) => {
   assert.equal(changeCount(res), count) // 清理后不再推
 })
 
+test('events: 删除分支触发推送（refs 指纹）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('feature')
+  const route = fakeCtx(repo.root, { pollIntervalMs: 20, heartbeatMs: 40 }).find((r) => r.path === GIT_EVENTS_PATH)
+  const res = fakeStream()
+  const req = fakeStream()
+  req.method = 'GET'
+  req.headers = {}
+  req.url = GIT_EVENTS_PATH
+  await route.handler(req, res)
+  t.after(() => req.emit('close'))
+  await wait(150)
+  assert.equal(changeCount(res), 1) // 初始推送
+  // 删分支：HEAD/未提交/冲突/操作均不变，仅 refs 指纹变化 → 应推送
+  await repo.git(['branch', '-D', 'feature'])
+  await wait(200)
+  assert.ok(changeCount(res) >= 2, `expected refs-change push, got ${changeCount(res)}`)
+})
+
+test('events: stash drop 触发推送（stash 指纹）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.write('a.txt', 'modified') // 修改已跟踪文件（stash push 默认只收已跟踪改动）
+  await repo.stash() // 订阅前造好 stash：仓库处于稳定态（无未提交 + 1 个 stash）
+  const route = fakeCtx(repo.root, { pollIntervalMs: 20, heartbeatMs: 40 }).find((r) => r.path === GIT_EVENTS_PATH)
+  const res = fakeStream()
+  const req = fakeStream()
+  req.method = 'GET'
+  req.headers = {}
+  req.url = GIT_EVENTS_PATH
+  await route.handler(req, res)
+  t.after(() => req.emit('close'))
+  await wait(150)
+  assert.equal(changeCount(res), 1) // 初始推送
+  // stash drop：工作区/HEAD/refs 均不变，仅 stash 首项指纹变化 → 应推送
+  await repo.git(['stash', 'drop'])
+  await wait(200)
+  assert.ok(changeCount(res) >= 2, `expected stash-change push, got ${changeCount(res)}`)
+})
+
 test('events: 心跳注释保活（: ping）', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')

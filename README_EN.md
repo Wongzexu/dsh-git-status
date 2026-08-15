@@ -1,13 +1,19 @@
+<div align="center">
+
 # dsh-git-status
 
-A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI, featuring a commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations.
+**English** · [**简体中文**](README.md)
 
-> Status: v0.4.0 · pure front-end self-rendered DOM (greeter mode, zero React dependencies, zero build chain) + a read-only/write Node half.
+A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations.
+
+🔖 **v0.4.0** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT
+
+</div>
 
 ## Features
 
 - **Commit DAG lane graph**: first-parent chains as lines, greedy leftmost column assignment, lane reuse, merge-commit connectors; SVG grid rendering (shadow + dual-color paths, elbow transitions, right-edge gradient fade, bold HEAD dot)
-- **Inline refs badges**: HEAD (red) / branches (gold) / remotes (blue) / tags (green); the currently checked-out branch name is bold; a local branch and its same-named remote are merged into one pill: `⎇ main [gitee]` (multiple remotes nest in order); remote HEAD symbolic refs (`gitee/HEAD`) are filtered by default
+- **Inline refs badges**: HEAD (red) / branches (gold) / remotes (blue) / tags (green); the currently checked-out branch pill is highlighted in bright gold (denser background + gold inset border + bold, hover tooltip "current"); a local branch and its same-named remote are merged into one pill: `⎇ main [gitee]` (multiple remotes nest in order); remote HEAD symbolic refs (`gitee/HEAD`) are filtered by default
 - **Uncommitted changes virtual row**: when the worktree has changes, a virtual row is inserted at the top of the graph (hollow circle + gray dashed line to HEAD), showing staged/unstaged counts; click to expand details grouped by "Changes / Staged Changes" (VS Code semantics: partially staged files appear in both groups, untracked files carry a badge)
 - **Stash display**: `git reflog refs/stash` rows are inserted into the graph (double circle + `stash@{n}` badge); expanding shows details (explicit two-tree diff of the base + untracked third-parent snapshot appended)
 - **Inline expandable details**: click a commit row to expand commit message + changed files (+/- line counts) + per-file diffs (256 KB truncation); the detail box height adapts to content (≤340px) and opening a patch does not shift the graph
@@ -48,7 +54,7 @@ Replace `/path/to/dsh-git-status` with the actual plugin directory path (e.g. th
 ### Usage
 
 1. Enter any chat view;
-2. Click the **branch icon** button on the left edge — the "Git status" drawer slides in from the right (draggable, position remembered);
+2. Click the **branch icon** button outside the panel's top-right corner — the "Git status" drawer expands (draggable, position remembered; the button stays glued to the panel's top-right corner, and floats at that spot to reopen once the panel is closed; a one-time hint guides first use);
 3. The drawer header toggles "All branches / Current branch" and manual refresh (↻); while open, SSE live refresh applies (10s poll fallback on disconnect);
 4. Click a commit row to expand details (commit message / changed files / per-file diffs); click a file row to view that file's patch;
 5. Right-click branch badges: local — "switch to x / merge x / rename x / delete x (force delete)"; remote — "create local branch x and check out";
