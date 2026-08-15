@@ -1,6 +1,5 @@
 // dsh-git-status 浏览器端 half：自渲染 DOM，零 React 依赖（greeter 模式）。
-// 单模块：Git Graph（commit DAG 泳道图 + 行内详情 diff + 分支操作），自
-// dsh-companion 抽离独立。
+// 单模块：Git 状态（commit DAG 泳道图 + 行内详情 diff + 分支操作）。
 // 数据通道：Node half 自造路由（/plugins/dsh-git-status/*）；
 // 布局锚点：官方 DOM 属性（data-chat-flow 等），不依赖 React 内部结构。
 // 构建：scripts/build-client.js 包成 __ModuleLoader__.load 契约（CJS）。
@@ -11,7 +10,7 @@ const I18N = {
     copied: '已复制到剪贴板',
     copyFailed: '复制失败',
     close: '关闭',
-    gitGraph: 'Git 图',
+    gitStatus: 'Git 状态',
     gitAll: '所有分支',
     gitHead: '当前分支',
     gitNotRepo: '当前工作区不是 git 仓库',
@@ -22,6 +21,9 @@ const I18N = {
     gitCopyHash: '复制 hash',
     gitFiles: '变更文件',
     gitNoFiles: '（无文件变更）',
+    gitChanges: '更改',
+    gitStagedChanges: '暂存的更改',
+    gitUntracked: '未跟踪',
     gitTruncated: '（diff 过长，已截断）',
     gitDetached: '游离 HEAD',
     gitUncommitted: '未提交改动：未暂存（{unstaged} 处）· 已暂存（{staged} 处）',
@@ -33,6 +35,7 @@ const I18N = {
     gitCreateTitle: '创建并检出新分支',
     gitCreatePlaceholder: '新分支名',
     gitCreateSubmit: '创建并检出',
+    gitCreatePrompt: '请输入分支名',
     gitCreateOk: '已创建分支 {name}',
     gitSwitchOk: '已切换到 {branch}',
     gitErr: '操作失败',
@@ -44,6 +47,48 @@ const I18N = {
     gitErrBranchInOtherWorktree: '该分支已在其他工作区检出',
     gitErrTrackedChangesWouldBeOverwritten: '本地改动会被覆盖',
     gitErrUntrackedChangesWouldBeOverwritten: '未跟踪文件会被覆盖',
+    gitErrCannotDeleteCurrent: '不能删除当前分支',
+    gitErrBranchNotFullyMerged: '分支未完全合并',
+    gitErrCannotMergeSelf: '不能合并当前分支自身',
+    gitErrMergeConflicts: '合并冲突，请解决后继续或中止',
+    gitErrNoMergeInProgress: '没有进行中的合并',
+    gitErrMergeConflictsRemain: '仍有未解决冲突，无法继续合并',
+    gitErrStartPointNotFound: '起始点不存在',
+    gitErrInvalidStartPoint: '无效的起始点',
+    gitConflicts: '存在 {n} 个未解决冲突',
+    gitOpMerge: '合并进行中',
+    gitOpCherryPick: 'cherry-pick 进行中',
+    gitOpRevert: 'revert 进行中',
+    gitOpRebase: 'rebase 进行中',
+    gitOpBisect: 'bisect 进行中',
+    gitOpSequencer: 'sequencer 进行中',
+    gitMergeAbort: '中止合并',
+    gitMergeContinue: '继续合并',
+    gitMergeInto: '合并 {branch} 到当前分支',
+    gitRenameBranch: '重命名分支 {branch}',
+    gitRenameTitle: '重命名分支',
+    gitRenameSubmit: '重命名',
+    gitRenameOk: '已重命名 {from} → {name}',
+    gitDeleteBranch: '删除分支 {branch}',
+    gitDeleteBranchForce: '强制删除分支 {branch}（未合并）',
+    gitDeleteConfirm: '确定删除分支 {branch}？',
+    gitDeleteForceConfirm: '确定强制删除未合并分支 {branch}？此操作不可恢复。',
+    gitDeleteOk: '已删除分支 {branch}',
+    gitMergeOk: '已合并 {branch}',
+    gitMergeAborted: '已中止合并',
+    gitMergeContinued: '合并已完成',
+    gitCreateFromTag: '在 {tag} 创建分支并检出',
+    gitFetch: '从远程拉取',
+    gitFetching: '拉取中…',
+    gitFetchOk: '已从远程拉取',
+    gitErrNetworkError: '网络或认证错误',
+    gitErrRemoteNotFound: '远程不存在',
+    gitErrRemoteUnreachable: '远程仓库不存在或不可达',
+    gitErrUncommittedChangesPresent: '工作区有未提交改动',
+    gitSwitchUncommitted: '工作区有未提交改动（已暂存 {staged} 处 · 未暂存 {unstaged} 处），切换到 {branch} 会把这些改动一起带过去。',
+    gitSwitchUncommittedUntracked: '（另有 {untracked} 个未跟踪文件）',
+    gitSwitchAnyway: '仍然切换',
+    gitCancel: '取消',
     timeJustNow: '刚刚',
     timeMin: '{n} 分钟前',
     timeHour: '{n} 小时前',
@@ -53,7 +98,7 @@ const I18N = {
     copied: 'Copied to clipboard',
     copyFailed: 'Copy failed',
     close: 'Close',
-    gitGraph: 'Git Graph',
+    gitStatus: 'Git Status',
     gitAll: 'All branches',
     gitHead: 'Current branch',
     gitNotRepo: 'Current workspace is not a git repository',
@@ -64,6 +109,9 @@ const I18N = {
     gitCopyHash: 'Copy hash',
     gitFiles: 'Changed files',
     gitNoFiles: '(no file changes)',
+    gitChanges: 'Changes',
+    gitStagedChanges: 'Staged Changes',
+    gitUntracked: 'Untracked',
     gitTruncated: '(diff truncated)',
     gitDetached: 'detached HEAD',
     gitUncommitted: 'Uncommitted: {unstaged} unstaged · {staged} staged',
@@ -75,6 +123,7 @@ const I18N = {
     gitCreateTitle: 'Create and check out new branch',
     gitCreatePlaceholder: 'new branch name',
     gitCreateSubmit: 'Create & check out',
+    gitCreatePrompt: 'Please enter a branch name',
     gitCreateOk: 'Branch {name} created',
     gitSwitchOk: 'Switched to {branch}',
     gitErr: 'Operation failed',
@@ -86,6 +135,48 @@ const I18N = {
     gitErrBranchInOtherWorktree: 'Branch is checked out in another worktree',
     gitErrTrackedChangesWouldBeOverwritten: 'Local changes would be overwritten',
     gitErrUntrackedChangesWouldBeOverwritten: 'Untracked files would be overwritten',
+    gitErrCannotDeleteCurrent: 'Cannot delete the current branch',
+    gitErrBranchNotFullyMerged: 'Branch is not fully merged',
+    gitErrCannotMergeSelf: 'Cannot merge the current branch into itself',
+    gitErrMergeConflicts: 'Merge conflicts — resolve then continue, or abort',
+    gitErrNoMergeInProgress: 'No merge in progress',
+    gitErrMergeConflictsRemain: 'Unresolved conflicts remain, cannot continue',
+    gitErrStartPointNotFound: 'Start point does not exist',
+    gitErrInvalidStartPoint: 'Invalid start point',
+    gitConflicts: '{n} unresolved conflict(s)',
+    gitOpMerge: 'Merge in progress',
+    gitOpCherryPick: 'Cherry-pick in progress',
+    gitOpRevert: 'Revert in progress',
+    gitOpRebase: 'Rebase in progress',
+    gitOpBisect: 'Bisect in progress',
+    gitOpSequencer: 'Sequencer in progress',
+    gitMergeAbort: 'Abort merge',
+    gitMergeContinue: 'Continue merge',
+    gitMergeInto: 'Merge {branch} into current',
+    gitRenameBranch: 'Rename branch {branch}',
+    gitRenameTitle: 'Rename branch',
+    gitRenameSubmit: 'Rename',
+    gitRenameOk: 'Renamed {from} → {name}',
+    gitDeleteBranch: 'Delete branch {branch}',
+    gitDeleteBranchForce: 'Force-delete branch {branch} (unmerged)',
+    gitDeleteConfirm: 'Delete branch {branch}?',
+    gitDeleteForceConfirm: 'Force-delete unmerged branch {branch}? This cannot be undone.',
+    gitDeleteOk: 'Branch {branch} deleted',
+    gitMergeOk: 'Merged {branch}',
+    gitMergeAborted: 'Merge aborted',
+    gitMergeContinued: 'Merge completed',
+    gitCreateFromTag: 'Create branch from {tag} and check out',
+    gitFetch: 'Fetch from Remote(s)',
+    gitFetching: 'Fetching…',
+    gitFetchOk: 'Fetched from remote(s)',
+    gitErrNetworkError: 'Network or authentication error',
+    gitErrRemoteNotFound: 'Remote not found',
+    gitErrRemoteUnreachable: 'Remote repository not found or unreachable',
+    gitErrUncommittedChangesPresent: 'Working tree has uncommitted changes',
+    gitSwitchUncommitted: 'The working tree has uncommitted changes ({staged} staged · {unstaged} unstaged); switching to {branch} will carry them along.',
+    gitSwitchUncommittedUntracked: '({untracked} untracked file(s))',
+    gitSwitchAnyway: 'Switch anyway',
+    gitCancel: 'Cancel',
     timeJustNow: 'just now',
     timeMin: '{n}m ago',
     timeHour: '{n}h ago',
@@ -116,6 +207,8 @@ module.exports = {
   background: rgba(255,255,255,.08); font-family: system-ui;
 }
 [data-dsc-btn]:hover { background: rgba(255,255,255,.16); }
+[data-dsc-btn]:disabled { opacity: .45; cursor: default; }
+[data-dsc-btn]:disabled:hover { background: rgba(255,255,255,.08); }
 [data-dsc-btn].danger:hover { background: rgba(255,69,58,.85); }
 [data-dsc-btn].armed { background: rgba(255,69,58,.85); }
 [data-dsc-toggle] {
@@ -125,7 +218,7 @@ module.exports = {
   font-size: 14px; cursor: pointer; display: none; align-items: center; justify-content: center;
   box-shadow: var(--dsw-shadow-lv3, 0 4px 12px rgba(0,0,0,.3));
 }
-[data-dsc-toggle]:hover { background: var(--dsw-alias-interactive-bg-hover); }
+[data-dsc-toggle]:hover { background: var(--dsw-alias-button-floating-hover, rgba(255,255,255,.22)); color: var(--dsw-alias-text-accent, #4c9aff); }
 [data-dsc-toggle].on { outline: 1px solid var(--dsw-alias-text-accent, #4c9aff); }
 [data-dsc-msg] {
   position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%);
@@ -192,10 +285,10 @@ module.exports = {
 .dsc-gref-current { font-weight: 800; }
 /* 分支徽标可右键操作（context-menu 光标提示） */
 .dsc-gref-branch, .dsc-gref-remote, .dsc-gref-remote-sub { cursor: context-menu; }
-/* 分支操作右键菜单 / 创建分支对话框（浮层卡片，同 hovercard 风格） */
-[data-dsc-git-ctx], [data-dsc-git-create] {
+/* 分支操作右键菜单 / 创建分支对话框 / 切换确认框（浮层卡片，同 hovercard 风格） */
+[data-dsc-git-ctx], [data-dsc-git-create], [data-dsc-git-confirm] {
   position: fixed; z-index: 930; min-width: 150px; max-width: 320px;
-  border-radius: 8px; padding: 4px; display: none; font-size: 11px;
+  border-radius: 8px; padding: 4px; display: none; font-size: 12px;
   color: var(--dsw-alias-text-1, #eee);
   background: var(--dsw-hovercard-bg, #2C2C2E);
   border: 1px solid rgba(255,255,255,.08); box-shadow: var(--dsw-shadow-lv3);
@@ -203,10 +296,18 @@ module.exports = {
 [data-dsc-git-ctx] button {
   display: block; width: 100%; text-align: left; padding: 6px 8px;
   border-radius: 6px; color: inherit; background: none; border: none; cursor: pointer;
+  font-size: inherit; /* 覆盖 UA 表单控件默认 13.3333px，跟随容器字号 */
 }
 [data-dsc-git-ctx] button:hover { background: rgba(255,255,255,.07); }
 [data-dsc-git-ctx] button:disabled { opacity: .45; cursor: default; }
 [data-dsc-git-ctx] button:disabled:hover { background: none; }
+/* 面板内按钮（头部/合并条/创建对话框）：跟随面板字号，覆盖 UA 表单控件默认 13.3333px */
+[data-dsc-git] [data-dsc-btn], [data-dsc-git-create] [data-dsc-btn], [data-dsc-git-confirm] [data-dsc-btn] { font-size: inherit; }
+/* 切换确认框（未提交改动提醒）：标题 + 正文 + 右对齐按钮行 */
+[data-dsc-git-confirm] { padding: 10px 12px; width: 260px; box-sizing: border-box; }
+[data-dsc-git-confirm] .dsc-git-confirm-title { font-weight: 600; margin-bottom: 6px; }
+[data-dsc-git-confirm] .dsc-git-confirm-text { opacity: .85; line-height: 1.5; }
+[data-dsc-git-confirm] .dsc-git-confirm-actions { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; }
 [data-dsc-git-create] { padding: 8px 10px; display: none; }
 [data-dsc-git-create] .dsc-git-create-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;
@@ -219,7 +320,18 @@ module.exports = {
 }
 [data-dsc-git-create] input:focus { border-color: var(--dsw-alias-text-accent, #4c9aff); }
 [data-dsc-git-create-err] { color: #ff6961; font-size: 11px; margin-top: 4px; min-height: 14px; }
+/* 初始空输入的提示态（「请输入分支名」）：弱化颜色，区别于真实错误 */
+[data-dsc-git-create-err].hint { color: var(--dsw-alias-text-2, rgba(255,255,255,.55)); }
 [data-dsc-git-create] .dsc-git-create-actions { display: flex; gap: 6px; margin-top: 6px; }
+[data-dsc-git-state] { display: flex; gap: 4px; align-items: center; margin-left: 8px; font-size: 11px; min-width: 0; overflow: hidden; }
+[data-dsc-git-state] .dsc-git-state-item { padding: 1px 6px; border-radius: 8px; white-space: nowrap; }
+[data-dsc-git-state] .dsc-git-state-warn { background: rgba(255,149,0,.14); color: #ff9f0a; }
+[data-dsc-git-state] .dsc-git-state-op { background: rgba(255,59,48,.14); color: #ff6b61; }
+[data-dsc-git-mergebar] {
+  display: flex; gap: 6px; align-items: center; padding: 4px 12px; font-size: 11px;
+  background: rgba(255,59,48,.1); color: #ff6b61; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+[data-dsc-git-mergebar] span { flex: 1; }
 [data-dsc-git-note] { padding: 18px 16px; text-align: center; opacity: .65; }
 [data-dsc-git-inline] {
   box-sizing: border-box; overflow-y: auto;
@@ -245,6 +357,8 @@ module.exports = {
 .dsc-gnum { flex: none; font-family: ui-monospace, monospace; font-size: 10px; }
 .dsc-gnum-add { color: #34c759; }
 .dsc-gnum-del { color: #ff453a; }
+/* 未跟踪文件徽标（未提交改动详情「更改」组内，弱化样式） */
+.dsc-gfile-untracked { flex: none; font-size: 9px; padding: 0 4px; border-radius: 3px; background: rgba(255,255,255,.1); color: var(--dsw-alias-text-2, rgba(255,255,255,.55)); }
 [data-dsc-git-dpatch] {
   margin: 0; white-space: pre-wrap; word-break: break-word;
   font-family: ui-monospace, monospace; font-size: 10.5px; line-height: 1.5;
@@ -430,6 +544,8 @@ module.exports = {
           let y1 = line.p1.y * gy + offsetY
           let x2 = line.p2.x * gx + offsetX
           let y2 = line.p2.y * gy + offsetY
+          // 未提交段虚线从空心圆下缘起线（圆心 y + 圆半径 5），不从圆心穿出
+          if (uncommitted) y1 += 5
           if (expandAt > -1) {
             if (line.p1.y > expandAt) {
               // 整条线在展开区之下：整体下移
@@ -498,11 +614,23 @@ module.exports = {
     }
 
     const SVG_NS = 'http://www.w3.org/2000/svg'
+    // 左缘开关图标：git-branch（iconfont 1024 网格）。fill=currentColor 跟随按钮
+    // 文字色；SVG + viewBox 结构，尺寸（width/height）可任意缩放。
+    const GIT_BRANCH_ICON_D = 'M234.688 832a64 64 0 1 1 0-128 64 64 0 0 1 0 128z m-149.376-64a149.312 149.312 0 1 0 199.104-140.8c13.184-30.144 43.264-51.2 78.272-51.2h298.624A170.688 170.688 0 0 0 832 405.312v-6.144a149.376 149.376 0 1 0-85.312 0v6.144c0 47.168-38.208 85.376-85.376 85.376H362.688c-31.104 0-60.224 8.32-85.376 22.784V399.168a149.376 149.376 0 1 0-85.312 0v225.664A149.376 149.376 0 0 0 85.312 768z m704-448a64 64 0 1 1 0-128 64 64 0 0 1 0 128zM234.688 320a64 64 0 1 1 0-128 64 64 0 0 1 0 128z'
     const gitToggle = document.createElement('button')
     gitToggle.type = 'button'
     gitToggle.setAttribute('data-dsc-toggle', '')
-    gitToggle.textContent = '⎇'
-    gitToggle.title = t('gitGraph')
+    const gitToggleIcon = document.createElementNS(SVG_NS, 'svg')
+    gitToggleIcon.setAttribute('viewBox', '0 0 1024 1024')
+    gitToggleIcon.setAttribute('width', '16')
+    gitToggleIcon.setAttribute('height', '16')
+    gitToggleIcon.setAttribute('fill', 'currentColor')
+    gitToggleIcon.setAttribute('aria-hidden', 'true')
+    const gitToggleIconPath = document.createElementNS(SVG_NS, 'path')
+    gitToggleIconPath.setAttribute('d', GIT_BRANCH_ICON_D)
+    gitToggleIcon.appendChild(gitToggleIconPath)
+    gitToggle.appendChild(gitToggleIcon)
+    gitToggle.title = t('gitStatus')
     gitToggle.style.top = 'calc(50% + 38px)'
     gitToggle.style.transform = 'translateY(-50%)'
     body.appendChild(gitToggle)
@@ -513,7 +641,7 @@ module.exports = {
     const gitHead = document.createElement('div')
     gitHead.setAttribute('data-dsc-git-head', '')
     const gitTitle = document.createElement('span')
-    gitTitle.textContent = t('gitGraph')
+    gitTitle.textContent = t('gitStatus')
     // 范围切换：自绘下拉（原生 select 的弹出面板是浏览器级 UI，CSS 无法定制；
     // 改为按钮 + 复用右键菜单组件，样式完全统一）
     let gitScopeValue = 'all'
@@ -538,12 +666,61 @@ module.exports = {
     gitClose.type = 'button'
     gitClose.setAttribute('data-dsc-btn', '')
     gitClose.textContent = t('close')
+    // 状态徽标（2.3）：未解决冲突数 + 进行中操作（merge/rebase/…）
+    const gitStateBadge = document.createElement('div')
+    gitStateBadge.setAttribute('data-dsc-git-state', '')
     gitHead.appendChild(gitTitle)
+    gitHead.appendChild(gitStateBadge)
     gitHead.appendChild(gitScopeBtn)
     gitHead.appendChild(gitRefresh)
     gitHead.appendChild(gitClose)
+    // 拉取远程按钮（上游 Git Graph 工具栏 Fetch from Remote(s) 移植）：有 remote
+    // 才显示（gitFetch 加载后按响应 remotes 显隐，初始隐藏）；点击直接 fetch --all
+    // （上游工具栏形态，无对话框），prune 默认关（同上游 fetchAndPrune 默认）；
+    // 完成后显式刷新图（SSE 状态键不含 refs/remotes，fetch 只更新远程跟踪 ref）。
+    const gitFetchBtn = document.createElement('button')
+    gitFetchBtn.type = 'button'
+    gitFetchBtn.setAttribute('data-dsc-btn', '')
+    gitFetchBtn.textContent = '⇣'
+    gitFetchBtn.title = t('gitFetch')
+    gitFetchBtn.style.display = 'none'
+    gitFetchBtn.addEventListener('click', async () => {
+      gitFetchBtn.disabled = true
+      gitFetchBtn.title = t('gitFetching')
+      try {
+        await gitPost('/git/fetch', { remote: '', prune: false })
+        flash(t('gitFetchOk'))
+      } catch (err) {
+        flash(gitErrText(err))
+      } finally {
+        gitFetchBtn.disabled = false
+        gitFetchBtn.title = t('gitFetch')
+      }
+      // 无论成败都刷新图：--all 多远程可能部分成功（git 会继续尝试其余远程），
+      // 已更新的跟踪 ref 要立即上屏；单远程失败时刷新也无害。
+      gitFetch(true)
+    })
+    // 插到刷新按钮之前：头部顺序 标题 / 状态徽标 / 范围▾ / ⇣拉取 / ↻ / ＋新分支 / 关闭
+    gitHead.insertBefore(gitFetchBtn, gitRefresh)
     const gitBody = document.createElement('div')
     gitBody.setAttribute('data-dsc-git-body', '')
+    // 合并进行中条（2.4）：中止 / 继续
+    const gitMergeBar = document.createElement('div')
+    gitMergeBar.setAttribute('data-dsc-git-mergebar', '')
+    gitMergeBar.style.display = 'none'
+    const gitMergeBarText = document.createElement('span')
+    const gitMergeAbort = document.createElement('button')
+    gitMergeAbort.type = 'button'
+    gitMergeAbort.setAttribute('data-dsc-btn', '')
+    gitMergeAbort.textContent = t('gitMergeAbort')
+    const gitMergeContinue = document.createElement('button')
+    gitMergeContinue.type = 'button'
+    gitMergeContinue.setAttribute('data-dsc-btn', '')
+    gitMergeContinue.textContent = t('gitMergeContinue')
+    gitMergeBar.appendChild(gitMergeBarText)
+    gitMergeBar.appendChild(gitMergeAbort)
+    gitMergeBar.appendChild(gitMergeContinue)
+    gitBody.appendChild(gitMergeBar)
     const gitRowsWrap = document.createElement('div')
     gitRowsWrap.setAttribute('data-dsc-git-rows', '')
     const gitSvg = document.createElementNS(SVG_NS, 'svg')
@@ -598,7 +775,7 @@ module.exports = {
 
     // 行内详情：把 commit 详情（标题/作者/正文/变更文件/diff）渲染进传入的盒子。
     // 数据按 hash 缓存，刷新重渲染时秒开。v2：虚拟行（UNCOMMITTED）/ stash 走特化 URL：
-    // - UNCOMMITTED：diff HEAD（服务端 gitShowUncommitted），无作者行/复制按钮
+    // - UNCOMMITTED：分组 diff（服务端 gitShowUncommitted：更改/暂存的更改），无作者行/复制按钮
     // - stash：&base=<baseHash> 显式 diff base..stash（多父 commit 的 diff-tree/show 无输出），
     //   第三父 untracked 快照经 &stashUntracked= 追加
     const showGitDetail = async (commit, box) => {
@@ -661,65 +838,83 @@ module.exports = {
           dSub.textContent = `${data.meta.author} <${data.meta.email}> · ${new Date(data.meta.date * 1000).toLocaleString()}`
           if (data.body !== '' && data.body !== data.meta.subject) dBody.textContent = data.body
         }
-        // 变更文件
-        const fileHead = document.createElement('div')
-        fileHead.style.opacity = '.6'
-        fileHead.style.marginBottom = '2px'
-        fileHead.textContent = t('gitFiles')
-        dFiles.appendChild(fileHead)
-        const sections = data.patch.split(/^diff --git /m).filter((s) => s.trim() !== '')
-        if (data.files.length === 0) {
-          const empty = document.createElement('div')
-          empty.style.opacity = '.55'
-          empty.textContent = t('gitNoFiles')
-          dFiles.appendChild(empty)
-        }
-        const patchPre = document.createElement('pre')
-        patchPre.setAttribute('data-dsc-git-dpatch', '')
-        dFiles.appendChild(patchPre)
-        data.files.forEach((f, idx) => {
-          const row = document.createElement('div')
-          row.setAttribute('data-dsc-git-dfile', '')
-          const path = document.createElement('span')
-          path.setAttribute('data-dsc-git-dfile-path', '')
-          path.textContent = f.path
-          const num = document.createElement('span')
-          num.className = 'dsc-gnum'
-          if (f.adds > 0 || f.dels > 0) {
-            const a = document.createElement('span')
-            a.className = 'dsc-gnum-add'
-            a.textContent = `+${f.adds}`
-            const d = document.createElement('span')
-            d.className = 'dsc-gnum-del'
-            d.textContent = `-${f.dels}`
-            num.appendChild(a)
-            num.appendChild(document.createTextNode(' '))
-            num.appendChild(d)
-          } else {
-            num.textContent = '±'
-            num.style.opacity = '.5'
+        // 变更文件（分组渲染）：普通 commit 单组「变更文件」；未提交改动按
+        // VS Code 语义分「更改 / 暂存的更改」两组——空组隐藏，部分暂存文件
+        // （MM/AM）两组各出现一次，未跟踪文件（??）带徽标且无 patch。
+        const gitDetailFiles = (group, label, hideEmpty) => {
+          if (hideEmpty && group.files.length === 0) return
+          const head = document.createElement('div')
+          head.style.opacity = '.6'
+          head.style.marginBottom = '2px'
+          head.textContent = label
+          dFiles.appendChild(head)
+          const sections = group.patch.split(/^diff --git /m).filter((s) => s.trim() !== '')
+          if (!hideEmpty && group.files.length === 0) {
+            const empty = document.createElement('div')
+            empty.style.opacity = '.55'
+            empty.textContent = t('gitNoFiles')
+            dFiles.appendChild(empty)
           }
-          row.appendChild(path)
-          row.appendChild(num)
-          row.addEventListener('click', () => {
-            const section = sections[idx]
-            const isOn = patchPre.classList.contains('on') && patchPre.dataset.idx === String(idx)
-            patchPre.classList.remove('on')
-            for (const el of dFiles.querySelectorAll('[data-dsc-git-dfile].sel')) el.classList.remove('sel')
-            if (!isOn && section !== undefined) {
-              patchPre.dataset.idx = String(idx)
-              patchPre.textContent = 'diff --git ' + section + (data.truncated ? `\n${t('gitTruncated')}` : '')
-              patchPre.classList.add('on')
-              row.classList.add('sel')
+          const patchPre = document.createElement('pre')
+          patchPre.setAttribute('data-dsc-git-dpatch', '')
+          dFiles.appendChild(patchPre)
+          group.files.forEach((f, idx) => {
+            const row = document.createElement('div')
+            row.setAttribute('data-dsc-git-dfile', '')
+            const path = document.createElement('span')
+            path.setAttribute('data-dsc-git-dfile-path', '')
+            path.textContent = f.path
+            const num = document.createElement('span')
+            num.className = 'dsc-gnum'
+            if (f.adds > 0 || f.dels > 0) {
+              const a = document.createElement('span')
+              a.className = 'dsc-gnum-add'
+              a.textContent = `+${f.adds}`
+              const d = document.createElement('span')
+              d.className = 'dsc-gnum-del'
+              d.textContent = `-${f.dels}`
+              num.appendChild(a)
+              num.appendChild(document.createTextNode(' '))
+              num.appendChild(d)
+            } else {
+              num.textContent = '±'
+              num.style.opacity = '.5'
             }
+            row.appendChild(path)
+            row.appendChild(num)
+            if (f.status === '??') {
+              const badge = document.createElement('span')
+              badge.className = 'dsc-gfile-untracked'
+              badge.textContent = t('gitUntracked')
+              row.appendChild(badge)
+            }
+            row.addEventListener('click', () => {
+              const section = sections[idx]
+              const isOn = patchPre.classList.contains('on') && patchPre.dataset.idx === String(idx)
+              patchPre.classList.remove('on')
+              for (const el of dFiles.querySelectorAll('[data-dsc-git-dfile].sel')) el.classList.remove('sel')
+              if (!isOn && section !== undefined) {
+                patchPre.dataset.idx = String(idx)
+                patchPre.textContent = 'diff --git ' + section + (group.truncated ? `\n${t('gitTruncated')}` : '')
+                patchPre.classList.add('on')
+                row.classList.add('sel')
+              }
+            })
+            dFiles.appendChild(row)
           })
-          dFiles.appendChild(row)
-        })
-        if (data.truncated && sections.length === 0) {
-          const note = document.createElement('div')
-          note.style.opacity = '.55'
-          note.textContent = t('gitTruncated')
-          dFiles.appendChild(note)
+          if (group.truncated && sections.length === 0) {
+            const note = document.createElement('div')
+            note.style.opacity = '.55'
+            note.textContent = t('gitTruncated')
+            dFiles.appendChild(note)
+          }
+        }
+        if (isUncommitted) {
+          // 未暂存组在前（VS Code「更改」），暂存组在后（VS Code「暂存的更改」）
+          gitDetailFiles(data.unstaged, t('gitChanges'), true)
+          gitDetailFiles(data.staged, t('gitStagedChanges'), true)
+        } else {
+          gitDetailFiles({ files: data.files, patch: data.patch, truncated: data.truncated }, t('gitFiles'), false)
         }
       } catch {
         dTitle.replaceChildren()
@@ -731,8 +926,9 @@ module.exports = {
       // 图/线/盒子高度跟随（gitExpandY），不等则重绘一次；相等即停（终止条件）。
       // 注意：点击文件行展开 patch 不走这里，盒子保持当前高度内部滚动，图不跳动。
       // box 可能已被后续重绘/收起移出 DOM（快速切换行）：isConnected 时才能测量，
-      // 否则 offsetHeight = 0 会把 gitExpandY 打崩。
-      if (box.isConnected) {
+      // 否则 offsetHeight = 0 会把 gitExpandY 打崩。归属校验（dataset.hash ===
+      // gitSelected）保证测量重绘只作用于当前选中行，杜绝陈旧盒子的竞态。
+      if (box.isConnected && box.dataset.hash === gitSelected) {
         box.style.height = 'auto'
         const measured = box.offsetHeight
         if (measured !== gitExpandY) {
@@ -742,9 +938,22 @@ module.exports = {
       }
     }
 
+    // 渲染防重入：showGitDetail 的缓存命中路径会同步执行测量并触发 renderGitGraph，
+    // 若此时外层 renderGitGraph 的 forEach 尚未跑完，内层渲染会清空重建一遍，外层
+    // 随后又把剩余行追加一遍 —— 造成"选中行之下的行在列表末尾重复"（本 bug 根因）。
+    // 重入时置 dirty 标记，外层渲染结束后补一次完整渲染（此时测量已更新 gitExpandY，
+    // 补渲染一次收敛，不会无限循环）。
+    let gitRendering = false
+    let gitRenderDirty = false
     const renderGitGraph = () => {
-      gitRowsWrap.querySelectorAll('[data-dsc-git-row], [data-dsc-git-inline]').forEach((el) => el.remove())
-      gitSvg.replaceChildren()
+      if (gitRendering) {
+        gitRenderDirty = true
+        return
+      }
+      gitRendering = true
+      try {
+        gitRowsWrap.querySelectorAll('[data-dsc-git-row], [data-dsc-git-inline], [data-dsc-git-more]').forEach((el) => el.remove())
+        gitSvg.replaceChildren()
       if (gitRows.length === 0) {
         gitSelected = null
         renderGitNote(t('gitNoCommits'))
@@ -919,6 +1128,9 @@ module.exports = {
           row.appendChild(copyBtn)
         }
         row.addEventListener('click', () => {
+          // 行已在后续渲染中被替换（面板重建）时，忽略陈旧行上的点击，
+          // 防止用陈旧 commit 改写 gitSelected 导致选中态/展开盒错位。
+          if (!row.isConnected) return
           gitSelected = gitSelected === commit.hash ? null : commit.hash
           renderGitGraph()
         })
@@ -929,6 +1141,7 @@ module.exports = {
         if (idx === expandAt) {
           const box = document.createElement('div')
           box.setAttribute('data-dsc-git-inline', '')
+          box.dataset.hash = commit.hash // 标记归属行：测量重绘前校验仍为当前选中行
           box.style.marginLeft = `${clipW}px`
           box.style.maxHeight = `${GIT_GRID.expandY}px`
           box.style.height = `${expandY}px`
@@ -938,16 +1151,86 @@ module.exports = {
       })
       if (gitMoreAvailable) {
         const more = document.createElement('div')
+        more.setAttribute('data-dsc-git-more', '')
         more.style.padding = '6px 12px'
         more.style.opacity = '.55'
         more.style.fontSize = '11px'
         more.textContent = t('gitMore', { n: gitRows.length })
         gitRowsWrap.appendChild(more)
       }
+      } finally {
+        gitRendering = false
+        if (gitRenderDirty) {
+          gitRenderDirty = false
+          renderGitGraph()
+        }
+      }
     }
 
     let gitRows = []
     let gitMoreAvailable = false
+    // 远程名列表（/git/log 响应 remotes）：有 remote 才显示「⇣ 拉取远程」按钮。
+    let gitRemotes = []
+    // 静默刷新去抖：上次 /git/log 响应的签名。内容未变时跳过重渲染，避免 10s 轮询 /
+    // SSE 反复整体重建行 DOM —— 重建会替换行元素，扩大用户点击与渲染竞争的陈旧行窗口。
+    let gitLastSig = null
+    // 响应签名：覆盖所有影响 UI 的字段（commit 集合 / stash 位置 / 未提交计数 /
+    // HEAD 与分支名 / 冲突数 / 进行中操作 / 远程列表）。任一变化都触发重渲染。
+    const gitSigOf = (data) => {
+      let s = `${data.moreAvailable}|${data.conflicts ?? 0}|${data.operation ?? ''}|${(data.remotes ?? []).join(',')}`
+      for (const c of data.commits ?? []) {
+        s += `|${c.hash}${c.stash !== null ? '@' + c.stash.selector : ''}${c.uncommitted !== undefined ? '#u' + c.uncommitted.staged + '/' + c.uncommitted.unstaged : ''}${c.refs.isHead ? '^' + (c.refs.headName ?? '') : ''}`
+      }
+      return s
+    }
+    // 仓库状态（2.3）：未解决冲突数 + 进行中操作标记（服务端 /git/log 响应）。
+    let gitState = { conflicts: 0, operation: null }
+    const OPERATION_LABELS = {
+      MERGE_HEAD: 'Merge',
+      CHERRY_PICK_HEAD: 'CherryPick',
+      REVERT_HEAD: 'Revert',
+      BISECT_LOG: 'Bisect',
+      'rebase-merge': 'Rebase',
+      'rebase-apply': 'Rebase',
+      sequencer: 'Sequencer',
+    }
+    const renderGitState = () => {
+      gitStateBadge.replaceChildren()
+      if (gitState.conflicts > 0) {
+        const el = document.createElement('span')
+        el.className = 'dsc-git-state-item dsc-git-state-warn'
+        el.textContent = t('gitConflicts', { n: gitState.conflicts })
+        gitStateBadge.appendChild(el)
+      }
+      if (gitState.operation !== null) {
+        const label = OPERATION_LABELS[gitState.operation] ?? gitState.operation
+        const el = document.createElement('span')
+        el.className = 'dsc-git-state-item dsc-git-state-op'
+        el.textContent = t(`gitOp${label}`)
+        gitStateBadge.appendChild(el)
+      }
+      const isMerge = gitState.operation === 'MERGE_HEAD'
+      gitMergeBar.style.display = isMerge ? 'flex' : 'none'
+      if (isMerge) gitMergeBarText.textContent = t('gitOpMerge')
+    }
+    gitMergeAbort.addEventListener('click', async () => {
+      try {
+        await gitBranchAction({ action: 'merge-abort' })
+        flash(t('gitMergeAborted'))
+        gitFetch(true)
+      } catch (err) {
+        flash(gitErrText(err))
+      }
+    })
+    gitMergeContinue.addEventListener('click', async () => {
+      try {
+        await gitBranchAction({ action: 'merge-continue' })
+        flash(t('gitMergeContinued'))
+        gitFetch(true)
+      } catch (err) {
+        flash(gitErrText(err))
+      }
+    })
     const gitFetch = async (silent) => {
       if (!silent) renderGitNote(t('gitLoading'))
       try {
@@ -957,13 +1240,30 @@ module.exports = {
         if (data.isRepo === false) {
           gitRows = []
           gitMoreAvailable = false
+          gitRemotes = []
+          gitFetchBtn.style.display = 'none'
+          gitState = { conflicts: 0, operation: null }
+          gitLastSig = 'no-repo'
           renderGitGraph()
+          renderGitState()
           renderGitNote(t('gitNotRepo'))
           return
         }
+        // 静默刷新（10s 轮询 / SSE）且响应签名未变：列表与状态均无变化，跳过重建。
+        // 手动刷新（↻）与切换范围仍强制重渲染。
+        const sig = gitSigOf(data)
+        if (silent && sig === gitLastSig) return
+        gitLastSig = sig
         gitRows = data.commits
         gitMoreAvailable = data.moreAvailable
+        gitRemotes = Array.isArray(data.remotes) ? data.remotes : []
+        gitFetchBtn.style.display = gitRemotes.length > 0 ? '' : 'none'
+        gitState = {
+          conflicts: typeof data.conflicts === 'number' ? data.conflicts : 0,
+          operation: typeof data.operation === 'string' ? data.operation : null,
+        }
         renderGitGraph()
+        renderGitState()
       } catch {
         if (!silent) renderGitNote(t('gitError'))
       }
@@ -1005,8 +1305,11 @@ module.exports = {
     }
 
     /** 分支操作 POST（写路由）；resolve { ok, branch }，reject { code, message, paths? }。 */
-    const gitBranchAction = async (payload) => {
-      const r = await fetch(`${BASE}/git/branch`, {
+    const gitBranchAction = (payload) => gitPost('/git/branch', payload)
+
+    /** 写路由 POST（/git/branch、/git/fetch 共用）；resolve { ok, ... }，reject { code, message, paths? }。 */
+    const gitPost = async (path, payload) => {
+      const r = await fetch(`${BASE}${path}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ ...payload, session: currentSessionId() }),
@@ -1015,6 +1318,29 @@ module.exports = {
       if (data === null) throw { code: 'internal', message: t('gitErr') }
       if (data.ok === true) return data
       throw data.error ?? { code: 'internal', message: t('gitErr') }
+    }
+
+    // ---------- SSE 订阅（2.1）：/git/events，仓库状态变化即时刷新 ----------
+    // EventSource 自带断线重连；10s 轮询保留作兜底。
+    let gitEvents = null
+    let gitEventsSession = ''
+    const gitEventsOpen = () => {
+      if (gitEvents !== null) return
+      const session = currentSessionId()
+      gitEventsSession = session
+      try {
+        gitEvents = new EventSource(`${BASE}/git/events?session=${encodeURIComponent(session)}`)
+      } catch {
+        gitEvents = null
+        return
+      }
+      gitEvents.addEventListener('change', () => { gitFetch(true) })
+    }
+    const gitEventsClose = () => {
+      if (gitEvents === null) return
+      gitEvents.close()
+      gitEvents = null
+      gitEventsSession = ''
     }
 
     // 右键菜单浮层（本地分支：切换；远程：创建本地分支并检出）。
@@ -1044,11 +1370,100 @@ module.exports = {
       if (ev.key === 'Escape') gitCtxClose()
     })
 
-    // 分支徽标右键（document 级委托，行重建不影响）：本地 pill → 切换；
-    // 远程子标签/独立 pill → 创建本地分支并检出。命中 git 面板内徽标才拦截默认菜单。
+    // 切换确认框（未提交改动提醒，方案 A）：风格同右键菜单/create 框浮层卡片。
+    // 收到 uncommitted-changes-present 时弹出，「仍然切换」带 force 重发（服务端
+    // 旁路未提交守卫，其余守卫仍生效）；Escape / 点击外部 / 取消 关闭。
+    const gitConfirmBox = document.createElement('div')
+    gitConfirmBox.setAttribute('data-dsc-git-confirm', '')
+    body.appendChild(gitConfirmBox)
+    const gitConfirmTitle = document.createElement('div')
+    gitConfirmTitle.className = 'dsc-git-confirm-title'
+    const gitConfirmText = document.createElement('div')
+    gitConfirmText.className = 'dsc-git-confirm-text'
+    const gitConfirmActions = document.createElement('div')
+    gitConfirmActions.className = 'dsc-git-confirm-actions'
+    const gitConfirmOk = document.createElement('button')
+    gitConfirmOk.type = 'button'
+    gitConfirmOk.setAttribute('data-dsc-btn', '')
+    const gitConfirmCancel = document.createElement('button')
+    gitConfirmCancel.type = 'button'
+    gitConfirmCancel.setAttribute('data-dsc-btn', '')
+    gitConfirmActions.appendChild(gitConfirmOk)
+    gitConfirmActions.appendChild(gitConfirmCancel)
+    gitConfirmBox.appendChild(gitConfirmTitle)
+    gitConfirmBox.appendChild(gitConfirmText)
+    gitConfirmBox.appendChild(gitConfirmActions)
+    let gitConfirmOnOk = null
+    const gitConfirmClose = () => { gitConfirmBox.style.display = 'none'; gitConfirmOnOk = null }
+    const gitConfirmOpen = (opts) => {
+      gitConfirmTitle.textContent = opts.title ?? ''
+      gitConfirmText.textContent = opts.text
+      gitConfirmOk.textContent = opts.okText ?? t('gitSwitchAnyway')
+      gitConfirmCancel.textContent = opts.cancelText ?? t('gitCancel')
+      gitConfirmOnOk = opts.onOk ?? null
+      gitConfirmBox.style.display = 'block'
+      // 定位：面板头部下方（同 create 框）；确认框在异步 POST 返回后弹出，
+      // 原鼠标位置已不可靠，不复用 ctx 菜单的坐标定位。
+      const headRect = gitHead.getBoundingClientRect()
+      gitConfirmBox.style.left = `${Math.min(headRect.left, window.innerWidth - 260)}px`
+      gitConfirmBox.style.top = `${headRect.bottom + 6}px`
+      gitConfirmOk.focus()
+    }
+    gitConfirmOk.addEventListener('click', () => { const fn = gitConfirmOnOk; gitConfirmClose(); if (fn !== null) fn() })
+    gitConfirmCancel.addEventListener('click', gitConfirmClose)
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && gitConfirmBox.style.display !== 'none') gitConfirmClose()
+    })
+    document.addEventListener('click', (ev) => {
+      if (gitConfirmBox.style.display === 'none') return
+      if (!gitConfirmBox.contains(ev.target)) gitConfirmClose()
+    })
+
+    /** 切换分支统一入口（本地/远程 checkout）：成功 flash + 刷新；
+     *  uncommitted-changes-present → 弹确认框，确认后带 force 重发。 */
+    const gitCheckout = async (payload) => {
+      try {
+        const result = await gitBranchAction({ action: 'checkout', ...payload })
+        flash(t('gitSwitchOk', { branch: result.branch }))
+        gitFetch(true)
+      } catch (err) {
+        if (err.code === 'uncommitted-changes-present') {
+          let text = t('gitSwitchUncommitted', {
+            branch: payload.branch,
+            staged: err.staged ?? 0,
+            unstaged: err.unstaged ?? 0,
+          })
+          if ((err.untracked ?? 0) > 0) {
+            text += ` ${t('gitSwitchUncommittedUntracked', { untracked: err.untracked })}`
+          }
+          gitConfirmOpen({
+            title: t('gitSwitchTo', { branch: payload.branch }),
+            text,
+            onOk: () => gitCheckout({ ...payload, force: true }),
+          })
+          return
+        }
+        flash(gitErrText(err))
+      }
+    }
+
+    // 徽标右键（document 级委托，行重建不影响）：本地 pill → 切换/合并/重命名/删除；
+    // 远程子标签/独立 pill → 创建本地分支并检出；tag → 以 tag 为起始点建分支。
+    // 命中 git 面板内徽标才拦截默认菜单。
     document.addEventListener('contextmenu', (ev) => {
       if (!(ev.target instanceof HTMLElement)) return
       if (!gitCtxMenu.contains(ev.target)) gitCtxClose()
+      const tag = ev.target.closest('[data-dsc-git-rows] .dsc-gref-tag')
+      if (tag !== null) {
+        ev.preventDefault()
+        ev.stopPropagation()
+        const tagName = tag.textContent.trim()
+        gitCtxOpen(ev.clientX, ev.clientY, [{
+          label: t('gitCreateFromTag', { tag: tagName }),
+          onClick: () => gitCreateOpen({ start: tagName }),
+        }])
+        return
+      }
       const sub = ev.target.closest('[data-dsc-git-rows] .dsc-gref-remote-sub')
       const local = ev.target.closest('[data-dsc-git-rows] .dsc-gref-branch')
       const remote = ev.target.closest('[data-dsc-git-rows] .dsc-gref-remote')
@@ -1066,31 +1481,63 @@ module.exports = {
         const branchName = slash > 0 ? fullRef.slice(slash + 1) : fullRef
         gitCtxOpen(ev.clientX, ev.clientY, [{
           label: t('gitCreateFromRemote', { branch: branchName, remote: fullRef.slice(0, slash) }),
-          onClick: async () => {
-            try {
-              const result = await gitBranchAction({ action: 'checkout', branch: branchName, remote: fullRef })
-              flash(t('gitSwitchOk', { branch: result.branch }))
-              gitFetch(true)
-            } catch (err) {
-              flash(gitErrText(err))
-            }
-          },
+          onClick: () => gitCheckout({ branch: branchName, remote: fullRef }),
         }])
       } else if (local !== null) {
         const branchName = (local.firstChild?.textContent ?? '').trim()
-        gitCtxOpen(ev.clientX, ev.clientY, [{
-          label: t('gitSwitchTo', { branch: branchName }),
-          disabled: branchName === currentBranch,
-          onClick: async () => {
-            try {
-              const result = await gitBranchAction({ action: 'checkout', branch: branchName })
-              flash(t('gitSwitchOk', { branch: result.branch }))
-              gitFetch(true)
-            } catch (err) {
-              flash(gitErrText(err))
-            }
+        const isCurrent = branchName === currentBranch
+        gitCtxOpen(ev.clientX, ev.clientY, [
+          {
+            label: t('gitSwitchTo', { branch: branchName }),
+            disabled: isCurrent,
+            onClick: () => gitCheckout({ branch: branchName }),
           },
-        }])
+          {
+            label: t('gitMergeInto', { branch: branchName }),
+            disabled: isCurrent,
+            onClick: async () => {
+              try {
+                const result = await gitBranchAction({ action: 'merge', branch: branchName })
+                flash(t('gitMergeOk', { branch: result.branch }))
+                gitFetch(true)
+              } catch (err) {
+                flash(gitErrText(err))
+              }
+            },
+          },
+          {
+            label: t('gitRenameBranch', { branch: branchName }),
+            onClick: () => gitCreateOpen({ mode: 'rename', branch: branchName }),
+          },
+          {
+            label: t('gitDeleteBranch', { branch: branchName }),
+            disabled: isCurrent,
+            onClick: async () => {
+              if (!window.confirm(t('gitDeleteConfirm', { branch: branchName }))) return
+              try {
+                await gitBranchAction({ action: 'delete', branch: branchName })
+                flash(t('gitDeleteOk', { branch: branchName }))
+                gitFetch(true)
+              } catch (err) {
+                flash(gitErrText(err))
+              }
+            },
+          },
+          {
+            label: t('gitDeleteBranchForce', { branch: branchName }),
+            disabled: isCurrent,
+            onClick: async () => {
+              if (!window.confirm(t('gitDeleteForceConfirm', { branch: branchName }))) return
+              try {
+                await gitBranchAction({ action: 'delete', branch: branchName, force: true })
+                flash(t('gitDeleteOk', { branch: branchName }))
+                gitFetch(true)
+              } catch (err) {
+                flash(gitErrText(err))
+              }
+            },
+          },
+        ])
       }
     })
 
@@ -1126,9 +1573,21 @@ module.exports = {
     gitCreateBox.appendChild(gitCreateErr)
     gitCreateBox.appendChild(gitCreateActions)
     const gitCreateClose = () => { gitCreateBox.style.display = 'none' }
-    const gitCreateOpen = () => {
-      gitCreateErr.textContent = ''
+    // 对话框模式（2.2/2.4）：create（含 start=tag）| rename
+    let gitCreateMode = 'create'
+    let gitCreateStart = ''
+    let gitCreateRenameFrom = ''
+    const gitCreateOpen = (opts = {}) => {
+      gitCreateMode = opts.mode ?? 'create'
+      gitCreateStart = opts.start ?? ''
+      gitCreateRenameFrom = opts.branch ?? ''
+      gitCreateTitle.textContent = gitCreateMode === 'rename' ? t('gitRenameTitle') : t('gitCreateTitle')
+      gitCreateSubmit.textContent = gitCreateMode === 'rename' ? t('gitRenameSubmit') : t('gitCreateSubmit')
+      // 初始态：提示输入分支名（弱化样式），空输入时提交按钮禁用
+      gitCreateErr.textContent = t('gitCreatePrompt')
+      gitCreateErr.classList.add('hint')
       gitCreateInput.value = ''
+      gitCreateSubmit.disabled = true
       gitCreateBox.style.display = 'block'
       const headRect = gitHead.getBoundingClientRect()
       gitCreateBox.style.left = `${Math.min(headRect.left, window.innerWidth - 230)}px`
@@ -1137,7 +1596,17 @@ module.exports = {
     }
     gitCreateInput.addEventListener('input', () => {
       const reason = validateBranchName(gitCreateInput.value.trim())
-      gitCreateErr.textContent = reason === null ? '' : t('gitErrInvalidBranchName')
+      if (reason === null) {
+        gitCreateErr.textContent = ''
+        gitCreateErr.classList.remove('hint')
+      } else if (reason === 'empty') {
+        // 清空后回到初始提示态
+        gitCreateErr.textContent = t('gitCreatePrompt')
+        gitCreateErr.classList.add('hint')
+      } else {
+        gitCreateErr.textContent = t('gitErrInvalidBranchName')
+        gitCreateErr.classList.remove('hint')
+      }
       gitCreateSubmit.disabled = reason !== null
     })
     const gitCreateRun = async () => {
@@ -1145,12 +1614,21 @@ module.exports = {
       if (validateBranchName(name) !== null) return
       gitCreateSubmit.disabled = true
       try {
-        const result = await gitBranchAction({ action: 'create', name })
-        gitCreateClose()
-        flash(t('gitCreateOk', { name: result.branch }))
+        if (gitCreateMode === 'rename') {
+          const result = await gitBranchAction({ action: 'rename', branch: gitCreateRenameFrom, name })
+          gitCreateClose()
+          flash(t('gitRenameOk', { from: gitCreateRenameFrom, name: result.branch }))
+        } else {
+          const payload = { action: 'create', name }
+          if (gitCreateStart !== '') payload.start = gitCreateStart
+          const result = await gitBranchAction(payload)
+          gitCreateClose()
+          flash(t('gitCreateOk', { name: result.branch }))
+        }
         gitFetch(true)
       } catch (err) {
         gitCreateErr.textContent = gitErrText(err)
+        gitCreateErr.classList.remove('hint')
         gitCreateSubmit.disabled = false
       }
     }
@@ -1166,26 +1644,40 @@ module.exports = {
     gitCreateBtn.textContent = t('gitCreateBtn')
     gitCreateBtn.title = t('gitCreateTitle')
     gitCreateBtn.addEventListener('click', gitCreateOpen)
-    gitHead.appendChild(gitCreateBtn)
+    // 插到关闭按钮之前：头部按钮顺序为 标题 / 范围▾ / ↻ / ＋新分支 / 关闭（关闭最右）
+    gitHead.insertBefore(gitCreateBtn, gitClose)
 
     gitToggle.addEventListener('click', () => {
       gitOpen = !gitOpen
       gitPanel.classList.toggle('open', gitOpen)
       gitToggle.classList.toggle('on', gitOpen)
-      if (gitOpen) gitFetch(false)
+      if (gitOpen) {
+        gitFetch(false)
+        gitEventsOpen()
+      } else {
+        gitEventsClose()
+      }
     })
     gitClose.addEventListener('click', () => {
       gitOpen = false
       gitPanel.classList.remove('open')
       gitToggle.classList.remove('on')
+      gitEventsClose()
     })
     gitRefresh.addEventListener('click', () => gitFetch(false))
     const gitTimer = setInterval(() => {
-      if (gitOpen && document.visibilityState === 'visible') gitFetch(true)
+      if (gitOpen && document.visibilityState === 'visible') {
+        // 会话切换（换工作区）时重建 SSE 订阅；10s 轮询兜底 EventSource 断连
+        if (gitEventsSession !== currentSessionId()) {
+          gitEventsClose()
+          gitEventsOpen()
+        }
+        gitFetch(true)
+      }
     }, 10000)
 
     
-    // ---------- 全局观测：视图切换时显示/隐藏左缘 ⎇ 开关 ----------
+    // ---------- 全局观测：视图切换时显示/隐藏左缘开关 ----------
     const syncToggles = () => {
       gitToggle.style.display = isChatView() ? 'flex' : 'none'
     }
