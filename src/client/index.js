@@ -167,6 +167,31 @@ const I18N = {
     timeMin: '{n} 分钟前',
     timeHour: '{n} 小时前',
     timeDay: '{n} 天前',
+    gitSettings: '设置',
+    gitUserInfo: '用户信息',
+    gitUserName: '姓名',
+    gitUserEmail: '邮箱',
+    gitUserNotSet: '未设置',
+    gitUserAdd: '添加',
+    gitUserEdit: '编辑',
+    gitUserDelete: '删除',
+    gitUserSave: '保存',
+    gitUserLocal: 'Local',
+    gitUserGlobal: 'Global',
+    gitUserLocalRepo: '本仓库',
+    gitUserGlobalRepo: '全局',
+    gitUserSwitchToGlobal: '点击切换到全局配置（所有仓库生效）',
+    gitUserSwitchToLocal: '点击切换为本仓库配置（仅当前仓库生效）',
+    gitUserSwitchTitle: '切换配置层级',
+    gitUserSwitchConfirm: '目标层已有不同的值，切换会覆盖它。确定切换吗？',
+    gitUserSwitchAnyway: '仍要切换',
+    gitUserDeleteConfirm: '确定删除该项配置吗？将写入 git config。',
+    gitUserWriteTo: '写入位置：{layer}',
+    gitUserEditPlaceholder: '输入{field}',
+    gitUserConfigFailed: '读取 git 配置失败',
+    gitUserSaveOk: '已保存',
+    gitUserSwitchOk: '已切换配置层级',
+    gitUserDeleteOk: '已删除',
   },
   en: {
     copied: 'Copied to clipboard',
@@ -329,6 +354,31 @@ const I18N = {
     timeMin: '{n}m ago',
     timeHour: '{n}h ago',
     timeDay: '{n}d ago',
+    gitSettings: 'Settings',
+    gitUserInfo: 'User Details',
+    gitUserName: 'Name',
+    gitUserEmail: 'Email',
+    gitUserNotSet: 'Not set',
+    gitUserAdd: 'Add',
+    gitUserEdit: 'Edit',
+    gitUserDelete: 'Delete',
+    gitUserSave: 'Save',
+    gitUserLocal: 'Local',
+    gitUserGlobal: 'Global',
+    gitUserLocalRepo: 'This repo',
+    gitUserGlobalRepo: 'Global',
+    gitUserSwitchToGlobal: 'Click to switch to global config (applies to all repositories)',
+    gitUserSwitchToLocal: 'Click to switch to this repository config (this repo only)',
+    gitUserSwitchTitle: 'Switch config layer',
+    gitUserSwitchConfirm: 'The target layer already has a different value; switching will overwrite it. Switch anyway?',
+    gitUserSwitchAnyway: 'Switch anyway',
+    gitUserDeleteConfirm: 'Delete this config entry? This writes to git config.',
+    gitUserWriteTo: 'Will be written to: {layer}',
+    gitUserEditPlaceholder: 'Enter {field}',
+    gitUserConfigFailed: 'Failed to load git config',
+    gitUserSaveOk: 'Saved',
+    gitUserSwitchOk: 'Config layer switched',
+    gitUserDeleteOk: 'Deleted',
   },
 }
 module.exports = {
@@ -541,6 +591,56 @@ module.exports = {
   background: rgba(76,154,255,.12);
 }
 .dsc-git-opt-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+/* 设置弹窗（头部 ⚙ 按钮 → 浮层卡片，同 push 框形态）：分区 + 用户信息行 +
+   可点击层级徽标（Local⇄Global 切换）+ 行内编辑 */
+[data-dsc-git-settings] {
+  position: fixed; z-index: 930; width: 340px; max-width: 90vw;
+  max-height: 70vh; overflow-y: auto; border-radius: 8px; padding: 10px 12px;
+  display: none; font-size: 12px; box-sizing: border-box;
+  color: var(--dsw-alias-text-1, #eee);
+  background: var(--dsw-hovercard-bg, #2C2C2E);
+  border: 1px solid rgba(255,255,255,.08); box-shadow: var(--dsw-shadow-lv3);
+}
+[data-dsc-git-settings] .dsc-git-settings-title {
+  display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 10px;
+}
+[data-dsc-git-settings] .dsc-git-settings-title .spacer { flex: 1; }
+[data-dsc-git-settings] .dsc-git-settings-section-title {
+  font-size: 11px; opacity: .6; margin: 8px 0 6px; font-weight: 600;
+}
+/* 用户信息行：label / 值 / 层级徽标 / 操作按钮 */
+.dsc-git-user-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11px;
+}
+.dsc-git-user-row .dsc-git-user-label { opacity: .85; flex: none; width: 36px; }
+.dsc-git-user-row .dsc-git-user-value {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dsc-git-user-row .dsc-git-user-value.unset { opacity: .4; }
+/* 层级徽标（可点击切换）：Local 蓝 / Global 绿，hover 提亮暗示可点 */
+.dsc-git-user-layer {
+  flex: none; font-size: 10px; padding: 1px 7px; border-radius: 999px;
+  cursor: pointer; user-select: none; border: 1px solid transparent;
+}
+.dsc-git-user-layer.local {
+  color: #8ab8ff; background: rgba(76,154,255,.14); border-color: rgba(76,154,255,.4);
+}
+.dsc-git-user-layer.global {
+  color: #7ee2a8; background: rgba(74,190,120,.14); border-color: rgba(74,190,120,.4);
+}
+.dsc-git-user-layer:hover { filter: brightness(1.3); }
+.dsc-git-user-layer:active { filter: brightness(1.5); }
+/* 行内编辑区：输入框 + 层级提示/二选一 + 错误行 + 操作按钮 */
+.dsc-git-user-edit { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+.dsc-git-user-edit input[type='text'] {
+  flex: 1; min-width: 110px; padding: 4px 6px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.25);
+  color: inherit; font-size: 11px; outline: none;
+}
+.dsc-git-user-edit input[type='text']:focus { border-color: var(--dsw-alias-text-accent, #4c9aff); }
+.dsc-git-user-edit .dsc-git-user-err { color: #ff6961; font-size: 11px; width: 100%; }
+.dsc-git-user-edit .dsc-git-user-layer-hint { opacity: .6; font-size: 10px; flex: none; }
+.dsc-git-user-layers { display: flex; gap: 4px; flex: none; }
 [data-dsc-git-create] { padding: 8px 10px; display: none; }
 [data-dsc-git-create] .dsc-git-create-head, [data-dsc-git-tag] .dsc-git-tag-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;
@@ -1004,7 +1104,7 @@ module.exports = {
     }
     let gitDrag = null
     gitHead.addEventListener('pointerdown', (ev) => {
-      if (ev.target instanceof HTMLElement && ev.target.closest('select, [data-dsc-btn]') !== null) return
+      if (ev.target instanceof Element && ev.target.closest('select, [data-dsc-btn]') !== null) return
       gitDrag = { dx: ev.clientX - gitPanel.offsetLeft, dy: ev.clientY - gitPanel.offsetTop }
       gitHead.setPointerCapture?.(ev.pointerId)
       ev.preventDefault()
@@ -2178,6 +2278,291 @@ module.exports = {
     gitCreateBtn.addEventListener('click', gitCreateOpen)
     // 插到关闭按钮之前：头部按钮顺序为 标题 / 范围▾ / ↻ / ＋新分支 / 关闭（关闭最右）
     gitHead.insertBefore(gitCreateBtn, gitClose)
+
+    // ---------- 设置弹窗（头部 ⚙ → 浮层卡片） ----------
+    // 首期区块：用户信息（git config user.name/email 两层读取 + 行内编辑 +
+    // 徽标点击层级迁移 + 删除）。后续区块（远程配置/显示开关）同骨架扩展。
+    const gitSettingsBtn = document.createElement('button')
+    gitSettingsBtn.type = 'button'
+    gitSettingsBtn.setAttribute('data-dsc-btn', '')
+    // 齿轮图标（iconfont 源 SVG 清理版）：fill 继承按钮文字色，display:block 保证
+    // 在按钮内垂直居中（文本字符 ⚙ 在部分字体下会渲染成 emoji，SVG 稳定）
+    gitSettingsBtn.innerHTML = '<svg viewBox="0 0 1024 1024" width="11" height="11" fill="currentColor" style="vertical-align:middle;pointer-events:none" aria-hidden="true"><path d="M512 43.434667c-65.152 0-134.144 48.213333-141.824 128.981333a42.666667 42.666667 0 0 0 0.085333 0.085333 42.666667 42.666667 0 0 0-0.170666 0.256c-3.626667 40.832-44.032 64.042667-81.194667 46.762667a42.666667 42.666667 0 0 0-0.426667-0.170667c-73.6-33.322667-149.632 2.218667-182.144 58.453334-32.469333 56.32-25.301333 139.989333 40.362667 187.093333a42.666667 42.666667 0 0 0 0.426667 0.256c33.493333 23.552 33.493333 70.058667 0 93.610667a42.666667 42.666667 0 0 0-0.384 0.256c-65.706667 47.104-72.96 130.858667-40.405334 187.136 32.512 56.32 108.586667 91.946667 182.272 58.496a42.666667 42.666667 0 0 0 0.426667-0.213334c37.12-17.365333 77.525333 5.973333 81.152 46.805334a42.666667 42.666667 0 0 0 0 0.256c7.68 80.725333 76.672 129.066667 141.824 129.066666s134.229333-48.341333 141.909333-129.066666a42.666667 42.666667 0 0 0 0-0.256c3.626667-40.832 43.946667-64.128 81.066667-46.848a42.666667 42.666667 0 0 0 0.426667 0.256c73.685333 33.450667 149.76-2.176 182.272-58.453334 32.512-56.32 25.344-140.074667-40.405334-187.178666a42.666667 42.666667 0 0 0-0.341333-0.256c-33.536-23.552-33.536-70.058667 0-93.610667a42.666667 42.666667 0 0 0 0.341333-0.256c65.706667-47.104 72.96-130.773333 40.405334-187.050667-32.512-56.32-108.586667-91.946667-182.272-58.496a42.666667 42.666667 0 0 0-0.426667 0.170667c-37.12 17.28-77.44-5.973333-81.066667-46.762667a42.666667 42.666667 0 0 0 0-0.341333c-7.68-80.725333-76.8-128.981333-141.909333-128.981333z m0 85.333333c28.544 0 53.12 11.946667 56.917333 51.712v-0.213333c8.576 97.109333 113.706667 157.738667 202.069334 116.565333l-0.298667 0.170667c36.266667-16.469333 58.88-1.152 73.130667 23.466666 14.250667 24.661333 16.128 51.925333-16.213334 75.093334l0.298667-0.213334c-79.786667 55.978667-79.786667 177.322667 0 233.301334l-0.341333-0.256c32.426667 23.210667 30.506667 50.474667 16.256 75.093333-14.208 24.661333-36.906667 39.893333-73.130667 23.466667l0.298667 0.128c-88.32-41.173333-193.493333 19.541333-202.069334 116.650666v-0.298666c-3.797333 39.765333-28.373333 51.797333-56.917333 51.797333s-53.12-12.032-56.917333-51.797333c-8.789333-96.938667-113.92-157.525333-202.154667-116.352l0.426667-0.170667c-36.266667 16.469333-58.965333 1.237333-73.173334-23.424-14.250667-24.618667-16.128-51.882667 16.213334-75.093333l-0.298667 0.256c79.786667-55.978667 79.786667-177.322667 0-233.301334l0.341333 0.256c-32.341333-23.210667-30.421333-50.389333-16.213333-75.008 14.250667-24.618667 36.906667-39.893333 73.088-23.509333l-0.426667-0.256c88.32 41.130667 193.28-19.328 202.112-116.266667a42.666667 42.666667 0 0 0 0.085334-0.085333c3.797333-39.765333 28.373333-51.712 56.917333-51.712z"></path><path d="M512 341.333333c-93.738667 0-170.666667 76.928-170.666667 170.666667s76.928 170.666667 170.666667 170.666667 170.666667-76.928 170.666667-170.666667-76.928-170.666667-170.666667-170.666667z m0 85.333334c47.616 0 85.333333 37.717333 85.333333 85.333333s-37.717333 85.333333-85.333333 85.333333-85.333333-37.717333-85.333333-85.333333 85.333333 37.717333 85.333333 85.333333-85.333333z"></path></svg>'
+    gitSettingsBtn.title = t('gitSettings')
+    gitHead.insertBefore(gitSettingsBtn, gitCreateBtn)
+
+    const gitSettingsBox = document.createElement('div')
+    gitSettingsBox.setAttribute('data-dsc-git-settings', '')
+    body.appendChild(gitSettingsBox)
+    const gitSettingsTitle = document.createElement('div')
+    gitSettingsTitle.className = 'dsc-git-settings-title'
+    const gitSettingsTitleText = document.createElement('span')
+    gitSettingsTitleText.textContent = `⚙ ${t('gitSettings')}`
+    const gitSettingsTitleSpacer = document.createElement('span')
+    gitSettingsTitleSpacer.className = 'spacer'
+    const gitSettingsCloseBtn = document.createElement('button')
+    gitSettingsCloseBtn.type = 'button'
+    gitSettingsCloseBtn.setAttribute('data-dsc-btn', '')
+    gitSettingsCloseBtn.textContent = t('close')
+    gitSettingsTitle.appendChild(gitSettingsTitleText)
+    gitSettingsTitle.appendChild(gitSettingsTitleSpacer)
+    gitSettingsTitle.appendChild(gitSettingsCloseBtn)
+    gitSettingsBox.appendChild(gitSettingsTitle)
+    const gitSettingsBody = document.createElement('div')
+    gitSettingsBox.appendChild(gitSettingsBody)
+
+    // 用户信息状态：{ name: { local, global }, email: { local, global } }
+    let gitUser = null
+    let gitUserEditing = null // 'name' | 'email' | null（行内编辑中的字段）
+    const gitUserLayerOf = (v) => (v.local !== null ? 'local' : v.global !== null ? 'global' : null)
+    const gitUserValueOf = (v) => v.local ?? v.global
+    const gitUserFieldLabel = (field) => t(field === 'name' ? 'gitUserName' : 'gitUserEmail')
+
+    const gitSettingsClose = () => { gitSettingsBox.style.display = 'none'; gitUserEditing = null }
+    // 同步渲染整个用户信息区块（标题 + 两行 + 编辑框）。所有操作（编辑/切换/
+    // 保存/删除）都走这里——纯同步、无 fetch 间隙，避免「清空 → 等网络 → 重建」
+    // 造成的闪烁与编辑态丢失。
+    const gitUserRender = () => {
+      gitSettingsBody.replaceChildren()
+      const title = document.createElement('div')
+      title.className = 'dsc-git-settings-section-title'
+      title.textContent = t('gitUserInfo')
+      gitSettingsBody.appendChild(title)
+      if (gitUser === null) return
+      for (const field of ['name', 'email']) {
+        gitSettingsBody.appendChild(gitUserRow(field))
+        if (gitUserEditing === field) gitSettingsBody.appendChild(gitUserEditBox(field))
+      }
+    }
+    // 仅打开弹窗时拉取一次配置；之后所有操作直接用 POST 响应里的最新 user 状态渲染
+    const gitUserLoad = async () => {
+      try {
+        // sessionQuery() 返回 `&session=…`（带 & 前缀，供拼在已有 query 后）；
+        // 本路由无其它 query，需先补 `?` 分隔符（否则整段被当路径 → 404）
+        const r = await fetch(`${BASE}/git/config?${sessionQuery().replace(/^&/, '')}`)
+        const data = await r.json().catch(() => null)
+        if (data === null || data.ok !== true) throw { code: 'internal', message: t('gitUserConfigFailed') }
+        if (data.isRepo === false) {
+          gitUser = null
+          gitSettingsBody.replaceChildren()
+          const note = document.createElement('div')
+          note.className = 'dsc-git-user-value unset'
+          note.textContent = t('gitNotRepo')
+          gitSettingsBody.appendChild(note)
+          return
+        }
+        gitUser = data.user
+        gitUserRender()
+      } catch (err) {
+        gitSettingsBody.replaceChildren()
+        const note = document.createElement('div')
+        note.className = 'dsc-git-user-err'
+        note.textContent = gitErrText(err)
+        gitSettingsBody.appendChild(note)
+      }
+    }
+    const gitUserSwitch = async (field, to) => {
+      try {
+        const data = await gitPost('/git/config', { action: 'switch-layer', field, to })
+        gitUser = data.user
+        // 徽标 Local↔Global 变化本身就是反馈；同步渲染不再弹 toast（避免"闪一下"）
+        gitUserRender()
+      } catch (err) {
+        flash(gitErrText(err), 'error')
+      }
+    }
+    // 单行渲染：label + 值（或未设置）+ 层级徽标（可点击迁移）+ 编辑/删除（或添加）
+    const gitUserRow = (field) => {
+      const row = document.createElement('div')
+      row.className = 'dsc-git-user-row'
+      const label = document.createElement('span')
+      label.className = 'dsc-git-user-label'
+      label.textContent = gitUserFieldLabel(field)
+      row.appendChild(label)
+      const v = gitUser[field]
+      const layer = gitUserLayerOf(v)
+      const value = document.createElement('span')
+      value.className = 'dsc-git-user-value'
+      if (layer === null) {
+        // 空态：灰字 + 「＋ 添加」（点开行内编辑，写入层级二选一）
+        value.textContent = t('gitUserNotSet')
+        value.classList.add('unset')
+        row.appendChild(value)
+        const addBtn = document.createElement('button')
+        addBtn.type = 'button'
+        addBtn.setAttribute('data-dsc-btn', '')
+        addBtn.textContent = `＋ ${t('gitUserAdd')}`
+        addBtn.addEventListener('click', () => {
+          gitUserEditing = gitUserEditing === field ? null : field
+          gitUserRender()
+        })
+        row.appendChild(addBtn)
+        return row
+      }
+      value.textContent = gitUserValueOf(v)
+      value.title = gitUserValueOf(v)
+      row.appendChild(value)
+      // 层级徽标 = 切换器：Local→Global 移动 / Global→Local 复制；目标层有不同值先确认
+      const badge = document.createElement('span')
+      badge.className = `dsc-git-user-layer ${layer}`
+      badge.textContent = layer === 'local' ? t('gitUserLocal') : t('gitUserGlobal')
+      badge.title = layer === 'local' ? t('gitUserSwitchToGlobal') : t('gitUserSwitchToLocal')
+      badge.addEventListener('click', () => {
+        const to = layer === 'local' ? 'global' : 'local'
+        const target = to === 'local' ? v.local : v.global
+        if (target !== null && target !== gitUserValueOf(v)) {
+          gitConfirmOpen({
+            title: t('gitUserSwitchTitle'),
+            text: t('gitUserSwitchConfirm'),
+            okText: t('gitUserSwitchAnyway'),
+            danger: true,
+            onOk: () => gitUserSwitch(field, to),
+          })
+          return
+        }
+        gitUserSwitch(field, to)
+      })
+      row.appendChild(badge)
+      const editBtn = document.createElement('button')
+      editBtn.type = 'button'
+      editBtn.setAttribute('data-dsc-btn', '')
+      editBtn.textContent = t('gitUserEdit')
+      editBtn.addEventListener('click', () => {
+        gitUserEditing = gitUserEditing === field ? null : field
+        gitUserRender()
+      })
+      row.appendChild(editBtn)
+      const delBtn = document.createElement('button')
+      delBtn.type = 'button'
+      delBtn.setAttribute('data-dsc-btn', '')
+      delBtn.textContent = t('gitUserDelete')
+      delBtn.addEventListener('click', () => {
+        gitConfirmOpen({
+          title: gitUserFieldLabel(field),
+          text: t('gitUserDeleteConfirm'),
+          okText: t('gitUserDelete'),
+          danger: true,
+          onOk: async () => {
+            try {
+              const data = await gitPost('/git/config', { action: 'delete', location: layer, field })
+              gitUser = data.user
+              gitUserEditing = null // 删除后字段值可能变化，收起编辑态
+              gitUserRender()
+              flash(t('gitUserDeleteOk'))
+            } catch (err) {
+              flash(gitErrText(err), 'error')
+            }
+          },
+        })
+      })
+      row.appendChild(delBtn)
+      return row
+    }
+    // 行内编辑块：编辑态（写入层 = 当前徽标层，提示文字）/ 添加态（本仓库|全局 二选一）
+    const gitUserEditBox = (field) => {
+      const box = document.createElement('div')
+      box.className = 'dsc-git-user-edit'
+      const v = gitUser[field]
+      const layer = gitUserLayerOf(v)
+      const isAdd = layer === null
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.placeholder = t('gitUserEditPlaceholder', { field: gitUserFieldLabel(field) })
+      input.value = isAdd ? '' : gitUserValueOf(v)
+      box.appendChild(input)
+      let targetLayer = isAdd ? 'local' : layer
+      if (isAdd) {
+        const layerGroup = document.createElement('div')
+        layerGroup.className = 'dsc-git-user-layers'
+        for (const [key, label] of [['local', t('gitUserLocalRepo')], ['global', t('gitUserGlobalRepo')]]) {
+          const btn = document.createElement('button')
+          btn.type = 'button'
+          btn.className = 'dsc-git-toggle' + (targetLayer === key ? ' on' : '')
+          btn.textContent = label
+          btn.addEventListener('click', () => {
+            targetLayer = key
+            for (const b of layerGroup.querySelectorAll('button')) b.classList.toggle('on', b === btn)
+          })
+          layerGroup.appendChild(btn)
+        }
+        box.appendChild(layerGroup)
+      } else {
+        const hint = document.createElement('span')
+        hint.className = 'dsc-git-user-layer-hint'
+        hint.textContent = t('gitUserWriteTo', {
+          layer: layer === 'local' ? t('gitUserLocalRepo') : t('gitUserGlobalRepo'),
+        })
+        box.appendChild(hint)
+      }
+      const err = document.createElement('div')
+      err.className = 'dsc-git-user-err'
+      const actions = document.createElement('div')
+      actions.className = 'dsc-git-opt-actions'
+      const save = document.createElement('button')
+      save.type = 'button'
+      save.setAttribute('data-dsc-btn', '')
+      save.textContent = t('gitUserSave')
+      const cancel = document.createElement('button')
+      cancel.type = 'button'
+      cancel.setAttribute('data-dsc-btn', '')
+      cancel.textContent = t('gitCancel')
+      actions.appendChild(save)
+      actions.appendChild(cancel)
+      box.appendChild(err)
+      box.appendChild(actions)
+      const run = async () => {
+        const value = input.value.trim()
+        save.disabled = true
+        try {
+          const data = await gitPost('/git/config', {
+            action: 'set',
+            location: targetLayer,
+            name: field === 'name' ? value : null,
+            email: field === 'email' ? value : null,
+          })
+          gitUser = data.user
+          gitUserEditing = null // 保存成功收起编辑态
+          gitUserRender()
+          flash(t('gitUserSaveOk'))
+        } catch (e) {
+          err.textContent = gitErrText(e)
+          save.disabled = false
+        }
+      }
+      save.addEventListener('click', run)
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') run()
+        if (ev.key === 'Escape') { gitUserEditing = null; gitUserRender() }
+      })
+      cancel.addEventListener('click', () => { gitUserEditing = null; gitUserRender() })
+      input.focus()
+      return box
+    }
+
+    const gitSettingsOpen = () => {
+      gitSettingsBox.style.display = 'block'
+      const headRect = gitHead.getBoundingClientRect()
+      gitSettingsBox.style.left = `${Math.min(headRect.left, window.innerWidth - 340)}px`
+      gitSettingsBox.style.top = `${headRect.bottom + 6}px`
+      gitUserLoad()
+    }
+    gitSettingsBtn.addEventListener('click', () => {
+      if (gitSettingsBox.style.display !== 'none') gitSettingsClose()
+      else gitSettingsOpen()
+    })
+    gitSettingsCloseBtn.addEventListener('click', gitSettingsClose)
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && gitSettingsBox.style.display !== 'none'
+        && gitCtxMenu.style.display === 'none' && gitConfirmBox.style.display === 'none') {
+        gitSettingsClose()
+      }
+    })
+    document.addEventListener('click', (ev) => {
+      if (gitSettingsBox.style.display === 'none') return
+      if (gitSettingsBox.contains(ev.target) || gitSettingsBtn.contains(ev.target)) return
+      if (gitConfirmBox.style.display !== 'none' && gitConfirmBox.contains(ev.target)) return
+      gitSettingsClose()
+    })
 
     // ---------- 推送分支对话框（上游 Push Branch 对话框移植，本地简化版） ----------
     // remote 单选（默认 origin/首个，同上游 getPushRemote 简化）+ Set Upstream toggle
