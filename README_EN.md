@@ -39,7 +39,13 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 
 ### Install the plugin
 
-Add the plugin as a local directory to the web config profile:
+**Option 1: install from GitHub (release)**
+
+```sh
+dsh plugin --profile web add github:Wongzexu/dsh-git-status
+```
+
+**Option 2: install from a local directory (development / personal use)**
 
 ```sh
 dsh plugin --profile web add /path/to/dsh-git-status

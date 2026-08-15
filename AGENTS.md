@@ -1,6 +1,6 @@
 # AGENTS.md（Agent 协作约定 · 参考层）
 
-> 本文件只含与 agent 协作的**通用约定**，不含任何项目具体实现细节；
+> 本文件只含与 agent 协作的**通用约定**与**可复用平台经验**，不含任何项目具体实现细节；
 > 可直接复用于本仓库及以后的新项目。
 
 ## 改动纪律
@@ -26,3 +26,17 @@
 
 8. **任务可见**：后台任务保持进度可追踪（开始即记录 id），结束前汇总结果。
 9. **大块工作先拆解**：长任务先用任务清单/规划拆分，逐个攻克再合并。
+
+## 平台经验：Gitee Issue API
+
+1. **项目型 Issue 用扁平路径**：创建/更新走
+   `POST https://gitee.com/api/v5/repos/{owner}/issues`，仓库名用表单参数
+   `repo={repo}` 传入；标准路径 `/repos/{owner}/{repo}/issues` 只支持简单型
+   Issue，对项目型仓库返回 404 `"project or enterprise"`。
+2. 创建必需参数：`access_token`、`repo`、`title`、`body`、`issue_type`
+   （如 `任务`）；**关闭同样走扁平路径** `PATCH /repos/{owner}/issues/{ident}`
+   + `state=closed`；评论/读取用标准路径即可。
+3. 删除不支持（405），只能 PATCH 关闭；测试 issue 清理需到网页手动删。
+4. Issue 编号是字母数字串（如 `IK8X7H`），不是顺序数字。
+5. 认证：令牌走环境变量或 600 权限文件（本项目：
+   `~/.config/dsh-git-status/gitee-token`），不回显、不入对话/代码。

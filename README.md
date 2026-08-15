@@ -61,7 +61,13 @@
 
 ### 安装插件
 
-以本地目录方式把插件加入 web 配置档：
+**方式一：从 GitHub 安装（发布版）**
+
+```sh
+dsh plugin --profile web add github:Wongzexu/dsh-git-status
+```
+
+**方式二：本地目录安装（开发/自用）**
 
 ```sh
 dsh plugin --profile web add /path/to/dsh-git-status
