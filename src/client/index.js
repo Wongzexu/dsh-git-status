@@ -641,6 +641,8 @@ module.exports = {
 .dsc-git-user-edit .dsc-git-user-err { color: #ff6961; font-size: 11px; width: 100%; }
 .dsc-git-user-edit .dsc-git-user-layer-hint { opacity: .6; font-size: 10px; flex: none; }
 .dsc-git-user-layers { display: flex; gap: 4px; flex: none; }
+/* 编辑块内按钮与输入框同行：去掉全局 actions 的上边距（行内无需 8px 间隔） */
+.dsc-git-user-edit .dsc-git-opt-actions { margin-top: 0; }
 [data-dsc-git-create] { padding: 8px 10px; display: none; }
 [data-dsc-git-create] .dsc-git-create-head, [data-dsc-git-tag] .dsc-git-tag-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;
@@ -2470,8 +2472,23 @@ module.exports = {
       input.placeholder = t('gitUserEditPlaceholder', { field: gitUserFieldLabel(field) })
       input.value = isAdd ? '' : gitUserValueOf(v)
       box.appendChild(input)
+      // 保存/取消与输入框同一行（紧贴右侧）；层级提示/二选一和错误提示在下一行
+      const actions = document.createElement('div')
+      actions.className = 'dsc-git-opt-actions'
+      const save = document.createElement('button')
+      save.type = 'button'
+      save.setAttribute('data-dsc-btn', '')
+      save.textContent = t('gitUserSave')
+      const cancel = document.createElement('button')
+      cancel.type = 'button'
+      cancel.setAttribute('data-dsc-btn', '')
+      cancel.textContent = t('gitCancel')
+      actions.appendChild(save)
+      actions.appendChild(cancel)
+      box.appendChild(actions)
       let targetLayer = isAdd ? 'local' : layer
       if (isAdd) {
+        // 添加态没有层级徽标可参照，需要二选一（本仓库|全局）
         const layerGroup = document.createElement('div')
         layerGroup.className = 'dsc-git-user-layers'
         for (const [key, label] of [['local', t('gitUserLocalRepo')], ['global', t('gitUserGlobalRepo')]]) {
@@ -2486,30 +2503,11 @@ module.exports = {
           layerGroup.appendChild(btn)
         }
         box.appendChild(layerGroup)
-      } else {
-        const hint = document.createElement('span')
-        hint.className = 'dsc-git-user-layer-hint'
-        hint.textContent = t('gitUserWriteTo', {
-          layer: layer === 'local' ? t('gitUserLocalRepo') : t('gitUserGlobalRepo'),
-        })
-        box.appendChild(hint)
       }
+      // 编辑态无需提示：写入层 = 该行徽标所示层（Local/Global 直接可见）
       const err = document.createElement('div')
       err.className = 'dsc-git-user-err'
-      const actions = document.createElement('div')
-      actions.className = 'dsc-git-opt-actions'
-      const save = document.createElement('button')
-      save.type = 'button'
-      save.setAttribute('data-dsc-btn', '')
-      save.textContent = t('gitUserSave')
-      const cancel = document.createElement('button')
-      cancel.type = 'button'
-      cancel.setAttribute('data-dsc-btn', '')
-      cancel.textContent = t('gitCancel')
-      actions.appendChild(save)
-      actions.appendChild(cancel)
       box.appendChild(err)
-      box.appendChild(actions)
       const run = async () => {
         const value = input.value.trim()
         save.disabled = true
@@ -2559,8 +2557,12 @@ module.exports = {
     })
     document.addEventListener('click', (ev) => {
       if (gitSettingsBox.style.display === 'none') return
-      if (gitSettingsBox.contains(ev.target) || gitSettingsBtn.contains(ev.target)) return
-      if (gitConfirmBox.style.display !== 'none' && gitConfirmBox.contains(ev.target)) return
+      // 用 composedPath（事件分发时确定的传播路径）而非 contains(ev.target)：
+      // 弹窗内操作（如点编辑）会同步重建 DOM，ev.target 已被移除时 contains 返回
+      // false，误判为外部点击而关闭弹窗。composedPath 不受后续 DOM 移除影响。
+      // 豁免范围：弹窗自身、⚙ 按钮、确认框（confirm 的按钮点击也是弹窗交互链）。
+      const path = ev.composedPath()
+      if (path.includes(gitSettingsBox) || path.includes(gitSettingsBtn) || path.includes(gitConfirmBox)) return
       gitSettingsClose()
     })
 
