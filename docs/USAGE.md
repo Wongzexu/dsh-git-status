@@ -6,14 +6,22 @@
 
 ### 1. 安装与启用
 
-1. 以本地目录方式把插件加入 web 配置档：
+**方式一：从 GitHub 安装（发布版）**
 
-   ```sh
-   dsh plugin --profile web add /path/to/dsh-git-status
-   ```
+```sh
+dsh plugin --profile web add github:Wongzexu/dsh-git-status
+```
 
-2. 重启 DSH web 服务，使插件加载生效；
-3. 打开 DSH web 页面 → 设置页「插件」面板，确认 `dsh-git-status` 已启用（可随时停用/启用）。
+**方式二：本地目录安装（开发/自用）**
+
+```sh
+dsh plugin --profile web add /path/to/dsh-git-status
+```
+
+然后：
+
+1. 重启 DSH web 服务，使插件加载生效；
+2. 打开 DSH web 页面 → 设置页「插件」面板，确认 `dsh-git-status` 已启用（可随时停用/启用）。
 
 ### 2. 打开 / 关闭浮窗
 
@@ -146,14 +154,22 @@ dsh plugin --profile web remove dsh-git-status
 
 ## 1. Install & enable
 
-1. Add the plugin as a local directory to the web config profile:
+**Option 1: install from GitHub (release)**
 
-   ```sh
-   dsh plugin --profile web add /path/to/dsh-git-status
-   ```
+```sh
+dsh plugin --profile web add github:Wongzexu/dsh-git-status
+```
 
-2. Restart the DSH web service for the plugin to load;
-3. Open the DSH web page → Settings → "Plugins" panel, confirm `dsh-git-status` is enabled (can be disabled/enabled anytime).
+**Option 2: install from a local directory (development / personal use)**
+
+```sh
+dsh plugin --profile web add /path/to/dsh-git-status
+```
+
+Then:
+
+1. Restart the DSH web service for the plugin to load;
+2. Open the DSH web page → Settings → "Plugins" panel, confirm `dsh-git-status` is enabled (can be disabled/enabled anytime).
 
 ## 2. Opening / closing the drawer
 

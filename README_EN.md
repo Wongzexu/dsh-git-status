@@ -2,6 +2,8 @@
 
 # dsh-git-status
 
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+
 **English** · [**简体中文**](README.md)
 
 A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations.
@@ -39,7 +41,13 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 
 ### Install the plugin
 
-Add the plugin as a local directory to the web config profile:
+**Option 1: install from GitHub (release)**
+
+```sh
+dsh plugin --profile web add github:Wongzexu/dsh-git-status
+```
+
+**Option 2: install from a local directory (development / personal use)**
 
 ```sh
 dsh plugin --profile web add /path/to/dsh-git-status
