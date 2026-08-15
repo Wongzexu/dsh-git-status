@@ -29,21 +29,21 @@ test('gitPushAction: 非法分支名 / 非法 remote / 非法 mode / 空参数�
   const repo = await makeRepo(t)
   await repo.commit('c1')
   await repo.git(['remote', 'add', 'origin', '/tmp/nonexistent-remote'])
-  const badBranch = await gitPushAction(repo.root, { branch: 'bad name', remote: 'origin' })
+  const badBranch = await gitPushAction(repo.root, { branch: 'bad name', remotes: ['origin'] })
   assert.equal(badBranch.error.code, 'invalid-branch-name')
-  const badRemote = await gitPushAction(repo.root, { branch: 'main', remote: 'a/b' })
+  const badRemote = await gitPushAction(repo.root, { branch: 'main', remotes: ['my remote'] })
   assert.equal(badRemote.error.code, 'invalid-remote-name')
-  const badMode = await gitPushAction(repo.root, { branch: 'main', remote: 'origin', mode: 'explode' })
+  const badMode = await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'], mode: 'explode' })
   assert.equal(badMode.error.code, 'invalid-push-mode')
 })
 
 test('gitPushAction: remote 不存在 / 分支不存在拒绝', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
-  const noRemote = await gitPushAction(repo.root, { branch: 'main', remote: 'nope' })
+  const noRemote = await gitPushAction(repo.root, { branch: 'main', remotes: ['nope'] })
   assert.equal(noRemote.error.code, 'remote-not-found')
   await repo.git(['remote', 'add', 'origin', '/tmp/nonexistent-remote'])
-  const noBranch = await gitPushAction(repo.root, { branch: 'ghost', remote: 'origin' })
+  const noBranch = await gitPushAction(repo.root, { branch: 'ghost', remotes: ['origin'] })
   assert.equal(noBranch.error.code, 'target-branch-not-found')
 })
 
@@ -77,7 +77,7 @@ test('gitPushAction: 普通推送成功，set-upstream 写入 tracking 配置', 
   const repo = await makeRepo(t)
   await repo.commit('c1')
   await repo.git(['remote', 'add', 'origin', bare])
-  const result = await gitPushAction(repo.root, { branch: 'main', remote: 'origin', setUpstream: true })
+  const result = await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'], setUpstream: true })
   assert.deepEqual(result, { ok: true })
   // 裸仓库已有 refs/heads/main
   assert.equal((await runGit(bare, ['rev-parse', 'refs/heads/main'])).trim(), (await repo.git(['rev-parse', 'HEAD'])).trim())
@@ -90,16 +90,16 @@ test('gitPushAction: non-fast-forward 拒绝 → push-rejected；force 模式成
   const repoA = await makeRepo(t)
   await repoA.commit('a1')
   await repoA.git(['remote', 'add', 'origin', bare])
-  await gitPushAction(repoA.root, { branch: 'main', remote: 'origin' })
+  await gitPushAction(repoA.root, { branch: 'main', remotes: ['origin'] })
   // 另一仓库推不同历史 → non-fast-forward
   const repoB = await makeRepo(t)
   await repoB.commit('b1')
   await repoB.git(['remote', 'add', 'origin', bare])
-  const rejected = await gitPushAction(repoB.root, { branch: 'main', remote: 'origin' })
+  const rejected = await gitPushAction(repoB.root, { branch: 'main', remotes: ['origin'] })
   assert.equal(rejected.ok, false)
   assert.equal(rejected.error.code, 'push-rejected')
   // force 模式覆盖
-  const forced = await gitPushAction(repoB.root, { branch: 'main', remote: 'origin', mode: 'force' })
+  const forced = await gitPushAction(repoB.root, { branch: 'main', remotes: ['origin'], mode: 'force' })
   assert.deepEqual(forced, { ok: true })
   assert.equal((await runGit(bare, ['rev-parse', 'refs/heads/main'])).trim(), (await repoB.git(['rev-parse', 'HEAD'])).trim())
 })
@@ -109,8 +109,45 @@ test('gitPushAction: force-with-lease 模式参数生效', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
   await repo.git(['remote', 'add', 'origin', bare])
-  const result = await gitPushAction(repo.root, { branch: 'main', remote: 'origin', mode: 'force-with-lease' })
+  const result = await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'], mode: 'force-with-lease' })
   assert.deepEqual(result, { ok: true })
+})
+
+test('gitPushAction: 多远程顺序推，全部成功', async (t) => {
+  const bare1 = await makeBareRepo(t)
+  const bare2 = await makeBareRepo(t)
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', bare1])
+  await repo.git(['remote', 'add', 'upstream', bare2])
+  const result = await gitPushAction(repo.root, { branch: 'main', remotes: ['origin', 'upstream'], setUpstream: true })
+  assert.deepEqual(result, { ok: true })
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  assert.equal((await runGit(bare1, ['rev-parse', 'refs/heads/main'])).trim(), head)
+  assert.equal((await runGit(bare2, ['rev-parse', 'refs/heads/main'])).trim(), head)
+})
+
+test('gitPushAction: 多远程顺序推，某远程失败即停（前面已成功的保留）', async (t) => {
+  const bare1 = await makeBareRepo(t)
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', bare1])
+  await repo.git(['remote', 'add', 'dead', join(tmpdir(), 'dsh-git-status-does-not-exist')])
+  const result = await gitPushAction(repo.root, { branch: 'main', remotes: ['origin', 'dead'] })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'remote-unreachable')
+  // 第一个远程已成功
+  assert.equal((await runGit(bare1, ['rev-parse', 'refs/heads/main'])).trim(), (await repo.git(['rev-parse', 'HEAD'])).trim())
+})
+
+test('gitPushAction: remotes 空数组 / 含非法项拒绝', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', '/tmp/nonexistent-remote'])
+  const empty = await gitPushAction(repo.root, { branch: 'main', remotes: [] })
+  assert.equal(empty.error.code, 'invalid-remote-name')
+  const mixed = await gitPushAction(repo.root, { branch: 'main', remotes: ['origin', 'my remote'] })
+  assert.equal(mixed.error.code, 'invalid-remote-name')
 })
 
 // ---------- 写路由（伪造 cordis ctx）：CSRF / 方法 / 全链路 ----------
@@ -179,7 +216,7 @@ test('push 路由: 合法请求全链路成功', async (t) => {
   const route = fakeCtx(repo.root).get(GIT_PUSH_PATH)
   const res = fakeRes()
   await route.handler(
-    fakeReq({ method: 'POST', contentType: 'application/json', body: '{"branch":"main","remote":"origin","setUpstream":true,"mode":"normal"}' }),
+    fakeReq({ method: 'POST', contentType: 'application/json', body: '{"branch":"main","remotes":["origin"],"setUpstream":true,"mode":"normal"}' }),
     res,
   )
   assert.equal(res.status, 200)
@@ -193,7 +230,7 @@ test('push 路由: 非 git 仓库 → 稳定错误', async (t) => {
   const route = fakeCtx(root).get(GIT_PUSH_PATH)
   const res = fakeRes()
   await route.handler(
-    fakeReq({ method: 'POST', contentType: 'application/json', body: '{"branch":"main","remote":"origin"}' }),
+    fakeReq({ method: 'POST', contentType: 'application/json', body: '{"branch":"main","remotes":["origin"]}' }),
     res,
   )
   assert.equal(JSON.parse(res.payload).error.code, 'internal')

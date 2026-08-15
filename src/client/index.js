@@ -431,6 +431,13 @@ module.exports = {
 [data-dsc-git-ctx] button:hover { background: rgba(255,255,255,.07); }
 [data-dsc-git-ctx] button:disabled { opacity: .45; cursor: default; }
 [data-dsc-git-ctx] button:disabled:hover { background: none; }
+/* 多选菜单项（如 push remote 选择）：复选框 + 文字左对齐 */
+[data-dsc-git-ctx] button.dsc-ctx-multi {
+  display: flex; align-items: center; gap: 6px;
+}
+[data-dsc-git-ctx] button.dsc-ctx-multi input[type='checkbox'] {
+  margin: 0; accent-color: var(--dsw-alias-text-accent, #4c9aff);
+}
 /* 面板内按钮（头部/合并条/创建对话框）：跟随面板字号，覆盖 UA 表单控件默认 13.3333px */
 [data-dsc-git] [data-dsc-btn], [data-dsc-git-create] [data-dsc-btn], [data-dsc-git-confirm] [data-dsc-btn] { font-size: inherit; }
 /* 切换确认框（未提交改动提醒）：标题 + 正文 + 右对齐按钮行 */
@@ -1561,17 +1568,42 @@ module.exports = {
     gitCtxMenu.setAttribute('data-dsc-git-ctx', '')
     body.appendChild(gitCtxMenu)
     const gitCtxClose = () => { gitCtxMenu.style.display = 'none'; gitCtxMenu.replaceChildren() }
-    const gitCtxOpen = (x, y, items) => {
+    // opts.multi：多选模式（如 push remote 选择）——复选框样式，点击项切换选中
+    // 状态（onToggle 须同步更新 item.checked）并保持菜单打开，点外部/Esc 关闭；
+    // 普通模式点击项后关闭并执行 onClick。
+    const gitCtxOpen = (x, y, items, opts = {}) => {
       gitCtxMenu.replaceChildren()
       for (const item of items) {
         const btn = document.createElement('button')
         btn.type = 'button'
-        btn.textContent = item.checked === true ? `✓ ${item.label}` : item.label
         btn.disabled = item.disabled === true
+        if (opts.multi === true && typeof item.onToggle === 'function') {
+          // 多选：原生复选框 + 文字（点击落在按钮上，checkbox 只作视觉）
+          const cb = document.createElement('input')
+          cb.type = 'checkbox'
+          cb.checked = item.checked === true
+          cb.style.pointerEvents = 'none'
+          cb.style.flex = 'none'
+          btn.appendChild(cb)
+          btn.appendChild(document.createTextNode(item.label))
+          btn.classList.add('dsc-ctx-multi')
+        } else {
+          btn.textContent = item.checked === true ? `✓ ${item.label}` : item.label
+        }
         // stopPropagation：菜单项可能同步弹出确认框（删除分支），若不阻断冒泡，
         // document 级「点击外部关闭」监听会把刚弹出的确认框当作外部点击立即关掉
         // （异步弹出如切换确认不受影响——点击事件早已结束）。
-        if (item.disabled !== true) btn.addEventListener('click', (ev) => { ev.stopPropagation(); gitCtxClose(); item.onClick() })
+        if (item.disabled !== true) btn.addEventListener('click', (ev) => {
+          ev.stopPropagation()
+          if (opts.multi === true && typeof item.onToggle === 'function') {
+            item.onToggle() // 约定：onToggle 同步更新 item.checked
+            const cb = btn.querySelector('input[type="checkbox"]')
+            if (cb !== null) cb.checked = item.checked === true
+          } else {
+            gitCtxClose()
+            item.onClick()
+          }
+        })
         gitCtxMenu.appendChild(btn)
       }
       gitCtxMenu.style.display = 'block'
@@ -2085,16 +2117,20 @@ module.exports = {
     gitPushBox.appendChild(gitPushModeRow)
     gitPushBox.appendChild(gitPushActions)
     let gitPushBranch = ''
-    let gitPushRemote = ''
+    let gitPushRemotes = []
     const gitPushClose = () => { gitPushBox.style.display = 'none' }
     const gitPushOpen = (branchName) => {
       gitPushBranch = branchName
-      gitPushRemote = gitRemotes.includes('origin') ? 'origin' : gitRemotes[0] ?? ''
-      if (gitPushRemote === '') return // 无远程不应触发（菜单项已按 remotes>0 显示）
+      // 默认选 origin（存在时），否则第一个远程（同上游 getPushRemote 简化）；
+      // 用户上次的选择不保留——每次打开回到默认（多选列表可随时调整）
+      gitPushRemotes = gitRemotes.includes('origin') ? ['origin'] : [gitRemotes[0] ?? ''].filter((r) => r !== '')
+      if (gitPushRemotes.length === 0) return // 无远程不应触发（菜单项已按 remotes>0 显示）
       gitPushTitle.textContent = t('gitPushTitle', { branch: branchName })
-      gitPushRemoteBtn.textContent = gitPushRemote
+      gitPushRemoteBtn.textContent = gitPushRemotes.join(', ')
       gitPushUpstreamToggle.classList.add('on')
       for (const b of gitPushModeBtns) b.classList.toggle('on', b.dataset.mode === 'normal')
+      // 上次推送成功后按钮被禁用（防重复提交）；再次打开必须重置，否则按钮永久失效
+      gitPushSubmit.disabled = false
       gitPushBox.style.display = 'block'
       const headRect = gitHead.getBoundingClientRect()
       gitPushBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`
@@ -2103,11 +2139,23 @@ module.exports = {
     gitPushRemoteBtn.addEventListener('click', (ev) => {
       ev.stopPropagation()
       const rect = gitPushRemoteBtn.getBoundingClientRect()
-      gitCtxOpen(rect.left, rect.bottom + 4, gitRemotes.map((r) => ({
-        label: r,
-        checked: r === gitPushRemote,
-        onClick: () => { gitPushRemote = r; gitPushRemoteBtn.textContent = r },
-      })))
+      // 多选模式（复选框）：点击切换勾选、菜单保持打开；点外部/Esc 关闭
+      // （对齐上游 Push to Remote(s) 多选 + 顺序推）。item 自引用：
+      // onToggle 同步更新 item.checked，供 gitCtxOpen 刷新复选框状态。
+      gitCtxOpen(rect.left, rect.bottom + 4, gitRemotes.map((r) => {
+        const item = {
+          label: r,
+          checked: gitPushRemotes.includes(r),
+          onToggle: () => {
+            gitPushRemotes = gitPushRemotes.includes(r)
+              ? gitPushRemotes.filter((x) => x !== r)
+              : [...gitPushRemotes, r]
+            item.checked = gitPushRemotes.includes(r)
+            gitPushRemoteBtn.textContent = gitPushRemotes.join(', ')
+          },
+        }
+        return item
+      }), { multi: true })
     })
     gitPushUpstreamToggle.addEventListener('click', () => {
       gitPushUpstreamToggle.classList.toggle('on')
@@ -2118,12 +2166,12 @@ module.exports = {
       try {
         await gitPost('/git/push', {
           branch: gitPushBranch,
-          remote: gitPushRemote,
+          remotes: gitPushRemotes,
           setUpstream: gitPushUpstreamToggle.classList.contains('on'),
           mode,
         })
         gitPushClose()
-        flash(t('gitPushOk', { branch: gitPushBranch, remote: gitPushRemote }))
+        flash(t('gitPushOk', { branch: gitPushBranch, remote: gitPushRemotes.join(', ') }))
         gitFetch(true, true)
       } catch (err) {
         // 失败保留对话框：用户可改 mode（如 force-with-lease）后重试
@@ -2184,6 +2232,8 @@ module.exports = {
     const gitStashBoxOpen = () => {
       gitStashMsgInput.value = ''
       gitStashUntrackedToggle.classList.remove('on')
+      // 上次成功后按钮被禁用；再次打开必须重置（同 push 对话框的 disabled 残留修复）
+      gitStashSubmit.disabled = false
       gitStashBox.style.display = 'block'
       const headRect = gitHead.getBoundingClientRect()
       gitStashBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`

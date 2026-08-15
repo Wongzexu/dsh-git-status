@@ -49,7 +49,7 @@ test('validateTagName: 合法/非法', () => {
 test('gitRemoteAction.delete-branch: 删除远程分支 + 本地跟踪 ref', async (t) => {
   const { repo, bare } = await makeRepoWithRemote(t)
   // 推送 main + 建远程分支 feat（模拟）
-  await gitPushAction(repo.root, { branch: 'main', remote: 'origin' })
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
   const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
   await repo.git(['update-ref', 'refs/remotes/origin/feat', head])
   await runGit(bare, ['update-ref', 'refs/heads/feat', head])
@@ -64,7 +64,7 @@ test('gitRemoteAction.delete-branch: 删除远程分支 + 本地跟踪 ref', asy
 
 test('gitRemoteAction.delete-branch: 远程分支已不存在 → 降级清理本地跟踪 ref', async (t) => {
   const { repo, bare } = await makeRepoWithRemote(t)
-  await gitPushAction(repo.root, { branch: 'main', remote: 'origin' })
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
   const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
   // 本地有跟踪 ref，但远程分支不存在（远程已删）
   await repo.git(['update-ref', 'refs/remotes/origin/gone', head])
@@ -75,10 +75,10 @@ test('gitRemoteAction.delete-branch: 远程分支已不存在 → 降级清理�
 
 test('gitRemoteAction.delete-branch: 校验（非法分支名/非法远程/远程不存在）', async (t) => {
   const { repo, bare } = await makeRepoWithRemote(t)
-  await gitPushAction(repo.root, { branch: 'main', remote: 'origin' })
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
   const badBranch = await gitRemoteAction(repo.root, 'delete-branch', { branch: 'bad name', remote: 'origin' })
   assert.equal(badBranch.error.code, 'invalid-branch-name')
-  const badRemote = await gitRemoteAction(repo.root, 'delete-branch', { branch: 'main', remote: 'a/b' })
+  const badRemote = await gitRemoteAction(repo.root, 'delete-branch', { branch: 'main', remote: 'my remote' })
   assert.equal(badRemote.error.code, 'invalid-remote-name')
   const noRemote = await gitRemoteAction(repo.root, 'delete-branch', { branch: 'main', remote: 'nope' })
   assert.equal(noRemote.error.code, 'remote-not-found')
