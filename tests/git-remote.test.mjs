@@ -18,7 +18,7 @@ import { makeRepo, runGit, runGitSafe } from './fixtures/repo.mjs'
 
 /** 建一个裸仓库（t.after 自动清理）。 */
 async function makeBareRepo(t) {
-  const root = await mkdtemp(join(tmpdir(), 'dsh-git-status-bare-'))
+  const root = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-bare-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   await runGit(root, ['init', '--bare'])
   return root
@@ -321,7 +321,7 @@ test('remote 路由: 合法 add-tag 全链路成功', async (t) => {
 })
 
 test('remote 路由: 非 git 仓库 → 稳定错误', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dsh-git-status-nogit-'))
+  const root = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-nogit-'))
   t.after(() => rm(root, { recursive: true, force: true }))
   const route = fakeCtx(root).get(GIT_REMOTE_PATH)
   const res = fakeRes()

@@ -1,14 +1,14 @@
 <div align="center">
 
-# dsh-git-status
+# @wongzexu/dsh-git-status
 
-[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com) [![dshfind](https://dshfind.com/api/badge/Wongzexu/dsh-git-status?lang=zh)](https://dshfind.com/zh/plugins/Wongzexu/dsh-git-status)
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com) [![npm](https://img.shields.io/npm/v/@wongzexu/dsh-git-status?color=cb3837&label=npm)](https://www.npmjs.com/package/@wongzexu/dsh-git-status) [![dshfind](https://dshfind.com/api/badge/Wongzexu/dsh-git-status?lang=zh)](https://dshfind.com/zh/plugins/Wongzexu/dsh-git-status)
 
 [**English**](README_EN.md) · **简体中文**
 
 独立 Git 状态（Git Graph）插件：DSH Web 右缘 **Git 状态浮窗** —— commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。
 
-🔖 **v0.4.0** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT
+🔖 **v0.4.0** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -18,9 +18,10 @@
   首次使用引导提示气泡（仅一次，localStorage 记录）
 - **commit DAG 泳道图**：第一父链成线、列分配贪心最左、泳道复用、合并提交连线；
   网格制 SVG 渲染（shadow + 彩色双 path、折角过渡、右缘渐变淡出、HEAD 加粗圆点）
-- **行内 refs 徽标**：HEAD（红）/ 分支（金）/ 远程（蓝）/ 标签（绿）；当前 checkout 分支 pill 亮金高亮
+- **行内 refs 徽标**：H（红，游离 HEAD）/ 分支（金）/ 远程（蓝）/ 标签（绿）；当前 checkout 分支 pill 亮金高亮
   （背景加浓 + 金色内描边 + 加粗，悬停提示「当前分支」）；
-  同名本地/远程分支合并为一个 pill：`⎇ main [gitee]`（多远程依次内嵌）；
+  同名本地/远程分支合并为一个 pill：`⎇ main [gitee]`；同一分支有 ≥2 个远程时
+  折叠为计数子标签 `⎇ main [2]`（悬停 pill 任意处即显示完整远程引用列表，右键先选远程再操作）；
   远程 HEAD 符号引用（`gitee/HEAD`）默认过滤
 - **未提交改动虚拟行**：工作区有改动时图顶部插入虚拟行（空心圆 + 灰色虚线连 HEAD），
   分类显示未暂存/已暂存处数；点击展开按「更改 / 暂存的更改」分组的详情
@@ -32,6 +33,7 @@
 - **分支操作**：
   - 右键本地分支徽标：切换到 x / 合并 x 到当前分支 / 重命名 x / 删除 x / 强制删除 x（未合并二次确认）
   - 右键远程分支徽标：「创建本地分支 x 并检出」/「删除远程分支 x」（远程已删时自动降级清理本地跟踪引用）；
+    折叠计数徽标右键先选远程、再出该远程的操作菜单；
     右键 tag 徽标：「在 x 创建分支并检出」/「推送 tag 到 <远程>」（每远程一项）/「删除 tag」
     （可选同步删除远程）；右键 commit 行「创建 tag…」（轻量/附注 + 多远程推送）/
     「在 x 新建分支并检出」（以该提交为起点）
@@ -64,13 +66,19 @@
 
 ### 安装插件
 
-**方式一：从 GitHub 安装（发布版）**
+**方式一：npm 安装（推荐，发布版）**
+
+```sh
+dsh plugin --profile web add @wongzexu/dsh-git-status
+```
+
+**方式二：从 GitHub 安装（源码版）**
 
 ```sh
 dsh plugin --profile web add github:Wongzexu/dsh-git-status
 ```
 
-**方式二：本地目录安装（开发/自用）**
+**方式三：本地目录安装（开发/自用）**
 
 ```sh
 dsh plugin --profile web add /path/to/dsh-git-status
@@ -78,10 +86,12 @@ dsh plugin --profile web add /path/to/dsh-git-status
 
 把 `/path/to/dsh-git-status` 换成插件目录的实际路径（例如本仓库根目录）。
 
+> ⚠️ 注意：npm 上另有同名（无作用域）包 `dsh-git-status`（其他作者的 React 实现，与本插件无关）；安装请认准 **`@wongzexu/dsh-git-status`**。
+
 ### 启用
 
 1. 重启 DSH web 服务，使插件加载生效；
-2. 打开 DSH web 页面 → 设置页「插件」面板，确认 `dsh-git-status` 已启用（可随时停用/启用）。
+2. 打开 DSH web 页面 → 设置页「插件」面板，确认 `@wongzexu/dsh-git-status` 已启用（可随时停用/启用）。
 
 ### 使用
 
@@ -102,7 +112,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 ### 卸载
 
 ```sh
-dsh plugin --profile web remove dsh-git-status
+dsh plugin --profile web remove @wongzexu/dsh-git-status
 ```
 
 ### 常见问题
@@ -132,7 +142,7 @@ dsh-git-status/
     └── git-events.test.mjs   # SSE 订阅：初始推送/变化检测/心跳/断连清理
 ```
 
-- **数据通道**：Node half 注册 `/plugins/dsh-git-status/*` 路由（webServer），
+- **数据通道**：Node half 注册 `/plugins/dsh-gitstatus/*` 路由（webServer），
   客户端 SSE 订阅 `/git/events` 即时刷新 + 10s 轮询兜底
 - **git 执行**：spawn 系统 `git`（`-C 工作区 --no-pager -c color.ui=false`、`GIT_OPTIONAL_LOCKS=0`、
   `LC_ALL=C` 强制英文输出、`GIT_EDITOR=true` 禁编辑器、15s 超时强杀；fetch/push 放宽到 120s）
@@ -146,7 +156,7 @@ dsh-git-status/
 
 ```sh
 node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js）
-npm test                       # node:test 套件（135 用例，真实 git fixture，零依赖）
+npm test                       # node:test 套件（150 用例，真实 git fixture，零依赖）
 ```
 
 改 Node half 直接改 `lib/index.mjs`（无构建步骤），改完跑 `npm test` 回归。
@@ -164,10 +174,19 @@ stash 全链路（push/apply/pop/drop/branch/两种冲突形态 / CSRF）、远�
 重新打包 client 后**刷新浏览器页面**即可看到效果（无需重启 web 服务）；
 改 Node half 后需**重启 web 服务**生效。
 
+### 发布新版本
+
+```sh
+npm version patch          # 或 minor / major，同步 package.json 版本号
+npm publish --access=public --registry=https://registry.npmjs.org
+```
+
+> 注意：发布需要 npm 账号的两步验证（安全密钥/浏览器授权）；若全局 registry 配置了镜像（如 npmmirror），发布必须显式带 `--registry=https://registry.npmjs.org`。
+
 ## 路线
 
 - git 状态变化推送降级优化：fs.watch 检测（当前为 2s 轮询对比状态键）
-- 发布形态：GitHub Releases（tag/Release）
+- 发布形态：npm 已上线（`@wongzexu/dsh-git-status`）；GitHub Releases（tag/Release）待做
 
 ## 许可
 

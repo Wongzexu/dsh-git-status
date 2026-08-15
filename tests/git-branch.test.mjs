@@ -140,7 +140,7 @@ test('gitGuardBlock: 目标分支在其它 worktree 检出 → branch-in-other-w
   const repo = await makeRepo(t)
   await repo.commit('c1')
   await repo.branch('other')
-  const wt = await mkdtemp(join(tmpdir(), 'dsh-git-status-wt-'))
+  const wt = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-wt-'))
   t.after(() => rm(wt, { recursive: true, force: true }))
   await repo.git(['worktree', 'add', wt, 'other'])
   const blocked = await gitGuardBlock(repo.root, 'other')
@@ -539,7 +539,7 @@ function fakeReq({ method = 'GET', contentType, body = '' } = {}) {
   return {
     method,
     headers,
-    url: '/plugins/dsh-git-status/git/branch',
+    url: '/plugins/dsh-gitstatus/git/branch',
     [Symbol.asyncIterator]: async function* () {
       yield body
     },
@@ -560,7 +560,7 @@ function fakeRes() {
 test('写路由: GET → 405', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
-  const route = fakeCtx(repo.root).get('/plugins/dsh-git-status/git/branch')
+  const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')
   const res = fakeRes()
   await route.handler(fakeReq({ method: 'GET' }), res)
   assert.equal(res.status, 405)
@@ -570,7 +570,7 @@ test('写路由: GET → 405', async (t) => {
 test('写路由: 非 application/json content-type → 415（CSRF 防护）', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
-  const route = fakeCtx(repo.root).get('/plugins/dsh-git-status/git/branch')
+  const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')
   const res = fakeRes()
   await route.handler(fakeReq({ method: 'POST', contentType: 'text/plain', body: '{}' }), res)
   assert.equal(res.status, 415)
@@ -580,7 +580,7 @@ test('写路由: 非 application/json content-type → 415（CSRF 防护）', as
 test('写路由: 畸形 JSON → 400', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
-  const route = fakeCtx(repo.root).get('/plugins/dsh-git-status/git/branch')
+  const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')
   const res = fakeRes()
   await route.handler(fakeReq({ method: 'POST', contentType: 'application/json', body: 'not json' }), res)
   assert.equal(res.status, 400)
@@ -589,7 +589,7 @@ test('写路由: 畸形 JSON → 400', async (t) => {
 test('写路由: 未知 action → 400', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
-  const route = fakeCtx(repo.root).get('/plugins/dsh-git-status/git/branch')
+  const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')
   const res = fakeRes()
   await route.handler(fakeReq({ method: 'POST', contentType: 'application/json', body: '{"action":"explode"}' }), res)
   assert.equal(res.status, 400)
@@ -599,7 +599,7 @@ test('写路由: 未知 action → 400', async (t) => {
 test('写路由: 合法 create 全链路成功（workspaceRoot 回退注册表）', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
-  const route = fakeCtx(repo.root).get('/plugins/dsh-git-status/git/branch')
+  const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')
   const res = fakeRes()
   await route.handler(
     fakeReq({ method: 'POST', contentType: 'application/json', body: '{"action":"create","name":"route-branch"}' }),
@@ -617,7 +617,7 @@ test('写路由: merge + noff 全链路成功（payload.noff 透传）', async (
   await repo.checkout('other')
   await repo.commit('other work')
   await repo.checkout('main')
-  const route = fakeCtx(repo.root).get('/plugins/dsh-git-status/git/branch')
+  const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')
   const res = fakeRes()
   await route.handler(
     fakeReq({ method: 'POST', contentType: 'application/json', body: '{"action":"merge","branch":"other","noff":true}' }),
@@ -629,9 +629,9 @@ test('写路由: merge + noff 全链路成功（payload.noff 透传）', async (
 })
 
 test('写路由: 非 git 仓库 → 稳定错误', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'dsh-git-status-nogit-'))
+  const root = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-nogit-'))
   t.after(() => rm(root, { recursive: true, force: true }))
-  const route = fakeCtx(root).get('/plugins/dsh-git-status/git/branch')
+  const route = fakeCtx(root).get('/plugins/dsh-gitstatus/git/branch')
   const res = fakeRes()
   await route.handler(
     fakeReq({ method: 'POST', contentType: 'application/json', body: '{"action":"create","name":"x"}' }),
@@ -646,7 +646,7 @@ test('写路由: checkout 脏仓库 → uncommitted-changes-present；force 全�
   await repo.commit('c1')
   await repo.branch('other')
   await repo.write('a.txt', 'dirty')
-  const route = fakeCtx(repo.root).get('/plugins/dsh-git-status/git/branch')
+  const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')
   const res1 = fakeRes()
   await route.handler(
     fakeReq({ method: 'POST', contentType: 'application/json', body: '{"action":"checkout","branch":"other"}' }),
