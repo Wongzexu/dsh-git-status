@@ -2,7 +2,7 @@
 
 # dsh-git-status
 
-[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com) [![dshfind](https://dshfind.com/api/badge/Wongzexu/dsh-git-status?lang=zh)](https://dshfind.com/zh/plugins/Wongzexu/dsh-git-status)
 
 [**English**](README_EN.md) · **简体中文**
 
