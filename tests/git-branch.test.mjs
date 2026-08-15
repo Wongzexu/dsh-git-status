@@ -319,6 +319,35 @@ test('gitBranchAction.create: tag 不存在 / start 形态非法', async (t) => 
   assert.equal(bad.error.code, 'invalid-start-point')
 })
 
+// ---------- gitBranchAction：commit 起始点（commit 行右键新建分支） ----------
+
+test('gitBranchAction.create: 以 commit hash 为起始点建分支', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  const c1Hash = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.commit('c2')
+  const result = await gitBranchAction(repo.root, 'create', { name: 'from-commit', start: c1Hash })
+  assert.deepEqual(result, { ok: true, branch: 'from-commit' })
+  assert.equal(await repo.currentBranch(), 'from-commit')
+  // 新分支起点 = 目标提交（而非当前 HEAD c2）
+  assert.equal((await repo.git(['rev-parse', 'HEAD'])).trim(), c1Hash)
+})
+
+test('gitBranchAction.create: 短 hash 起始点 / hex hash 不存在', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  const c1Hash = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.commit('c2')
+  // 短 hash（7 位）同样按 commit 校验通过
+  const short = await gitBranchAction(repo.root, 'create', { name: 'from-short', start: c1Hash.slice(0, 7) })
+  assert.deepEqual(short, { ok: true, branch: 'from-short' })
+  assert.equal((await repo.git(['rev-parse', 'HEAD'])).trim(), c1Hash)
+  // hex 形态但对象不存在 → rev-parse 权威校验拒绝
+  const missing = await gitBranchAction(repo.root, 'create', { name: 'x', start: '1234567' })
+  assert.equal(missing.ok, false)
+  assert.equal(missing.error.code, 'start-point-not-found')
+})
+
 // ---------- gitBranchAction：delete（2.4） ----------
 
 test('gitBranchAction.delete: 已合并分支安全删除', async (t) => {
@@ -403,6 +432,23 @@ test('gitBranchAction.merge: 快进合并', async (t) => {
   const result = await gitBranchAction(repo.root, 'merge', { branch: 'other' })
   assert.deepEqual(result, { ok: true, branch: 'other' })
   assert.equal((await repo.git(['log', '-1', '--format=%s'])).trim(), 'other work')
+})
+
+test('gitBranchAction.merge: noff 可快进也强制生成合并提交', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('other')
+  await repo.checkout('other')
+  await repo.commit('other work')
+  await repo.checkout('main')
+  const result = await gitBranchAction(repo.root, 'merge', { branch: 'other', noff: true })
+  assert.deepEqual(result, { ok: true, branch: 'other' })
+  // 本可快进，但 --no-ff 强制产生了合并提交（默认消息 "Merge branch 'other'"）
+  assert.equal((await repo.git(['log', '-1', '--format=%s'])).trim(), "Merge branch 'other'")
+  assert.equal((await repo.git(['rev-list', '--count', '--merges', 'main'])).trim(), '1')
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  const other = (await repo.git(['rev-parse', 'other'])).trim()
+  assert.notEqual(head, other)
 })
 
 test('gitBranchAction.merge: 自身 / 不存在 / 非法名', async (t) => {
@@ -562,6 +608,24 @@ test('写路由: 合法 create 全链路成功（workspaceRoot 回退注册表�
   assert.equal(res.status, 200)
   assert.deepEqual(JSON.parse(res.payload), { ok: true, branch: 'route-branch' })
   assert.equal(await repo.currentBranch(), 'route-branch')
+})
+
+test('写路由: merge + noff 全链路成功（payload.noff 透传）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('other')
+  await repo.checkout('other')
+  await repo.commit('other work')
+  await repo.checkout('main')
+  const route = fakeCtx(repo.root).get('/plugins/dsh-git-status/git/branch')
+  const res = fakeRes()
+  await route.handler(
+    fakeReq({ method: 'POST', contentType: 'application/json', body: '{"action":"merge","branch":"other","noff":true}' }),
+    res,
+  )
+  assert.equal(res.status, 200)
+  assert.deepEqual(JSON.parse(res.payload), { ok: true, branch: 'other' })
+  assert.equal((await repo.git(['rev-list', '--count', '--merges', 'main'])).trim(), '1')
 })
 
 test('写路由: 非 git 仓库 → 稳定错误', async (t) => {
