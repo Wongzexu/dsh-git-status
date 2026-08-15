@@ -31,6 +31,7 @@ const I18N = {
     gitStash: 'stash',
     gitSwitchTo: '切换到 {branch}',
     gitCurrentBranch: '（当前分支）',
+    gitRemoteSubs: '{branch} 的远程分支：{remotes}',
     gitCreateFromRemote: '创建本地分支 {branch} 并检出（{remote}）',
     gitCreateFromCommit: '在 {hash} 新建分支并检出',
     gitCreateBtn: '＋ 新分支',
@@ -191,6 +192,7 @@ const I18N = {
     gitStash: 'stash',
     gitSwitchTo: 'Switch to {branch}',
     gitCurrentBranch: '(current)',
+    gitRemoteSubs: 'Remote branches of {branch}: {remotes}',
     gitCreateFromRemote: 'Create local branch {branch} and check out ({remote})',
     gitCreateFromCommit: 'Create branch from {hash} and check out',
     gitCreateBtn: '+ New branch',
@@ -1334,11 +1336,30 @@ module.exports = {
           b.appendChild(name)
           const remotes = remotesOfHead.get(r)
           if (remotes !== undefined) {
-            for (const remote of remotes) {
+            if (remotes.length >= 2) {
+              // ≥2 个远程：折叠为单个计数子标签（如 ⎇ main [2]）；完整远程引用
+              // 列表提示放在整个 pill 上（悬停 pill 任意处即显示，无需对准小数字），
+              // data-remotes 存完整列表供右键两级菜单使用。
               const sub = document.createElement('span')
               sub.className = 'dsc-gref-remote-sub'
-              sub.textContent = remote
+              sub.textContent = String(remotes.length)
+              sub.dataset.branch = r
+              sub.dataset.remotes = JSON.stringify(remotes)
               b.appendChild(sub)
+              const remoteTip = t('gitRemoteSubs', {
+                branch: r,
+                remotes: remotes.map((remote) => `${remote}/${r}`).join(', '),
+              })
+              b.title = r === currentBranch ? `${t('gitCurrentBranch')}\n${remoteTip}` : remoteTip
+            } else {
+              for (const remote of remotes) {
+                const sub = document.createElement('span')
+                sub.className = 'dsc-gref-remote-sub'
+                sub.textContent = remote
+                sub.dataset.branch = r
+                sub.dataset.remote = remote
+                b.appendChild(sub)
+              }
             }
           }
           row.appendChild(b)
@@ -1368,7 +1389,8 @@ module.exports = {
         if (commit.refs.isHead) {
           const b = document.createElement('span')
           b.className = 'dsc-gref dsc-gref-head'
-          b.textContent = 'HEAD'
+          // 游离 HEAD 徽标：单个大写 H 省位置，悬停 title 提示完整语义
+          b.textContent = 'H'
           b.title = t('gitDetached')
           row.appendChild(b)
         }
@@ -1759,6 +1781,40 @@ module.exports = {
       }
     }
 
+    // 远程分支操作菜单（独立蓝 pill 或本地分支内嵌远程子标签右键共用）：
+    // 创建本地分支并检出 / 删除远程分支。fullRef 形如 gitee/main。
+    const gitRemoteMenuOpen = (x, y, fullRef) => {
+      const slash = fullRef.indexOf('/')
+      const branchName = slash > 0 ? fullRef.slice(slash + 1) : fullRef
+      const remoteName = slash > 0 ? fullRef.slice(0, slash) : fullRef
+      gitCtxOpen(x, y, [
+        {
+          label: t('gitCreateFromRemote', { branch: branchName, remote: remoteName }),
+          onClick: () => gitCheckout({ branch: branchName, remote: fullRef }),
+        },
+        {
+          label: t('gitDeleteRemoteBranch', { branch: branchName }),
+          onClick: () => gitConfirmOpen({
+            title: t('gitDeleteRemoteBranch', { branch: branchName }),
+            text: t('gitDeleteRemoteBranchConfirm', { remote: remoteName, branch: branchName }),
+            okText: t('gitDeleteBtn'),
+            danger: true,
+            onOk: async () => {
+              try {
+                const result = await gitPost('/git/remote', { action: 'delete-branch', branch: branchName, remote: remoteName })
+                flash(result.degraded === true
+                  ? t('gitDeleteRemoteBranchDegraded')
+                  : t('gitDeleteRemoteBranchOk', { remote: remoteName, branch: branchName }))
+                gitFetch(true, true)
+              } catch (err) {
+                flash(gitErrText(err))
+              }
+            },
+          }),
+        },
+      ])
+    }
+
     // 徽标右键（document 级委托，行重建不影响）：本地 pill → 切换/合并/重命名/删除；
     // 远程子标签/独立 pill → 创建本地分支并检出；tag → 以 tag 为起始点建分支。
     // 命中 git 面板内徽标才拦截默认菜单。
@@ -1913,38 +1969,29 @@ module.exports = {
       ev.stopPropagation()
       const currentBranch = gitRows.find((c) => c.refs.isHead)?.refs.headName ?? null
       if (sub !== null || remote !== null) {
-        // 远程：全名 = 远程名/本地分支名（子标签）或完整 ref（独立 pill）
-        const fullRef = sub !== null
-          ? `${(local?.firstChild?.textContent ?? '').trim()}/${sub.textContent.trim()}`
-          : (remote?.textContent ?? '').trim()
-        const slash = fullRef.indexOf('/')
-        const branchName = slash > 0 ? fullRef.slice(slash + 1) : fullRef
-        gitCtxOpen(ev.clientX, ev.clientY, [
-          {
-            label: t('gitCreateFromRemote', { branch: branchName, remote: fullRef.slice(0, slash) }),
-            onClick: () => gitCheckout({ branch: branchName, remote: fullRef }),
-          },
-          {
-            label: t('gitDeleteRemoteBranch', { branch: branchName }),
-            onClick: () => gitConfirmOpen({
-              title: t('gitDeleteRemoteBranch', { branch: branchName }),
-              text: t('gitDeleteRemoteBranchConfirm', { remote: fullRef.slice(0, slash), branch: branchName }),
-              okText: t('gitDeleteBtn'),
-              danger: true,
-              onOk: async () => {
-                try {
-                  const result = await gitPost('/git/remote', { action: 'delete-branch', branch: branchName, remote: fullRef.slice(0, slash) })
-                  flash(result.degraded === true
-                    ? t('gitDeleteRemoteBranchDegraded')
-                    : t('gitDeleteRemoteBranchOk', { remote: fullRef.slice(0, slash), branch: branchName }))
-                  gitFetch(true, true)
-                } catch (err) {
-                  flash(gitErrText(err))
-                }
-              },
-            }),
-          },
-        ])
+        if (sub !== null) {
+          const branchName = sub.dataset.branch ?? (local?.firstChild?.textContent ?? '').trim()
+          let remotes = null
+          if (sub.dataset.remotes !== undefined) {
+            try { remotes = JSON.parse(sub.dataset.remotes) } catch { remotes = null }
+          }
+          if (remotes !== null && remotes.length > 1) {
+            // 折叠计数子标签（≥2 远程）：先选远程，再出该远程的操作菜单
+            gitCtxOpen(ev.clientX, ev.clientY, remotes.map((remoteName) => ({
+              label: `${remoteName}/${branchName}`,
+              onClick: () => gitRemoteMenuOpen(ev.clientX, ev.clientY, `${remoteName}/${branchName}`),
+            })))
+            return
+          }
+          // 单远程子标签：直接出操作菜单（优先用 data 属性，兜底按原 DOM 拼法）
+          const fullRef = sub.dataset.remote !== undefined
+            ? `${sub.dataset.remote}/${branchName}`
+            : `${branchName}/${sub.textContent.trim()}`
+          gitRemoteMenuOpen(ev.clientX, ev.clientY, fullRef)
+        } else {
+          // 独立蓝 pill：完整 ref（remote/branch）即文本
+          gitRemoteMenuOpen(ev.clientX, ev.clientY, (remote?.textContent ?? '').trim())
+        }
       } else if (local !== null) {
         const branchName = (local.firstChild?.textContent ?? '').trim()
         const isCurrent = branchName === currentBranch
