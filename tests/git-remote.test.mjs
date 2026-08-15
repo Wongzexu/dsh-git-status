@@ -1,5 +1,5 @@
-// git-remote 测试：tag 名校验 / 删除远程分支（含降级）/ 推送 tag / 删除 tag
-// （仅本地 / 同步远程）/ 写路由（含 CSRF 防护）。
+// git-remote 测试：tag 名校验 / 删除远程分支（含降级）/ 推送 tag / 创建 tag
+// （轻量/附注/force 替换/双远程推送/部分失败）/ 删除 tag（仅本地 / 同步远程）/ 写路由（含 CSRF 防护）。
 // 零依赖：node:test + 真实 git fixture 仓库（file:// 裸仓库往返）+ 伪造 cordis ctx。
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -49,7 +49,7 @@ test('validateTagName: 合法/非法', () => {
 test('gitRemoteAction.delete-branch: 删除远程分支 + 本地跟踪 ref', async (t) => {
   const { repo, bare } = await makeRepoWithRemote(t)
   // 推送 main + 建远程分支 feat（模拟）
-  await gitPushAction(repo.root, { branch: 'main', remote: 'origin' })
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
   const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
   await repo.git(['update-ref', 'refs/remotes/origin/feat', head])
   await runGit(bare, ['update-ref', 'refs/heads/feat', head])
@@ -64,7 +64,7 @@ test('gitRemoteAction.delete-branch: 删除远程分支 + 本地跟踪 ref', asy
 
 test('gitRemoteAction.delete-branch: 远程分支已不存在 → 降级清理本地跟踪 ref', async (t) => {
   const { repo, bare } = await makeRepoWithRemote(t)
-  await gitPushAction(repo.root, { branch: 'main', remote: 'origin' })
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
   const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
   // 本地有跟踪 ref，但远程分支不存在（远程已删）
   await repo.git(['update-ref', 'refs/remotes/origin/gone', head])
@@ -75,10 +75,10 @@ test('gitRemoteAction.delete-branch: 远程分支已不存在 → 降级清理�
 
 test('gitRemoteAction.delete-branch: 校验（非法分支名/非法远程/远程不存在）', async (t) => {
   const { repo, bare } = await makeRepoWithRemote(t)
-  await gitPushAction(repo.root, { branch: 'main', remote: 'origin' })
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
   const badBranch = await gitRemoteAction(repo.root, 'delete-branch', { branch: 'bad name', remote: 'origin' })
   assert.equal(badBranch.error.code, 'invalid-branch-name')
-  const badRemote = await gitRemoteAction(repo.root, 'delete-branch', { branch: 'main', remote: 'a/b' })
+  const badRemote = await gitRemoteAction(repo.root, 'delete-branch', { branch: 'main', remote: 'my remote' })
   assert.equal(badRemote.error.code, 'invalid-remote-name')
   const noRemote = await gitRemoteAction(repo.root, 'delete-branch', { branch: 'main', remote: 'nope' })
   assert.equal(noRemote.error.code, 'remote-not-found')
@@ -104,6 +104,95 @@ test('gitRemoteAction.push-tag: tag 不存在 / 非法名 / 远程不存在', as
   assert.equal(bad.error.code, 'invalid-tag-name')
   const noRemote = await gitRemoteAction(repo.root, 'push-tag', { tag: 'v1.0', remote: 'nope' })
   assert.equal(noRemote.error.code, 'remote-not-found')
+})
+
+// ---------- gitRemoteAction：add-tag（创建 tag，镜像上游 Add Tag 对话框） ----------
+
+test('gitRemoteAction.add-tag: 轻量 tag 创建（起点 = 目标提交，不切分支）', async (t) => {
+  const { repo } = await makeRepoWithRemote(t)
+  const c1 = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.commit('c2')
+  const result = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1.0', hash: c1, type: 'lightweight' })
+  assert.deepEqual(result, { ok: true })
+  // 指向 c1 而非当前 HEAD（c2）
+  assert.equal((await repo.git(['rev-parse', 'refs/tags/v1.0'])).trim(), c1)
+  assert.equal(await repo.currentBranch(), 'main') // 不检出新分支
+  assert.equal((await repo.git(['cat-file', '-t', 'refs/tags/v1.0'])).trim(), 'commit') // 轻量 = 直接指向 commit 对象
+})
+
+test('gitRemoteAction.add-tag: 附注 tag + message', async (t) => {
+  const { repo } = await makeRepoWithRemote(t)
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  const result = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1.0', hash: head, type: 'annotated', message: 'release v1' })
+  assert.deepEqual(result, { ok: true })
+  assert.equal((await repo.git(['cat-file', '-t', 'refs/tags/v1.0'])).trim(), 'tag') // 附注 = tag 对象
+  const content = await repo.git(['cat-file', '-p', 'refs/tags/v1.0'])
+  assert.match(content, /release v1/)
+})
+
+test('gitRemoteAction.add-tag: 校验（非法名/非法 hash/不存在 commit/非法类型/远程不存在）', async (t) => {
+  const { repo } = await makeRepoWithRemote(t)
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  const badName = await gitRemoteAction(repo.root, 'add-tag', { tag: 'a..b', hash: head, type: 'lightweight' })
+  assert.equal(badName.error.code, 'invalid-tag-name')
+  const badHash = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1', hash: 'zzz', type: 'lightweight' })
+  assert.equal(badHash.error.code, 'invalid-commit')
+  const noCommit = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1', hash: '1234567', type: 'lightweight' })
+  assert.equal(noCommit.error.code, 'commit-not-found')
+  const badType = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1', hash: head, type: 'signed' })
+  assert.equal(badType.error.code, 'invalid-tag-type')
+  const noRemote = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1', hash: head, type: 'lightweight', remotes: ['nope'] })
+  assert.equal(noRemote.error.code, 'remote-not-found')
+  const badRemotes = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1', hash: head, type: 'lightweight', remotes: 'origin' })
+  assert.equal(badRemotes.error.code, 'invalid-remote-name')
+})
+
+test('gitRemoteAction.add-tag: 同名 tag 拒绝 → force 替换', async (t) => {
+  const { repo } = await makeRepoWithRemote(t)
+  const c1 = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.git(['tag', 'v1.0']) // 现成同名 tag（指向 c1）
+  await repo.commit('c2')
+  const c2 = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  const dup = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1.0', hash: c2, type: 'lightweight' })
+  assert.equal(dup.ok, false)
+  assert.equal(dup.error.code, 'tag-already-exists')
+  assert.equal((await repo.git(['rev-parse', 'refs/tags/v1.0'])).trim(), c1) // 未动
+  const forced = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1.0', hash: c2, type: 'lightweight', force: true })
+  assert.deepEqual(forced, { ok: true })
+  assert.equal((await repo.git(['rev-parse', 'refs/tags/v1.0'])).trim(), c2) // 已移动
+})
+
+test('gitRemoteAction.add-tag: 创建 + 推送远程', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  const result = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1.0', hash: head, type: 'lightweight', remotes: ['origin'] })
+  assert.deepEqual(result, { ok: true, pushed: ['origin'] })
+  assert.equal((await runGit(bare, ['rev-parse', 'refs/tags/v1.0'])).trim(), head)
+})
+
+test('gitRemoteAction.add-tag: 创建 + 推送双远程（顺序推，全部成功）', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  const bare2 = await makeBareRepo(t)
+  await repo.git(['remote', 'add', 'gitee', bare2])
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  const result = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1.0', hash: head, type: 'lightweight', remotes: ['origin', 'gitee'] })
+  assert.deepEqual(result, { ok: true, pushed: ['origin', 'gitee'] })
+  assert.equal((await runGit(bare, ['rev-parse', 'refs/tags/v1.0'])).trim(), head)
+  assert.equal((await runGit(bare2, ['rev-parse', 'refs/tags/v1.0'])).trim(), head)
+})
+
+test('gitRemoteAction.add-tag: 推送部分失败 → push-failed（tag 保留本地，成功远程已收）', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  const dead = await makeBareRepo(t)
+  await rm(dead, { recursive: true, force: true }) // 远程路径失效 → 该远程推送必败
+  await repo.git(['remote', 'add', 'dead', dead])
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  const result = await gitRemoteAction(repo.root, 'add-tag', { tag: 'v1.0', hash: head, type: 'lightweight', remotes: ['origin', 'dead'] })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'push-failed')
+  assert.match(result.error.message, /dead:/)
+  assert.equal((await repo.git(['rev-parse', 'refs/tags/v1.0'])).trim(), head) // 本地已创建
+  assert.equal((await runGit(bare, ['rev-parse', 'refs/tags/v1.0'])).trim(), head) // origin 已收到
 })
 
 // ---------- gitRemoteAction：delete-tag ----------
@@ -214,6 +303,21 @@ test('remote 路由: 合法 push-tag 全链路成功', async (t) => {
   assert.equal(res.status, 200)
   assert.deepEqual(JSON.parse(res.payload), { ok: true })
   assert.equal((await runGitSafe(bare, ['rev-parse', '--verify', '--quiet', 'refs/tags/v1.0'])).ok, true)
+})
+
+test('remote 路由: 合法 add-tag 全链路成功', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  const route = fakeCtx(repo.root).get(GIT_REMOTE_PATH)
+  const res = fakeRes()
+  await route.handler(
+    fakeReq({ method: 'POST', contentType: 'application/json', body: JSON.stringify({ action: 'add-tag', tag: 'v1.0', hash: head, type: 'lightweight', remotes: ['origin'] }) }),
+    res,
+  )
+  assert.equal(res.status, 200)
+  assert.deepEqual(JSON.parse(res.payload), { ok: true, pushed: ['origin'] })
+  assert.equal((await repo.git(['rev-parse', 'refs/tags/v1.0'])).trim(), head)
+  assert.equal((await runGit(bare, ['rev-parse', 'refs/tags/v1.0'])).trim(), head)
 })
 
 test('remote 路由: 非 git 仓库 → 稳定错误', async (t) => {

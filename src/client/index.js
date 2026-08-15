@@ -32,6 +32,7 @@ const I18N = {
     gitSwitchTo: '切换到 {branch}',
     gitCurrentBranch: '（当前分支）',
     gitCreateFromRemote: '创建本地分支 {branch} 并检出（{remote}）',
+    gitCreateFromCommit: '在 {hash} 新建分支并检出',
     gitCreateBtn: '＋ 新分支',
     gitCreateTitle: '创建并检出新分支',
     gitCreatePlaceholder: '新分支名',
@@ -111,6 +112,27 @@ const I18N = {
     gitDeleteTagWithRemote: '删除本地并同步删除远程 {remote} 的 {tag}',
     gitDeleteTagConfirm: '确定删除 tag {tag}？此操作不可恢复。',
     gitDeleteTagOk: '已删除 tag {tag}',
+    gitAddTag: '创建 tag…',
+    gitAddTagTitle: '给 {hash} 添加 tag',
+    gitAddTagPrompt: '请输入 tag 名',
+    gitAddTagPlaceholder: 'tag 名',
+    gitAddTagSubmit: '创建 tag',
+    gitAddTagOk: '已创建 tag {tag}',
+    gitAddTagPushedOk: '已创建 tag {tag} 并推送 → {remote}',
+    gitAddTagReplaceTitle: '替换 tag {tag}？',
+    gitAddTagReplaceText: '同名 tag 已存在，是否用新 tag 替换？',
+    gitReplaceBtn: '替换',
+    gitTagType: '类型',
+    gitTagTypeAnnotated: '附注',
+    gitTagTypeLightweight: '轻量',
+    gitTagMessagePlaceholder: '备注（可选，仅附注 tag）',
+    gitPushTo: '推送到',
+    gitNoPush: '不推送',
+    gitErrPushFailed: 'tag 已创建，但推送远程失败',
+    gitErrTagAlreadyExists: 'tag 已存在',
+    gitErrInvalidTagType: '无效的 tag 类型',
+    gitErrInvalidCommit: '无效的提交',
+    gitErrCommitNotFound: '目标提交不存在',
     gitErrTagNotFound: 'tag 不存在',
     gitErrInvalidTagName: '无效的 tag 名',
     gitErrRemoteRefNotFound: '远程引用不存在',
@@ -170,6 +192,7 @@ const I18N = {
     gitSwitchTo: 'Switch to {branch}',
     gitCurrentBranch: '(current)',
     gitCreateFromRemote: 'Create local branch {branch} and check out ({remote})',
+    gitCreateFromCommit: 'Create branch from {hash} and check out',
     gitCreateBtn: '+ New branch',
     gitCreateTitle: 'Create and check out new branch',
     gitCreatePlaceholder: 'new branch name',
@@ -249,6 +272,27 @@ const I18N = {
     gitDeleteTagWithRemote: 'Delete local tag {tag} and on remote {remote}',
     gitDeleteTagConfirm: 'Delete tag {tag}? This cannot be undone.',
     gitDeleteTagOk: 'Deleted tag {tag}',
+    gitAddTag: 'Add Tag…',
+    gitAddTagTitle: 'Add tag to commit {hash}',
+    gitAddTagPrompt: 'Please enter a tag name',
+    gitAddTagPlaceholder: 'tag name',
+    gitAddTagSubmit: 'Add tag',
+    gitAddTagOk: 'Tag {tag} created',
+    gitAddTagPushedOk: 'Tag {tag} created and pushed → {remote}',
+    gitAddTagReplaceTitle: 'Replace tag {tag}?',
+    gitAddTagReplaceText: 'A tag named {tag} already exists. Replace it with the new tag?',
+    gitReplaceBtn: 'Replace',
+    gitTagType: 'Type',
+    gitTagTypeAnnotated: 'Annotated',
+    gitTagTypeLightweight: 'Lightweight',
+    gitTagMessagePlaceholder: 'Message (optional, annotated tags only)',
+    gitPushTo: 'Push to',
+    gitNoPush: "Don't push",
+    gitErrPushFailed: 'Tag created, but pushing to remote(s) failed',
+    gitErrTagAlreadyExists: 'Tag already exists',
+    gitErrInvalidTagType: 'Invalid tag type',
+    gitErrInvalidCommit: 'Invalid commit',
+    gitErrCommitNotFound: 'Target commit not found',
     gitErrTagNotFound: 'Tag not found',
     gitErrInvalidTagName: 'Invalid tag name',
     gitErrRemoteRefNotFound: 'Remote reference not found',
@@ -431,8 +475,15 @@ module.exports = {
 [data-dsc-git-ctx] button:hover { background: rgba(255,255,255,.07); }
 [data-dsc-git-ctx] button:disabled { opacity: .45; cursor: default; }
 [data-dsc-git-ctx] button:disabled:hover { background: none; }
+/* 多选菜单项（如 push remote 选择）：复选框 + 文字左对齐 */
+[data-dsc-git-ctx] button.dsc-ctx-multi {
+  display: flex; align-items: center; gap: 6px;
+}
+[data-dsc-git-ctx] button.dsc-ctx-multi input[type='checkbox'] {
+  margin: 0; accent-color: var(--dsw-alias-text-accent, #4c9aff);
+}
 /* 面板内按钮（头部/合并条/创建对话框）：跟随面板字号，覆盖 UA 表单控件默认 13.3333px */
-[data-dsc-git] [data-dsc-btn], [data-dsc-git-create] [data-dsc-btn], [data-dsc-git-confirm] [data-dsc-btn] { font-size: inherit; }
+[data-dsc-git] [data-dsc-btn], [data-dsc-git-create] [data-dsc-btn], [data-dsc-git-confirm] [data-dsc-btn], [data-dsc-git-tag] [data-dsc-btn] { font-size: inherit; }
 /* 切换确认框（未提交改动提醒）：标题 + 正文 + 右对齐按钮行 */
 [data-dsc-git-confirm] { padding: 10px 12px; width: 260px; box-sizing: border-box; }
 [data-dsc-git-confirm] .dsc-git-confirm-title { font-weight: 600; margin-bottom: 6px; }
@@ -443,15 +494,24 @@ module.exports = {
   background: rgba(232,73,73,.92); color: #fff;
 }
 [data-dsc-git-confirm] .dsc-git-confirm-ok-danger:hover { background: rgba(255,92,92,1); }
-/* push/stash 对话框（浮层卡片，同 confirm/create 框风格）：选项行 + toggle 按钮 */
-[data-dsc-git-push], [data-dsc-git-stash] {
+/* push/stash/tag 对话框（浮层卡片，同 confirm/create 框风格）：选项行 + toggle 按钮 */
+[data-dsc-git-push], [data-dsc-git-stash], [data-dsc-git-tag] {
   position: fixed; z-index: 930; min-width: 250px; max-width: 340px;
   border-radius: 8px; padding: 10px 12px; display: none; font-size: 12px;
   box-sizing: border-box; color: var(--dsw-alias-text-1, #eee);
   background: var(--dsw-hovercard-bg, #2C2C2E);
   border: 1px solid rgba(255,255,255,.08); box-shadow: var(--dsw-shadow-lv3);
 }
-[data-dsc-git-push] .dsc-git-push-title, [data-dsc-git-stash] .dsc-git-stash-title {
+/* tag 对话框低于确认框（930）：同名 tag「替换？」确认需盖在对话框之上 */
+[data-dsc-git-tag] { z-index: 929; }
+/* tag 对话框底部操作行：左侧「推送到」+ 下拉多选按钮（不推送/各远程），右侧「创建 tag」按钮；
+   按钮（margin-left:auto）保持右下 */
+[data-dsc-git-tag] .dsc-git-tag-actions {
+  display: flex; gap: 6px; margin-top: 8px; align-items: center; flex-wrap: wrap;
+}
+[data-dsc-git-tag] .dsc-git-tag-actions [data-dsc-btn] { margin-left: auto; }
+[data-dsc-git-tag] .dsc-git-tag-push-label { opacity: .6; font-size: 11px; flex: none; }
+[data-dsc-git-push] .dsc-git-push-title, [data-dsc-git-stash] .dsc-git-stash-title, [data-dsc-git-tag] .dsc-git-tag-title {
   font-weight: 600; margin-bottom: 8px;
 }
 .dsc-git-opt-row {
@@ -460,12 +520,12 @@ module.exports = {
 }
 .dsc-git-opt-row label { opacity: .85; flex: 1; min-width: 0; }
 .dsc-git-opt-group { display: flex; gap: 4px; flex: none; }
-[data-dsc-git-stash] input[type='text'] {
+[data-dsc-git-stash] input[type='text'], [data-dsc-git-tag] input[type='text'] {
   width: 100%; box-sizing: border-box; padding: 4px 6px; border-radius: 6px;
   border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.25);
   color: inherit; font-size: 11px; outline: none; margin-bottom: 6px;
 }
-[data-dsc-git-stash] input[type='text']:focus { border-color: var(--dsw-alias-text-accent, #4c9aff); }
+[data-dsc-git-stash] input[type='text']:focus, [data-dsc-git-tag] input[type='text']:focus { border-color: var(--dsw-alias-text-accent, #4c9aff); }
 /* toggle 按钮（Set Upstream / Include Untracked / Push Mode 互斥组）：on 高亮 accent */
 .dsc-git-toggle {
   border: 1px solid rgba(255,255,255,.14); border-radius: 6px; padding: 2px 8px;
@@ -478,7 +538,7 @@ module.exports = {
 }
 .dsc-git-opt-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
 [data-dsc-git-create] { padding: 8px 10px; display: none; }
-[data-dsc-git-create] .dsc-git-create-head {
+[data-dsc-git-create] .dsc-git-create-head, [data-dsc-git-tag] .dsc-git-tag-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px;
 }
 [data-dsc-git-create] .dsc-git-create-title { font-weight: 600; }
@@ -1508,6 +1568,15 @@ module.exports = {
       return null
     }
 
+    /** tag 名客户端镜像（服务端 check-ref-format 权威）：空/超长/危险字符即时拦截。 */
+    const validateTagName = (name) => {
+      if (name === '') return 'empty'
+      if (name.length > 200) return 'too-long'
+      if (!/^[0-9A-Za-z._\/-]+$/.test(name)) return 'forbidden-char'
+      if (name.startsWith('/') || name.startsWith('.') || name.endsWith('/') || name.endsWith('.') || name.includes('..') || name.includes('@{')) return 'forbidden-char'
+      return null
+    }
+
     /** 稳定错误码 → 本地化文案（含被挡文件路径详情）。 */
     const gitErrText = (err) => {
       if (err === undefined || err === null) return t('gitErr')
@@ -1561,17 +1630,42 @@ module.exports = {
     gitCtxMenu.setAttribute('data-dsc-git-ctx', '')
     body.appendChild(gitCtxMenu)
     const gitCtxClose = () => { gitCtxMenu.style.display = 'none'; gitCtxMenu.replaceChildren() }
-    const gitCtxOpen = (x, y, items) => {
+    // opts.multi：多选模式（如 push remote 选择）——复选框样式，点击项切换选中
+    // 状态（onToggle 须同步更新 item.checked）并保持菜单打开，点外部/Esc 关闭；
+    // 普通模式点击项后关闭并执行 onClick。
+    const gitCtxOpen = (x, y, items, opts = {}) => {
       gitCtxMenu.replaceChildren()
       for (const item of items) {
         const btn = document.createElement('button')
         btn.type = 'button'
-        btn.textContent = item.checked === true ? `✓ ${item.label}` : item.label
         btn.disabled = item.disabled === true
+        if (opts.multi === true && typeof item.onToggle === 'function') {
+          // 多选：原生复选框 + 文字（点击落在按钮上，checkbox 只作视觉）
+          const cb = document.createElement('input')
+          cb.type = 'checkbox'
+          cb.checked = item.checked === true
+          cb.style.pointerEvents = 'none'
+          cb.style.flex = 'none'
+          btn.appendChild(cb)
+          btn.appendChild(document.createTextNode(item.label))
+          btn.classList.add('dsc-ctx-multi')
+        } else {
+          btn.textContent = item.checked === true ? `✓ ${item.label}` : item.label
+        }
         // stopPropagation：菜单项可能同步弹出确认框（删除分支），若不阻断冒泡，
         // document 级「点击外部关闭」监听会把刚弹出的确认框当作外部点击立即关掉
         // （异步弹出如切换确认不受影响——点击事件早已结束）。
-        if (item.disabled !== true) btn.addEventListener('click', (ev) => { ev.stopPropagation(); gitCtxClose(); item.onClick() })
+        if (item.disabled !== true) btn.addEventListener('click', (ev) => {
+          ev.stopPropagation()
+          if (opts.multi === true && typeof item.onToggle === 'function') {
+            item.onToggle() // 约定：onToggle 同步更新 item.checked
+            const cb = btn.querySelector('input[type="checkbox"]')
+            if (cb !== null) cb.checked = item.checked === true
+          } else {
+            gitCtxClose()
+            item.onClick()
+          }
+        })
         gitCtxMenu.appendChild(btn)
       }
       gitCtxMenu.style.display = 'block'
@@ -1785,15 +1879,33 @@ module.exports = {
       const remote = ev.target.closest('[data-dsc-git-rows] .dsc-gref-remote')
       const target = sub ?? (local === null ? remote : local)
       if (target === null) {
-        // 未提交改动虚拟行右键：暂存未提交改动（上游 Uncommitted Context Menu 核心项）
         const row = ev.target.closest('[data-dsc-git-rows] [data-dsc-git-row]')
-        if (row !== null && row.dataset.hash === 'UNCOMMITTED') {
-          ev.preventDefault()
-          ev.stopPropagation()
-          gitCtxOpen(ev.clientX, ev.clientY, [{
-            label: t('gitStashUncommitted'),
-            onClick: () => gitStashBoxOpen(),
-          }])
+        if (row !== null) {
+          if (row.dataset.hash === 'UNCOMMITTED') {
+            // 未提交改动虚拟行右键：暂存未提交改动（上游 Uncommitted Context Menu 核心项）
+            ev.preventDefault()
+            ev.stopPropagation()
+            gitCtxOpen(ev.clientX, ev.clientY, [{
+              label: t('gitStashUncommitted'),
+              onClick: () => gitStashBoxOpen(),
+            }])
+          } else if (row.dataset.hash !== '') {
+            // 普通 commit 行右键：创建 tag / 新建分支（上游 Commit Context Menu：
+            // Add Tag… 与 Create Branch…，均复用已有对话框）
+            ev.preventDefault()
+            ev.stopPropagation()
+            const hash = row.dataset.hash
+            gitCtxOpen(ev.clientX, ev.clientY, [
+              {
+                label: t('gitAddTag'),
+                onClick: () => gitTagOpen(hash),
+              },
+              {
+                label: t('gitCreateFromCommit', { hash: hash.slice(0, 7) }),
+                onClick: () => gitCreateOpen({ start: hash }),
+              },
+            ])
+          }
         }
         return
       }
@@ -2085,16 +2197,39 @@ module.exports = {
     gitPushBox.appendChild(gitPushModeRow)
     gitPushBox.appendChild(gitPushActions)
     let gitPushBranch = ''
-    let gitPushRemote = ''
+    let gitPushRemotes = []
+    // remote 选择记忆（localStorage，同 dsc-git-pos 模式）：上次推送的远程组合
+    // 下次打开对话框时恢复；远程被删/改名时过滤失效项，全部失效回退默认。
+    const gitPushRemotesKey = 'dsc-git-push-remotes'
+    const gitPushRemotesSave = () => {
+      try { localStorage.setItem(gitPushRemotesKey, JSON.stringify(gitPushRemotes)) } catch { /* ignore */ }
+    }
+    const gitPushRemotesLoad = () => {
+      try {
+        const raw = JSON.parse(localStorage.getItem(gitPushRemotesKey) ?? 'null')
+        if (Array.isArray(raw)) return raw.filter((r) => typeof r === 'string')
+      } catch { /* ignore */ }
+      return null
+    }
     const gitPushClose = () => { gitPushBox.style.display = 'none' }
     const gitPushOpen = (branchName) => {
       gitPushBranch = branchName
-      gitPushRemote = gitRemotes.includes('origin') ? 'origin' : gitRemotes[0] ?? ''
-      if (gitPushRemote === '') return // 无远程不应触发（菜单项已按 remotes>0 显示）
+      // 记忆的远程组合（仅保留当前仍存在的远程，按 gitRemotes 顺序）；
+      // 无记忆或全部失效 → 回退默认 origin（存在时）或第一个远程
+      const saved = gitPushRemotesLoad()
+      gitPushRemotes = saved !== null && saved.length > 0
+        ? gitRemotes.filter((r) => saved.includes(r))
+        : []
+      if (gitPushRemotes.length === 0) {
+        gitPushRemotes = gitRemotes.includes('origin') ? ['origin'] : [gitRemotes[0] ?? ''].filter((r) => r !== '')
+      }
+      if (gitPushRemotes.length === 0) return // 无远程不应触发（菜单项已按 remotes>0 显示）
       gitPushTitle.textContent = t('gitPushTitle', { branch: branchName })
-      gitPushRemoteBtn.textContent = gitPushRemote
+      gitPushRemoteBtn.textContent = gitPushRemotes.join(', ')
       gitPushUpstreamToggle.classList.add('on')
       for (const b of gitPushModeBtns) b.classList.toggle('on', b.dataset.mode === 'normal')
+      // 上次推送成功后按钮被禁用（防重复提交）；再次打开必须重置，否则按钮永久失效
+      gitPushSubmit.disabled = false
       gitPushBox.style.display = 'block'
       const headRect = gitHead.getBoundingClientRect()
       gitPushBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`
@@ -2103,11 +2238,24 @@ module.exports = {
     gitPushRemoteBtn.addEventListener('click', (ev) => {
       ev.stopPropagation()
       const rect = gitPushRemoteBtn.getBoundingClientRect()
-      gitCtxOpen(rect.left, rect.bottom + 4, gitRemotes.map((r) => ({
-        label: r,
-        checked: r === gitPushRemote,
-        onClick: () => { gitPushRemote = r; gitPushRemoteBtn.textContent = r },
-      })))
+      // 多选模式（复选框）：点击切换勾选、菜单保持打开；点外部/Esc 关闭
+      // （对齐上游 Push to Remote(s) 多选 + 顺序推）。item 自引用：
+      // onToggle 同步更新 item.checked，供 gitCtxOpen 刷新复选框状态。
+      gitCtxOpen(rect.left, rect.bottom + 4, gitRemotes.map((r) => {
+        const item = {
+          label: r,
+          checked: gitPushRemotes.includes(r),
+          onToggle: () => {
+            gitPushRemotes = gitPushRemotes.includes(r)
+              ? gitPushRemotes.filter((x) => x !== r)
+              : [...gitPushRemotes, r]
+            item.checked = gitPushRemotes.includes(r)
+            gitPushRemoteBtn.textContent = gitPushRemotes.join(', ')
+            gitPushRemotesSave() // 切换即记忆
+          },
+        }
+        return item
+      }), { multi: true })
     })
     gitPushUpstreamToggle.addEventListener('click', () => {
       gitPushUpstreamToggle.classList.toggle('on')
@@ -2118,12 +2266,12 @@ module.exports = {
       try {
         await gitPost('/git/push', {
           branch: gitPushBranch,
-          remote: gitPushRemote,
+          remotes: gitPushRemotes,
           setUpstream: gitPushUpstreamToggle.classList.contains('on'),
           mode,
         })
         gitPushClose()
-        flash(t('gitPushOk', { branch: gitPushBranch, remote: gitPushRemote }))
+        flash(t('gitPushOk', { branch: gitPushBranch, remote: gitPushRemotes.join(', ') }))
         gitFetch(true, true)
       } catch (err) {
         // 失败保留对话框：用户可改 mode（如 force-with-lease）后重试
@@ -2142,6 +2290,222 @@ module.exports = {
       // 排除右键菜单内的点击：remote 选择列表从 push 框弹出，点选项不能关 push 框
       if (!gitPushBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitPushClose()
     })
+
+    // ---------- 创建 tag 对话框（镜像上游 Add Tag 对话框：名称 + 类型 + message + 推送远程） ----------
+    // 入口：右键 commit 行「创建 tag…」。类型二选一（附注默认，同上游 dialogDefaults.addTag.type），
+    // 附注时显示备注输入；推送目标为底部左侧下拉多选（镜像 push 对话框 remote 多选菜单：
+    // 第一项「不推送」，其后各远程可多选，同上游 pushTagToMultipleRemotes 语义），
+    // 无远程时隐藏；同名 tag 服务端权威返回 tag-already-exists → 「替换？」确认框后
+    // 带 force 重试（上游两按钮语义）。
+    const gitTagBox = document.createElement('div')
+    gitTagBox.setAttribute('data-dsc-git-tag', '')
+    body.appendChild(gitTagBox)
+    const gitTagHead = document.createElement('div')
+    gitTagHead.className = 'dsc-git-tag-head'
+    const gitTagTitle = document.createElement('div')
+    gitTagTitle.className = 'dsc-git-tag-title'
+    const gitTagCancel = document.createElement('button')
+    gitTagCancel.type = 'button'
+    gitTagCancel.setAttribute('data-dsc-btn', '')
+    gitTagCancel.textContent = t('close')
+    gitTagHead.appendChild(gitTagTitle)
+    gitTagHead.appendChild(gitTagCancel)
+    const gitTagInput = document.createElement('input')
+    gitTagInput.type = 'text'
+    gitTagInput.placeholder = t('gitAddTagPlaceholder')
+    const gitTagTypeRow = document.createElement('div')
+    gitTagTypeRow.className = 'dsc-git-opt-row'
+    const gitTagTypeLabel = document.createElement('label')
+    gitTagTypeLabel.textContent = t('gitTagType')
+    gitTagTypeRow.appendChild(gitTagTypeLabel)
+    const gitTagTypeGroup = document.createElement('div')
+    gitTagTypeGroup.className = 'dsc-git-opt-group'
+    const gitTagTypeBtns = [
+      { type: 'annotated', text: t('gitTagTypeAnnotated') },
+      { type: 'lightweight', text: t('gitTagTypeLightweight') },
+    ].map(({ type, text }) => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'dsc-git-toggle' + (type === 'annotated' ? ' on' : '')
+      btn.dataset.type = type
+      btn.textContent = text
+      btn.addEventListener('click', () => {
+        gitTagType = type
+        for (const b of gitTagTypeBtns) b.classList.toggle('on', b.dataset.type === gitTagType)
+        gitTagMessageRow.style.display = type === 'annotated' ? '' : 'none'
+      })
+      gitTagTypeGroup.appendChild(btn)
+      return btn
+    })
+    gitTagTypeRow.appendChild(gitTagTypeGroup)
+    const gitTagMessageRow = document.createElement('div')
+    gitTagMessageRow.className = 'dsc-git-opt-row'
+    const gitTagMessageInput = document.createElement('input')
+    gitTagMessageInput.type = 'text'
+    gitTagMessageInput.placeholder = t('gitTagMessagePlaceholder')
+    gitTagMessageRow.appendChild(gitTagMessageInput)
+    const gitTagErr = document.createElement('div')
+    gitTagErr.setAttribute('data-dsc-git-create-err', '')
+    const gitTagActions = document.createElement('div')
+    gitTagActions.className = 'dsc-git-tag-actions'
+    // 推送目标下拉多选（镜像 push 对话框的 remote 多选菜单形态）：按钮显示当前选择
+    // （「不推送」或远程列表），点击弹出多选菜单；第一项固定「不推送」（勾选 = 清空
+    // 远程选择），其后每远程一项可多选，全不勾 = 不推送。远程再多也不挤占对话框宽度。
+    const gitTagPushLabel = document.createElement('span')
+    gitTagPushLabel.className = 'dsc-git-tag-push-label'
+    gitTagPushLabel.textContent = t('gitPushTo')
+    const gitTagRemoteBtn = document.createElement('button')
+    gitTagRemoteBtn.type = 'button'
+    gitTagRemoteBtn.className = 'dsc-git-toggle'
+    gitTagRemoteBtn.textContent = t('gitNoPush')
+    gitTagRemoteBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation()
+      const rect = gitTagRemoteBtn.getBoundingClientRect()
+      // 自引用 item（同 push 对话框模式）：gitCtxOpen 的 multi 刷新约定是
+      // onToggle 必须同步更新 item.checked，勾选才会按 item.checked 重画。
+      const noPushItem = {
+        label: t('gitNoPush'),
+        checked: gitTagRemotes.length === 0,
+        onToggle: () => {
+          gitTagRemotes = []
+          noPushItem.checked = true
+          // multi 模式只刷新被点项，这里同步清掉菜单里所有远程项勾选
+          gitCtxMenu.querySelectorAll('button.dsc-ctx-multi').forEach((b, i) => {
+            const cb = b.querySelector('input[type="checkbox"]')
+            if (cb !== null && i > 0) cb.checked = false
+          })
+          gitTagRemoteBtn.textContent = t('gitNoPush')
+        },
+      }
+      const remoteItems = gitRemotes.map((r) => {
+        const item = {
+          label: r,
+          checked: gitTagRemotes.includes(r),
+          onToggle: () => {
+            gitTagRemotes = gitTagRemotes.includes(r)
+              ? gitTagRemotes.filter((x) => x !== r)
+              : [...gitTagRemotes, r]
+            item.checked = gitTagRemotes.includes(r)
+            // 勾选任一远程 → 「不推送」取消勾选（第一项）；全部取消 → 回到不推送
+            gitCtxMenu.querySelectorAll('button.dsc-ctx-multi').forEach((b, i) => {
+              const cb = b.querySelector('input[type="checkbox"]')
+              if (cb !== null && i === 0) cb.checked = gitTagRemotes.length === 0
+            })
+            gitTagRemoteBtn.textContent = gitTagRemotes.length === 0 ? t('gitNoPush') : gitTagRemotes.join(', ')
+          },
+        }
+        return item
+      })
+      gitCtxOpen(rect.left, rect.bottom + 4, [noPushItem, ...remoteItems], { multi: true })
+    })
+    const gitTagSubmit = document.createElement('button')
+    gitTagSubmit.type = 'button'
+    gitTagSubmit.setAttribute('data-dsc-btn', '')
+    gitTagSubmit.textContent = t('gitAddTagSubmit')
+    gitTagActions.appendChild(gitTagPushLabel)
+    gitTagActions.appendChild(gitTagRemoteBtn)
+    gitTagActions.appendChild(gitTagSubmit)
+    gitTagBox.appendChild(gitTagHead)
+    gitTagBox.appendChild(gitTagInput)
+    gitTagBox.appendChild(gitTagTypeRow)
+    gitTagBox.appendChild(gitTagMessageRow)
+    gitTagBox.appendChild(gitTagErr)
+    gitTagBox.appendChild(gitTagActions)
+    let gitTagHash = ''
+    let gitTagType = 'annotated'
+    let gitTagRemotes = []
+    let gitTagForce = false
+    const gitTagClose = () => { gitTagBox.style.display = 'none' }
+    const gitTagOpen = (hash) => {
+      gitTagHash = hash
+      gitTagType = 'annotated'
+      gitTagRemotes = []
+      gitTagForce = false
+      gitTagTitle.textContent = t('gitAddTagTitle', { hash: hash.slice(0, 7) })
+      gitTagInput.value = ''
+      gitTagMessageInput.value = ''
+      for (const b of gitTagTypeBtns) b.classList.toggle('on', b.dataset.type === gitTagType)
+      gitTagMessageRow.style.display = ''
+      // 推送目标下拉：无远程时隐藏；重置为「不推送」（全不勾）
+      gitTagPushLabel.style.display = gitRemotes.length > 0 ? '' : 'none'
+      gitTagRemoteBtn.style.display = gitRemotes.length > 0 ? '' : 'none'
+      gitTagRemoteBtn.textContent = t('gitNoPush')
+      gitTagErr.textContent = t('gitAddTagPrompt')
+      gitTagErr.classList.add('hint')
+      gitTagSubmit.disabled = true
+      gitTagBox.style.display = 'block'
+      const headRect = gitHead.getBoundingClientRect()
+      gitTagBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`
+      gitTagBox.style.top = `${headRect.bottom + 6}px`
+      gitTagInput.focus()
+    }
+    gitTagInput.addEventListener('input', () => {
+      const reason = validateTagName(gitTagInput.value.trim())
+      if (reason === null) {
+        gitTagErr.textContent = ''
+        gitTagErr.classList.remove('hint')
+      } else if (reason === 'empty') {
+        // 清空后回到初始提示态
+        gitTagErr.textContent = t('gitAddTagPrompt')
+        gitTagErr.classList.add('hint')
+      } else {
+        gitTagErr.textContent = t('gitErrInvalidTagName')
+        gitTagErr.classList.remove('hint')
+      }
+      gitTagSubmit.disabled = reason !== null
+    })
+    const gitTagRun = async () => {
+      const name = gitTagInput.value.trim()
+      if (validateTagName(name) !== null) return
+      gitTagSubmit.disabled = true
+      try {
+        const result = await gitPost('/git/remote', {
+          action: 'add-tag',
+          tag: name,
+          hash: gitTagHash,
+          type: gitTagType,
+          message: gitTagType === 'annotated' ? gitTagMessageInput.value : '',
+          remotes: gitTagRemotes,
+          force: gitTagForce,
+        })
+        const pushed = Array.isArray(result.pushed) ? result.pushed : []
+        gitTagClose()
+        flash(pushed.length === 0
+          ? t('gitAddTagOk', { tag: name })
+          : t('gitAddTagPushedOk', { tag: name, remote: pushed.join(', ') }))
+        gitFetch(true, true)
+      } catch (err) {
+        // 同名 tag：服务端权威校验拒绝 → 「替换？」确认后带 force 重试（上游两按钮对话框）；
+        // 确认框（930）层级高于 tag 对话框（929），可正常盖在其上
+        if (err.code === 'tag-already-exists' && gitTagForce !== true) {
+          gitTagSubmit.disabled = false
+          gitConfirmOpen({
+            title: t('gitAddTagReplaceTitle', { tag: name }),
+            text: t('gitAddTagReplaceText', { tag: name }),
+            okText: t('gitReplaceBtn'),
+            danger: true,
+            onOk: async () => { gitTagForce = true; gitTagRun() },
+          })
+          return
+        }
+        // 创建成功但推送部分/全部失败（push-failed）：tag 已在本地，关框提示并刷新
+        if (err.code === 'push-failed') {
+          gitTagClose()
+          flash(gitErrText(err), 'error')
+          gitFetch(true, true)
+          return
+        }
+        gitTagErr.textContent = gitErrText(err)
+        gitTagErr.classList.remove('hint')
+        gitTagSubmit.disabled = false
+      }
+    }
+    gitTagSubmit.addEventListener('click', gitTagRun)
+    gitTagInput.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') gitTagRun()
+      if (ev.key === 'Escape') gitTagClose()
+    })
+    gitTagCancel.addEventListener('click', gitTagClose)
 
     // ---------- stash 对话框（未提交行右键「暂存未提交改动」） ----------
     // message（可选）+ include untracked toggle（上游 stashUncommittedChanges 对话框简化）。
@@ -2184,6 +2548,8 @@ module.exports = {
     const gitStashBoxOpen = () => {
       gitStashMsgInput.value = ''
       gitStashUntrackedToggle.classList.remove('on')
+      // 上次成功后按钮被禁用；再次打开必须重置（同 push 对话框的 disabled 残留修复）
+      gitStashSubmit.disabled = false
       gitStashBox.style.display = 'block'
       const headRect = gitHead.getBoundingClientRect()
       gitStashBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`

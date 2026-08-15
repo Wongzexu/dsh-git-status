@@ -2,7 +2,7 @@
 
 # dsh-git-status
 
-[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com) [![dshfind](https://dshfind.com/api/badge/Wongzexu/dsh-git-status?lang=zh)](https://dshfind.com/zh/plugins/Wongzexu/dsh-git-status)
 
 [**English**](README_EN.md) · **简体中文**
 
@@ -33,7 +33,8 @@
   - 右键本地分支徽标：切换到 x / 合并 x 到当前分支 / 重命名 x / 删除 x / 强制删除 x（未合并二次确认）
   - 右键远程分支徽标：「创建本地分支 x 并检出」/「删除远程分支 x」（远程已删时自动降级清理本地跟踪引用）；
     右键 tag 徽标：「在 x 创建分支并检出」/「推送 tag 到 <远程>」（每远程一项）/「删除 tag」
-    （可选同步删除远程）
+    （可选同步删除远程）；右键 commit 行「创建 tag…」（轻量/附注 + 多远程推送）/
+    「在 x 新建分支并检出」（以该提交为起点）
   - 头部「＋ 新分支」对话框：客户端即时校验 + 服务端 `check-ref-format` 权威校验双保险
   - 切换守卫：未解决冲突 / 进行中操作（MERGE_HEAD 等标记）/ 目标分支在其他 worktree 检出 → 稳定错误码；
     存在**已跟踪**未提交改动时弹「仍然切换」确认框（确认后带 `force` 旁路；仅未跟踪文件不拦）

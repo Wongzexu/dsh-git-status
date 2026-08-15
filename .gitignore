@@ -1,0 +1,3 @@
+# 第三方参考源码（仅本地保留，出处见 docs/upstream/*/README.md）
+docs/upstream/vscode-git-graph/*
+!docs/upstream/vscode-git-graph/README.md

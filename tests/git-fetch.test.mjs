@@ -38,14 +38,14 @@ async function makeRemote(t, messages) {
 
 // ---------- validateRemoteName：remote 名（非 ref）形态校验 ----------
 
-test('validateRemoteName: 合法名 → true', () => {
-  for (const name of ['origin', 'gitee', 'my_remote-2', 'a.b']) {
+test('validateRemoteName: 合法名 → true（含实测 git 接受的 @ / + / 斜杠 / 尾点）', () => {
+  for (const name of ['origin', 'gitee', 'my_remote-2', 'a.b', 'Gitee', 'repo@backup', 'upstream+mirror', 'a/b', 'a.']) {
     assert.equal(validateRemoteName(name), true, name)
   }
 })
 
-test('validateRemoteName: 非法名 → false', () => {
-  for (const bad of ['', 'a/b', 'a b', 'a..b', '.a', 'a.', 'x'.repeat(201)]) {
+test('validateRemoteName: 非法名 → false（对齐实测 git 拒绝集）', () => {
+  for (const bad of ['', 'a b', 'a..b', '.a', 'a/.b', 'x.lock', 'a/b.lock', 'x'.repeat(201)]) {
     assert.equal(validateRemoteName(bad), false, bad)
   }
 })
@@ -137,7 +137,7 @@ test('gitFetchAction: prune 默认关（残留失效跟踪 ref），prune=true �
 test('gitFetchAction: 非法 remote 名拒绝', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
-  const result = await gitFetchAction(repo.root, { remote: 'a/b' })
+  const result = await gitFetchAction(repo.root, { remote: 'my remote' })
   assert.equal(result.ok, false)
   assert.equal(result.error.code, 'invalid-remote-name')
 })
