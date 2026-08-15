@@ -29,7 +29,9 @@
   （256KB 截断）；详情盒高度自适应内容（≤340px 上限），点开 patch 不引起图跳动
 - **分支操作**：
   - 右键本地分支徽标：切换到 x / 合并 x 到当前分支 / 重命名 x / 删除 x / 强制删除 x（未合并二次确认）
-  - 右键远程分支徽标：「创建本地分支 x 并检出」；右键 tag 徽标：「在 x 创建分支并检出」
+  - 右键远程分支徽标：「创建本地分支 x 并检出」/「删除远程分支 x」（远程已删时自动降级清理本地跟踪引用）；
+    右键 tag 徽标：「在 x 创建分支并检出」/「推送 tag 到 <远程>」（每远程一项）/「删除 tag」
+    （可选同步删除远程）
   - 头部「＋ 新分支」对话框：客户端即时校验 + 服务端 `check-ref-format` 权威校验双保险
   - 切换守卫：未解决冲突 / 进行中操作（MERGE_HEAD 等标记）/ 目标分支在其他 worktree 检出 → 稳定错误码；
     存在**已跟踪**未提交改动时弹「仍然切换」确认框（确认后带 `force` 旁路；仅未跟踪文件不拦）
@@ -81,7 +83,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 3. 浮窗头部可切换「所有分支 / 当前分支」、手动刷新（↻）；打开期间 SSE 即时刷新（断连时 10s 轮询兜底）；
 4. 点击 commit 行展开详情（提交信息 / 变更文件 / 逐文件 diff）；点击文件行查看该文件 patch；
 5. 右键分支徽标：本地「切换到 x / 推送到远程… / 合并 x / 重命名 x / 删除 x（可强删）」；远程「创建本地分支 x 并检出」；
-6. 右键 tag 徽标「在 x 创建分支并检出」；头部「＋ 新分支」：输入名称创建并检出新分支（非法名称即时拦截）；
+6. 右键 tag 徽标「在 x 创建分支并检出」/「推送 tag 到 <远程>」/「删除 tag（可选同步远程）」；头部「＋ 新分支」：输入名称创建并检出新分支（非法名称即时拦截）；
 7. 右键 stash 徽标「应用 / 弹出 / 从 stash 创建分支并检出 / 删除」；右键未提交改动虚拟行「暂存未提交改动」；
 8. 头部徽标提示未解决冲突 / 进行中操作；合并冲突时合并条提供「中止合并 / 继续合并」；
 9. 仓库配置了远程时，头部「⇣」按钮一键拉取全部远程（`git fetch --all`，prune 默认关），完成后图即时刷新。
@@ -106,7 +108,7 @@ dsh-git-status/
 ├── package.json          # dsh.bundle.patch + dsh.client.inject + platform: web
 ├── cordis.patch.yml      # 挂载 Node half
 ├── lib/
-│   ├── index.mjs         # Node half：git log/show/branch/fetch/push/stash/events 七路由（末尾导出测试用纯函数）
+│   ├── index.mjs         # Node half：git log/show/branch/fetch/push/remote/stash/events 八路由（末尾导出测试用纯函数）
 │   └── client.js         # client bundle（构建产物，__ModuleLoader__ 契约）
 ├── src/client/index.js   # client 源码（手写 CJS，单模块）
 ├── scripts/build-client.js  # 零依赖构建脚本（纯 Node）
@@ -117,6 +119,7 @@ dsh-git-status/
     ├── git-fetch.test.mjs    # 远程列表/名称校验/fetch 失败分类/真实拉取（file:// 裸仓库，含 prune）/写路由（含 CSRF）
     ├── git-push.test.mjs     # push 参数校验/失败分类/真实推送（set-upstream、non-fast-forward→force）/写路由（含 CSRF）
     ├── git-stash.test.mjs    # stash selector 校验/apply/pop/drop/branch/两种冲突形态/写路由（含 CSRF）
+    ├── git-remote.test.mjs   # tag 名校验/删除远程分支（含降级）/推送与删除 tag（含同步远程）/写路由（含 CSRF）
     └── git-events.test.mjs   # SSE 订阅：初始推送/变化检测/心跳/断连清理
 ```
 
@@ -127,14 +130,14 @@ dsh-git-status/
 - **布局锚点**：官方 DOM 属性（`data-chat-flow`），不依赖 React 内部结构
 - **安全**：路由根限定**会话权威工作区**（请求带 `session=`，优先 `ctx.sessions.get(id).header.cwd`；
   缺省回退注册表/进程 cwd），拒绝 `..` 分量与越界路径；只读命令白名单；
-  写路由（分支操作 + 拉取远程 + 推送 + stash）POST + 强制 `application/json` content-type（CSRF 防护），
-  分支名/remote 名/stash selector 权威校验 + argv 数组（无 shell）+ 切换前守卫；fetch/push 超时放宽（120s）
+  写路由（分支操作 + 拉取远程 + 推送 + 远程/标签操作 + stash）POST + 强制 `application/json` content-type（CSRF 防护），
+  分支名/remote 名/tag 名/stash selector 权威校验 + argv 数组（无 shell）+ 切换前守卫；fetch/push 超时放宽（120s）
 
 ## 开发
 
 ```sh
 node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js）
-npm test                       # node:test 套件（122 用例，真实 git fixture，零依赖）
+npm test                       # node:test 套件（135 用例，真实 git fixture，零依赖）
 ```
 
 改 Node half 直接改 `lib/index.mjs`（无构建步骤），改完跑 `npm test` 回归。
@@ -146,7 +149,8 @@ stash 第三父、show 详情、冲突/进行中状态、分支名校验、切�
 （初始推送/变化检测/心跳/断连清理/删分支与 stash 变化推送）、fetch 全链路
 （--all/单远程/prune 语义/失败分类/CSRF，file:// 裸仓库真实拉取）、push 全链路
 （set-upstream tracking / non-fast-forward → force 覆盖 / 失败分类 / CSRF）、
-stash 全链路（push/apply/pop/drop/branch/两种冲突形态 / CSRF）。
+stash 全链路（push/apply/pop/drop/branch/两种冲突形态 / CSRF）、远程/标签操作全链路
+（删除远程分支含降级、推送/删除 tag 含同步远程、tag 名校验 / CSRF）。
 
 重新打包 client 后**刷新浏览器页面**即可看到效果（无需重启 web 服务）；
 改 Node half 后需**重启 web 服务**生效。
