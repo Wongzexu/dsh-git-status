@@ -12,6 +12,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 
 ## Features
 
+- **Drawer UX**: the drawer is **draggable** with its position **remembered**; a floating toggle button sits at the panel's top-right corner (overlaps the corner, follows drags, and stays floating at that spot to reopen after closing); a one-time first-use hint bubble (localStorage)
 - **Commit DAG lane graph**: first-parent chains as lines, greedy leftmost column assignment, lane reuse, merge-commit connectors; SVG grid rendering (shadow + dual-color paths, elbow transitions, right-edge gradient fade, bold HEAD dot)
 - **Inline refs badges**: HEAD (red) / branches (gold) / remotes (blue) / tags (green); the currently checked-out branch pill is highlighted in bright gold (denser background + gold inset border + bold, hover tooltip "current"); a local branch and its same-named remote are merged into one pill: `⎇ main [gitee]` (multiple remotes nest in order); remote HEAD symbolic refs (`gitee/HEAD`) are filtered by default
 - **Uncommitted changes virtual row**: when the worktree has changes, a virtual row is inserted at the top of the graph (hollow circle + gray dashed line to HEAD), showing staged/unstaged counts; click to expand details grouped by "Changes / Staged Changes" (VS Code semantics: partially staged files appear in both groups, untracked files carry a badge)
@@ -52,6 +53,8 @@ Replace `/path/to/dsh-git-status` with the actual plugin directory path (e.g. th
 2. Open the DSH web page → Settings → "Plugins" panel, confirm `dsh-git-status` is enabled (can be disabled/enabled anytime).
 
 ### Usage
+
+> 📖 Full usage guide (bilingual, text version): [docs/USAGE.md#dsh-git-status-usage-guide](docs/USAGE.md#dsh-git-status-usage-guide) — UI overview, reading the graph, branch operations, conflict handling, and fetching from remotes.
 
 1. Enter any chat view;
 2. Click the **branch icon** button outside the panel's top-right corner — the "Git status" drawer expands (draggable, position remembered; the button stays glued to the panel's top-right corner, and floats at that spot to reopen once the panel is closed; a one-time hint guides first use);
