@@ -54,7 +54,7 @@ Replace `/path/to/dsh-git-status` with the actual plugin directory path (e.g. th
 ### Usage
 
 1. Enter any chat view;
-2. Click the **branch icon** button on the left edge — the "Git status" drawer slides in from the right (draggable, position remembered);
+2. Click the **branch icon** button outside the panel's top-right corner — the "Git status" drawer expands (draggable, position remembered; the button stays glued to the panel's top-right corner, and floats at that spot to reopen once the panel is closed; a one-time hint guides first use);
 3. The drawer header toggles "All branches / Current branch" and manual refresh (↻); while open, SSE live refresh applies (10s poll fallback on disconnect);
 4. Click a commit row to expand details (commit message / changed files / per-file diffs); click a file row to view that file's patch;
 5. Right-click branch badges: local — "switch to x / merge x / rename x / delete x (force delete)"; remote — "create local branch x and check out";
