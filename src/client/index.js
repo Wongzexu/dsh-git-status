@@ -83,7 +83,7 @@ const I18N = {
     gitMergeAborted: '已中止合并',
     gitMergeContinued: '合并已完成',
     gitCreateFromTag: '在 {tag} 创建分支并检出',
-    gitFetch: '从远程拉取',
+    gitFetch: '从所有远程拉取',
     gitFetching: '拉取中…',
     gitFetchOk: '已从远程拉取',
     gitErrNetworkError: '网络或认证错误',
@@ -208,7 +208,7 @@ const I18N = {
     gitRemoteDeleteTitle: '删除远程',
     gitRemoteDeleteConfirm: '确定删除远程 {name} 吗？其远程分支记录将一并移除。',
     gitSettingsDefaults: '默认行为',
-    gitDefaultPruneFetch: '拉取时自动修剪过时远程分支',
+    gitDefaultPruneFetch: '拉取时自动修剪',
     gitDefaultPruneFetchHint: '拉取时自动清理远端已删除的分支引用（git fetch --prune）；关闭后保留过时的远程分支记录',
     gitErrRemoteAlreadyExists: '远程名称已存在',
     gitErrInvalidRemoteName: '远程名称非法',
@@ -292,7 +292,7 @@ const I18N = {
     gitMergeAborted: 'Merge aborted',
     gitMergeContinued: 'Merge completed',
     gitCreateFromTag: 'Create branch from {tag} and check out',
-    gitFetch: 'Fetch from Remote(s)',
+    gitFetch: 'Fetch from all remotes',
     gitFetching: 'Fetching…',
     gitFetchOk: 'Fetched from remote(s)',
     gitErrNetworkError: 'Network or authentication error',
@@ -590,8 +590,10 @@ module.exports = {
 }
 /* 面板内按钮（头部/合并条/创建对话框）：跟随面板字号，覆盖 UA 表单控件默认 13.3333px */
 [data-dsc-git] [data-dsc-btn], [data-dsc-git-create] [data-dsc-btn], [data-dsc-git-confirm] [data-dsc-btn], [data-dsc-git-tag] [data-dsc-btn] { font-size: inherit; }
-/* 切换确认框（未提交改动提醒）：标题 + 正文 + 右对齐按钮行 */
-[data-dsc-git-confirm] { padding: 10px 12px; width: 260px; box-sizing: border-box; }
+/* 切换确认框（未提交改动提醒）：标题 + 正文 + 右对齐按钮行。
+   z-index 940：高于设置弹窗（930）与右键菜单（935）——从设置弹窗内触发
+   （如删除远程）时确认框必须浮在弹窗之上，否则同层叠被 DOM 靠后的弹窗盖住。 */
+[data-dsc-git-confirm] { padding: 10px 12px; width: 260px; box-sizing: border-box; z-index: 940; }
 [data-dsc-git-confirm] .dsc-git-confirm-title { font-weight: 600; margin-bottom: 6px; }
 [data-dsc-git-confirm] .dsc-git-confirm-text { opacity: .85; line-height: 1.5; }
 [data-dsc-git-confirm] .dsc-git-confirm-actions { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; }
@@ -714,6 +716,8 @@ module.exports = {
   display: inline-flex; align-items: center; justify-content: center;
 }
 .dsc-git-remote-icon-btn svg { display: block; }
+/* 删除按钮：常态浅红提示危险，hover 走 [data-dsc-btn].danger 红底 */
+.dsc-git-remote-icon-btn.danger { color: #ff8f87; }
 /* 拉取中：图标旋转动画替代文字提示 */
 .dsc-git-remote-spin svg { animation: dsc-git-remote-spin 0.9s linear infinite; }
 @keyframes dsc-git-remote-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -1925,6 +1929,7 @@ module.exports = {
     gitConfirmBox.appendChild(gitConfirmText)
     gitConfirmBox.appendChild(gitConfirmActions)
     let gitConfirmOnOk = null
+    let gitConfirmJustOpened = false
     const gitConfirmClose = () => { gitConfirmBox.style.display = 'none'; gitConfirmOnOk = null }
     const gitConfirmOpen = (opts) => {
       gitConfirmTitle.textContent = opts.title ?? ''
@@ -1935,6 +1940,12 @@ module.exports = {
       gitConfirmOk.classList.toggle('dsc-git-confirm-ok-danger', opts.danger === true)
       gitConfirmOnOk = opts.onOk ?? null
       gitConfirmBox.style.display = 'block'
+      // 「刚打开」标志：本次 click 事件还在冒泡中（确认框由点击元素同步触发，
+      // 如设置弹窗里点删除），document 的「点外部关闭」监听器会在同一事件里
+      // 误判 target 不在框内而立即关闭刚弹出的确认框——跳过紧随的这一次。
+      // 异步触发场景（POST 返回后弹框）无此问题，setTimeout 0 兜底清除。
+      gitConfirmJustOpened = true
+      setTimeout(() => { gitConfirmJustOpened = false }, 0)
       // 定位：面板头部下方（同 create 框）；确认框在异步 POST 返回后弹出，
       // 原鼠标位置已不可靠，不复用 ctx 菜单的坐标定位。
       const headRect = gitHead.getBoundingClientRect()
@@ -1949,6 +1960,7 @@ module.exports = {
     })
     document.addEventListener('click', (ev) => {
       if (gitConfirmBox.style.display === 'none') return
+      if (gitConfirmJustOpened) { gitConfirmJustOpened = false; return }
       if (!gitConfirmBox.contains(ev.target)) gitConfirmClose()
     })
 

@@ -406,6 +406,21 @@ test('gitRemoteConfig: 按名排序（非添加顺序）', async (t) => {
   assert.deepEqual(names, ['alpha', 'zeta'])
 })
 
+test('gitRemoteConfig: 保留远程名大小写（MyRemote ≠ myremote 两个远程）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'MyRemote', 'https://m.example/r.git'])
+  await repo.git(['remote', 'add', 'myremote', 'https://m.example/r2.git'])
+  const remotes = await gitRemoteConfig(repo.root)
+  assert.equal(remotes.length, 2)
+  const big = remotes.find((r) => r.name === 'MyRemote')
+  assert.ok(big !== undefined, 'MyRemote 应原样保留（未小写化）')
+  assert.equal(big.url, 'https://m.example/r.git')
+  const small = remotes.find((r) => r.name === 'myremote')
+  assert.ok(small !== undefined, 'myremote 应独立存在（未被合并）')
+  assert.equal(small.url, 'https://m.example/r2.git')
+})
+
 test('gitRemoteManageAction.add-remote: 成功（含 pushUrl）', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
