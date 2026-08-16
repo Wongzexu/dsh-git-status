@@ -9,6 +9,7 @@ import {
   parseNumstat,
   gitUncommittedCount,
   gitStashes,
+  gitLog,
   gitLogV2,
   gitShow,
   gitShowUncommitted,
@@ -269,4 +270,36 @@ test('gitLogV2: 干净仓库无冲突无操作', async (t) => {
   assert.equal(result.conflicts, 0)
   assert.equal(result.operation, null)
   assert.equal(result.operationInProgress, false)
+})
+
+// ---------- gitLog：--first-parent / --reflog 参数透传 ----------
+
+test('gitLog: followFirst 只输出第一父链（合并分支提交被排除）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('side')
+  await repo.commit('c2')
+  await repo.checkout('side')
+  await repo.commit('s1', { files: { 's.txt': 's1' } })
+  await repo.checkout('main')
+  await repo.git(['merge', '--no-ff', 'side', '-m', 'merge side'])
+  const subjects = (rows) => rows.commits.map((c) => c.subject)
+  const all = await gitLog(repo.root, { scope: 'head' })
+  assert.ok(subjects(all).includes('s1'), '默认输出应含合并分支提交')
+  const first = await gitLog(repo.root, { scope: 'head', followFirst: true })
+  assert.ok(!subjects(first).includes('s1'), '--first-parent 应排除第二父分支提交')
+  assert.ok(subjects(first).includes('merge side'))
+  assert.ok(subjects(first).includes('c2'))
+})
+
+test('gitLog: reflogs 包含被 reset 丢弃的提交', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.commit('c2')
+  const c2 = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.git(['reset', '--hard', 'HEAD~1']) // c2 仅存于 reflog
+  const without = await gitLog(repo.root, { scope: 'all' })
+  assert.ok(!without.commits.some((c) => c.hash === c2), '默认输出应不含被丢弃的提交')
+  const withReflogs = await gitLog(repo.root, { scope: 'all', reflogs: true })
+  assert.ok(withReflogs.commits.some((c) => c.hash === c2), '--reflog 应包含 reflog 提及的提交')
 })
