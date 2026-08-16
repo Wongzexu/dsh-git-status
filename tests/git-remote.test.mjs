@@ -1,5 +1,7 @@
 // git-remote 测试：tag 名校验 / 删除远程分支（含降级）/ 推送 tag / 创建 tag
-// （轻量/附注/force 替换/双远程推送/部分失败）/ 删除 tag（仅本地 / 同步远程）/ 写路由（含 CSRF 防护）。
+// （轻量/附注/force 替换/双远程推送/部分失败）/ 删除 tag（仅本地 / 同步远程）/
+// 远程配置管理（gitRemoteConfig 读取 / add-remote / edit-remote / delete-remote）/
+// 写路由（含 CSRF 防护）。
 // 零依赖：node:test + 真实 git fixture 仓库（file:// 裸仓库往返）+ 伪造 cordis ctx。
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -12,6 +14,9 @@ import {
   validateTagName,
   gitRemoteAction,
   gitPushAction,
+  gitRemoteConfig,
+  gitRemoteManageAction,
+  validateRemoteUrl,
   apply,
 } from '../lib/index.mjs'
 import { makeRepo, runGit, runGitSafe } from './fixtures/repo.mjs'
@@ -345,4 +350,245 @@ test('remote 路由: 非 git 仓库 → 稳定错误', async (t) => {
     res,
   )
   assert.equal(JSON.parse(res.payload).error.code, 'internal')
+})
+
+// ---------- 远程配置管理（设置弹窗「远程配置」区块） ----------
+
+const GIT_CONFIG_PATH = '/plugins/dsh-gitstatus/git/config'
+
+test('validateRemoteUrl: 合法形态（http/ssh/scp 风格/本地路径）→ true', () => {
+  assert.equal(validateRemoteUrl('https://github.com/user/repo.git'), true)
+  assert.equal(validateRemoteUrl('git@gitee.com:user/repo.git'), true)
+  assert.equal(validateRemoteUrl('ssh://git@host:2222/path/repo.git'), true)
+  assert.equal(validateRemoteUrl('file:///srv/git/repo.git'), true)
+  assert.equal(validateRemoteUrl('/srv/git/repo.git'), true)
+  assert.equal(validateRemoteUrl('u'.repeat(500)), true)
+})
+
+test('validateRemoteUrl: 非法（空/超长/控制字符/非 string）→ false', () => {
+  assert.equal(validateRemoteUrl(''), false)
+  assert.equal(validateRemoteUrl(' '), false)
+  assert.equal(validateRemoteUrl('u'.repeat(501)), false)
+  assert.equal(validateRemoteUrl('git@gitee.com:u\nrepo.git'), false)
+  assert.equal(validateRemoteUrl('git@gitee.com:u\x01repo.git'), false)
+  assert.equal(validateRemoteUrl(42), false)
+  assert.equal(validateRemoteUrl(null), false)
+})
+
+test('gitRemoteConfig: 无远程 → 空数组', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  assert.deepEqual(await gitRemoteConfig(repo.root), [])
+})
+
+test('gitRemoteConfig: 读取 url / pushUrl（无 pushUrl → null）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', 'https://github.com/user/repo.git'])
+  await repo.git(['remote', 'add', 'mirror', 'git@gitee.com:user/mirror.git'])
+  await repo.git(['remote', 'set-url', '--push', 'mirror', 'git@gitee.com:user/push.git'])
+  const remotes = await gitRemoteConfig(repo.root)
+  assert.equal(remotes.length, 2)
+  const origin = remotes.find((r) => r.name === 'origin')
+  assert.equal(origin.url, 'https://github.com/user/repo.git')
+  assert.equal(origin.pushUrl, null)
+  const mirror = remotes.find((r) => r.name === 'mirror')
+  assert.equal(mirror.url, 'git@gitee.com:user/mirror.git')
+  assert.equal(mirror.pushUrl, 'git@gitee.com:user/push.git')
+})
+
+test('gitRemoteConfig: 按名排序（非添加顺序）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'zeta', 'https://z.example/r.git'])
+  await repo.git(['remote', 'add', 'alpha', 'https://a.example/r.git'])
+  const names = (await gitRemoteConfig(repo.root)).map((r) => r.name)
+  assert.deepEqual(names, ['alpha', 'zeta'])
+})
+
+test('gitRemoteManageAction.add-remote: 成功（含 pushUrl）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  const result = await gitRemoteManageAction(repo.root, 'add-remote', {
+    name: 'origin',
+    url: 'https://github.com/user/repo.git',
+    pushUrl: 'git@gitee.com:user/push.git',
+  })
+  assert.equal(result.ok, true)
+  const remotes = await gitRemoteConfig(repo.root)
+  assert.equal(remotes.length, 1)
+  assert.equal(remotes[0].name, 'origin')
+  assert.equal(remotes[0].url, 'https://github.com/user/repo.git')
+  assert.equal(remotes[0].pushUrl, 'git@gitee.com:user/push.git')
+})
+
+test('gitRemoteManageAction.add-remote: 重名 → remote-already-exists', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', 'https://github.com/user/repo.git'])
+  const result = await gitRemoteManageAction(repo.root, 'add-remote', { name: 'origin', url: 'https://x.example/r.git' })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'remote-already-exists')
+})
+
+test('gitRemoteManageAction.add-remote: 非法名 / 非法 URL → 稳定错误码', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  let r = await gitRemoteManageAction(repo.root, 'add-remote', { name: 'bad name', url: 'https://x.example/r.git' })
+  assert.equal(r.error.code, 'invalid-remote-name')
+  r = await gitRemoteManageAction(repo.root, 'add-remote', { name: 'ok', url: '' })
+  assert.equal(r.error.code, 'invalid-remote-url')
+  r = await gitRemoteManageAction(repo.root, 'add-remote', { name: 'ok', url: 'https://x.example/r.git', pushUrl: 'bad\nurl' })
+  assert.equal(r.error.code, 'invalid-remote-url')
+})
+
+test('gitRemoteManageAction.edit-remote: 改 fetch URL', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', 'https://github.com/user/repo.git'])
+  const result = await gitRemoteManageAction(repo.root, 'edit-remote', { name: 'origin', url: 'https://github.com/user/new.git' })
+  assert.equal(result.ok, true)
+  const remotes = await gitRemoteConfig(repo.root)
+  assert.equal(remotes[0].url, 'https://github.com/user/new.git')
+})
+
+test('gitRemoteManageAction.edit-remote: 改名（remote rename 生效）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', 'https://github.com/user/repo.git'])
+  const result = await gitRemoteManageAction(repo.root, 'edit-remote', { name: 'origin', newName: 'upstream' })
+  assert.equal(result.ok, true)
+  assert.deepEqual((await gitRemoteConfig(repo.root)).map((r) => r.name), ['upstream'])
+  assert.deepEqual((await runGit(repo.root, ['remote'])).trim().split('\n'), ['upstream'])
+})
+
+test('gitRemoteManageAction.edit-remote: pushUrl 设置与清除（留空 = 回到同 fetch）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', 'https://github.com/user/repo.git'])
+  let result = await gitRemoteManageAction(repo.root, 'edit-remote', { name: 'origin', pushUrl: 'git@gitee.com:user/push.git' })
+  assert.equal(result.ok, true)
+  assert.equal((await gitRemoteConfig(repo.root))[0].pushUrl, 'git@gitee.com:user/push.git')
+  result = await gitRemoteManageAction(repo.root, 'edit-remote', { name: 'origin', pushUrl: '' })
+  assert.equal(result.ok, true)
+  assert.equal((await gitRemoteConfig(repo.root))[0].pushUrl, null)
+  // 再次清除（key 已不存在，exit 5）→ 仍静默成功
+  result = await gitRemoteManageAction(repo.root, 'edit-remote', { name: 'origin', pushUrl: '' })
+  assert.equal(result.ok, true)
+})
+
+test('gitRemoteManageAction.edit-remote: 改名到已存在名 → remote-already-exists', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', 'https://github.com/user/repo.git'])
+  await repo.git(['remote', 'add', 'upstream', 'https://github.com/other/repo.git'])
+  const result = await gitRemoteManageAction(repo.root, 'edit-remote', { name: 'origin', newName: 'upstream' })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'remote-already-exists')
+})
+
+test('gitRemoteManageAction.edit-remote: 远程不存在 / 非法名 → 稳定错误码', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  let r = await gitRemoteManageAction(repo.root, 'edit-remote', { name: 'ghost', url: 'https://x.example/r.git' })
+  assert.equal(r.error.code, 'remote-not-found')
+  r = await gitRemoteManageAction(repo.root, 'edit-remote', { name: 'bad name', url: 'https://x.example/r.git' })
+  assert.equal(r.error.code, 'invalid-remote-name')
+})
+
+test('gitRemoteManageAction.delete-remote: 成功并连带清理远程跟踪分支', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', 'https://github.com/user/repo.git'])
+  // 造一条远程跟踪引用（模拟 fetch 过）
+  await runGit(repo.root, ['update-ref', 'refs/remotes/origin/main', 'HEAD'])
+  const result = await gitRemoteManageAction(repo.root, 'delete-remote', { name: 'origin' })
+  assert.equal(result.ok, true)
+  assert.deepEqual(await gitRemoteConfig(repo.root), [])
+  assert.equal((await runGitSafe(repo.root, ['rev-parse', '--verify', '--quiet', 'refs/remotes/origin/main'])).ok, false)
+})
+
+test('gitRemoteManageAction.delete-remote: 远程不存在 → remote-not-found', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  const result = await gitRemoteManageAction(repo.root, 'delete-remote', { name: 'ghost' })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'remote-not-found')
+})
+
+// ---------- 远程配置写路由：GET remotes / POST 全链路 / CSRF ----------
+
+test('config 路由 GET: 返回 remotes 数组（含 pushUrl）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', 'https://github.com/user/repo.git'])
+  await repo.git(['remote', 'set-url', '--push', 'origin', 'git@gitee.com:user/push.git'])
+  const route = fakeCtx(repo.root).get(GIT_CONFIG_PATH)
+  const res = fakeRes()
+  await route.handler(fakeReq({ url: `${GIT_CONFIG_PATH}?session=` }), res)
+  assert.equal(res.status, 200)
+  const data = JSON.parse(res.payload)
+  assert.equal(data.ok, true)
+  assert.equal(data.remotes.length, 1)
+  assert.equal(data.remotes[0].name, 'origin')
+  assert.equal(data.remotes[0].url, 'https://github.com/user/repo.git')
+  assert.equal(data.remotes[0].pushUrl, 'git@gitee.com:user/push.git')
+})
+
+test('config 路由 GET: 非 git 仓库 → remotes 空数组', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-norepo-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const route = fakeCtx(root).get(GIT_CONFIG_PATH)
+  const res = fakeRes()
+  await route.handler(fakeReq({ url: `${GIT_CONFIG_PATH}?session=` }), res)
+  const data = JSON.parse(res.payload)
+  assert.equal(data.isRepo, false)
+  assert.deepEqual(data.remotes, [])
+})
+
+test('remote 路由 POST: add-remote 全链路（真实写 + 返回 ok）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  const route = fakeCtx(repo.root).get(GIT_REMOTE_PATH)
+  const res = fakeRes()
+  await route.handler(fakeReq({
+    method: 'POST',
+    contentType: 'application/json',
+    body: JSON.stringify({ action: 'add-remote', name: 'origin', url: 'https://github.com/user/repo.git' }),
+  }), res)
+  assert.equal(res.status, 200)
+  assert.equal(JSON.parse(res.payload).ok, true)
+  assert.equal((await gitRemoteConfig(repo.root))[0].url, 'https://github.com/user/repo.git')
+})
+
+test('remote 路由 POST: 重名 add → 200 + remote-already-exists', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', 'https://github.com/user/repo.git'])
+  const route = fakeCtx(repo.root).get(GIT_REMOTE_PATH)
+  const res = fakeRes()
+  await route.handler(fakeReq({
+    method: 'POST',
+    contentType: 'application/json',
+    body: JSON.stringify({ action: 'add-remote', name: 'origin', url: 'https://x.example/r.git' }),
+  }), res)
+  assert.equal(res.status, 200)
+  const data = JSON.parse(res.payload)
+  assert.equal(data.ok, false)
+  assert.equal(data.error.code, 'remote-already-exists')
+})
+
+test('remote 路由 POST: delete-remote 全链路', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', 'https://github.com/user/repo.git'])
+  const route = fakeCtx(repo.root).get(GIT_REMOTE_PATH)
+  const res = fakeRes()
+  await route.handler(fakeReq({
+    method: 'POST',
+    contentType: 'application/json',
+    body: JSON.stringify({ action: 'delete-remote', name: 'origin' }),
+  }), res)
+  assert.equal(JSON.parse(res.payload).ok, true)
+  assert.deepEqual(await gitRemoteConfig(repo.root), [])
 })
