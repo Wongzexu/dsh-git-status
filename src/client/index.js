@@ -425,6 +425,14 @@ const I18N = {
     gitErrRemoteNotFound: 'Remote does not exist',
   },
 }
+
+// 远程行图标按钮 SVG（用户提供源稿清理版）：viewBox 1024，渲染 12px，
+// fill 继承按钮文字色（currentColor），pointer-events:none 防 SVG 抢点击（拖拽豁免教训）。
+// 拉取 = 下载箭头；编辑 = 铅笔；删除 = ×。
+const GIT_ICON_FETCH = '<svg viewBox="0 0 1024 1024" width="11" height="11" fill="currentColor" style="vertical-align:middle;pointer-events:none" aria-hidden="true"><path d="M549.831 139.662h-75.662V64h75.662v75.662zM537.884 960l374.329-370.347-55.751-55.751-306.631 310.614v-107.52h-75.662v107.52L163.556 533.902l-51.769 55.751L486.116 960h51.768z m-63.715-597.333h75.662v-71.68h-75.662v71.68z m75.662 226.986h-75.662v-75.662h75.662v75.662z"/></svg>'
+const GIT_ICON_EDIT = '<svg viewBox="0 0 1024 1024" width="11" height="11" fill="currentColor" style="vertical-align:middle;pointer-events:none" aria-hidden="true"><path d="M960 176.855v92.336L433.344 799.267l-17.099 10.26L152.916 960 64 871.084l150.473-263.328 10.26-17.099L754.809 64h92.336L960 176.855zM344.427 771.908l-92.336-92.336-99.176 191.511 191.512-99.175z m567.695-547.175L799.267 111.878 286.29 624.855 399.145 737.71l512.977-512.977z"/></svg>'
+const GIT_ICON_DELETE = '<svg viewBox="0 0 1024 1024" width="11" height="11" fill="currentColor" style="vertical-align:middle;pointer-events:none" aria-hidden="true"><path d="M140.5 960L64 883.5 441 512 64 140.5 140.5 64 512 441 883.5 64l76.5 76.5L583 512l377 371.5-76.5 76.5L512 583 140.5 960z"/></svg>'
+
 module.exports = {
   name: 'git-status-client',
   apply(ctx) {
@@ -687,13 +695,28 @@ module.exports = {
 .dsc-git-user-layers { display: flex; gap: 4px; flex: none; }
 /* 编辑块内按钮与输入框同行：去掉全局 actions 的上边距（行内无需 8px 间隔） */
 .dsc-git-user-edit .dsc-git-opt-actions { margin-top: 0; }
-/* 远程配置列表：每远程三行（名称+URL / push 说明 / 操作按钮） */
+/* 远程配置列表：每远程 = 主区一行（名称 + 两行信息 + 右侧按钮组） */
 .dsc-git-remote-row { margin-bottom: 8px; }
-.dsc-git-remote-line1 { display: flex; align-items: center; gap: 8px; font-size: 11px; }
-.dsc-git-remote-name { flex: none; width: 64px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dsc-git-remote-url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .85; }
-.dsc-git-remote-push { font-size: 10px; opacity: .5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 1px 0 3px 72px; }
-.dsc-git-remote-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.dsc-git-remote-main { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+/* 名称列：窄列（48px）内水平居中，超长省略 */
+.dsc-git-remote-name {
+  flex: none; width: 48px; text-align: center; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dsc-git-remote-info { flex: 1; min-width: 0; }
+.dsc-git-remote-url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .85; }
+.dsc-git-remote-push { font-size: 10px; opacity: .5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 右侧按钮组：拉取 / 编辑 / 删除（图标按钮） */
+.dsc-git-remote-actions { flex: none; display: flex; gap: 4px; }
+/* 图标按钮：18px 方形（与文字按钮同高）、图标 11px 居中；覆盖 data-dsc-btn 的 padding */
+.dsc-git-remote-icon-btn {
+  flex: none; width: 18px; height: 18px; padding: 0; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.dsc-git-remote-icon-btn svg { display: block; }
+/* 拉取中：图标旋转动画替代文字提示 */
+.dsc-git-remote-spin svg { animation: dsc-git-remote-spin 0.9s linear infinite; }
+@keyframes dsc-git-remote-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .dsc-git-remote-row .dsc-git-remote-fetching { opacity: .6; cursor: default; }
 .dsc-git-remote-none { font-size: 11px; opacity: .5; margin-bottom: 6px; }
 /* 远程编辑表单：三字段（名称 / Fetch URL / Push URL），保存/取消与错误行 */
@@ -2725,39 +2748,47 @@ module.exports = {
     const gitRemoteRow = (remote, index) => {
       const row = document.createElement('div')
       row.className = 'dsc-git-remote-row'
-      const line1 = document.createElement('div')
-      line1.className = 'dsc-git-remote-line1'
+      // 主区一行：名称 + 两行信息 + 右侧按钮组（拉取 / 编辑 / 删除，拉取在最前），
+      // 名称与按钮相对两行信息整体垂直居中
+      const main = document.createElement('div')
+      main.className = 'dsc-git-remote-main'
       const name = document.createElement('span')
       name.className = 'dsc-git-remote-name'
       name.textContent = remote.name
       name.title = remote.name
-      const url = document.createElement('span')
+      const info = document.createElement('div')
+      info.className = 'dsc-git-remote-info'
+      const url = document.createElement('div')
       url.className = 'dsc-git-remote-url'
       url.textContent = remote.url ?? ''
       url.title = remote.url ?? ''
-      line1.appendChild(name)
-      line1.appendChild(url)
-      row.appendChild(line1)
       const push = document.createElement('div')
       push.className = 'dsc-git-remote-push'
       push.textContent = remote.pushUrl ?? t('gitRemotePushSame')
       push.title = remote.pushUrl ?? ''
-      row.appendChild(push)
+      info.appendChild(url)
+      info.appendChild(push)
+      main.appendChild(name)
+      main.appendChild(info)
+      // 右侧按钮组：拉取（组内最前）/ 编辑 / 删除
       const actions = document.createElement('div')
       actions.className = 'dsc-git-remote-actions'
       const fetching = gitRemoteFetching === remote.name
       const fetchBtn = document.createElement('button')
       fetchBtn.type = 'button'
       fetchBtn.setAttribute('data-dsc-btn', '')
-      fetchBtn.textContent = fetching ? t('gitRemoteFetching') : `⇣ ${t('gitRemoteFetch')}`
+      fetchBtn.className = 'dsc-git-remote-icon-btn' + (fetching ? ' dsc-git-remote-spin' : '')
+      fetchBtn.title = fetching ? t('gitRemoteFetching') : t('gitRemoteFetch')
       fetchBtn.disabled = fetching
-      if (fetching) fetchBtn.classList.add('dsc-git-remote-fetching')
+      fetchBtn.innerHTML = GIT_ICON_FETCH
       fetchBtn.addEventListener('click', () => gitRemoteFetchOne(remote.name))
       actions.appendChild(fetchBtn)
       const editBtn = document.createElement('button')
       editBtn.type = 'button'
       editBtn.setAttribute('data-dsc-btn', '')
-      editBtn.textContent = t('gitUserEdit')
+      editBtn.className = 'dsc-git-remote-icon-btn'
+      editBtn.title = t('gitUserEdit')
+      editBtn.innerHTML = GIT_ICON_EDIT
       editBtn.addEventListener('click', () => {
         gitUserEditing = null
         const open = gitRemoteEditing !== null && gitRemoteEditing.mode === 'edit' && gitRemoteEditing.index === index
@@ -2768,10 +2799,13 @@ module.exports = {
       const delBtn = document.createElement('button')
       delBtn.type = 'button'
       delBtn.setAttribute('data-dsc-btn', '')
-      delBtn.textContent = t('gitUserDelete')
+      delBtn.className = 'dsc-git-remote-icon-btn danger'
+      delBtn.title = t('gitUserDelete')
+      delBtn.innerHTML = GIT_ICON_DELETE
       delBtn.addEventListener('click', () => gitRemoteDelete(remote.name))
       actions.appendChild(delBtn)
-      row.appendChild(actions)
+      main.appendChild(actions)
+      row.appendChild(main)
       return row
     }
     // 添加/编辑共用三字段表单：名称 / Fetch URL / Push URL（留空 = 清除 push URL）
