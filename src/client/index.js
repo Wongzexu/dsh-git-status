@@ -3239,15 +3239,22 @@ module.exports = {
     gitPushBox.appendChild(gitPushActions)
     let gitPushBranch = ''
     let gitPushRemotes = []
-    // remote 选择记忆（localStorage，同 dsc-git-pos 模式）：上次推送的远程组合
-    // 下次打开对话框时恢复；远程被删/改名时过滤失效项，全部失效回退默认。
-    const gitPushRemotesKey = 'dsc-git-push-remotes'
+    // remote 选择记忆按 session 隔离：不同项目不能共享同名 remote 的选择。
+    // session 不可用时只使用内存状态，不读写一个全局 fallback key。
+    const gitPushRemotesKey = () => {
+      const session = currentSessionId()
+      return session === '' ? null : `dsc-git-push-remotes:${encodeURIComponent(session)}`
+    }
     const gitPushRemotesSave = () => {
-      try { localStorage.setItem(gitPushRemotesKey, JSON.stringify(gitPushRemotes)) } catch { /* ignore */ }
+      const key = gitPushRemotesKey()
+      if (key === null) return
+      try { localStorage.setItem(key, JSON.stringify(gitPushRemotes)) } catch { /* ignore */ }
     }
     const gitPushRemotesLoad = () => {
+      const key = gitPushRemotesKey()
+      if (key === null) return null
       try {
-        const raw = JSON.parse(localStorage.getItem(gitPushRemotesKey) ?? 'null')
+        const raw = JSON.parse(localStorage.getItem(key) ?? 'null')
         if (Array.isArray(raw)) return raw.filter((r) => typeof r === 'string')
       } catch { /* ignore */ }
       return null
@@ -3681,6 +3688,10 @@ module.exports = {
       if (gitOpen && document.visibilityState === 'visible') {
         // 会话切换（换工作区）时重建 SSE 订阅；10s 轮询兜底 EventSource 断连
         if (gitEventsSession !== currentSessionId()) {
+          // 弹窗中的 branch/remote 来自旧项目，切换后必须丢弃，避免误操作新项目。
+          gitPushClose()
+          gitPushBranch = ''
+          gitPushRemotes = []
           gitEventsClose()
           gitEventsOpen()
         }
