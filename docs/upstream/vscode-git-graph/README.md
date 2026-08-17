@@ -25,9 +25,24 @@
 
 ## 重新拉取
 
+直连（国外网络可用，走 `master` 分支最新版）：
+
 ```sh
 UPSTREAM=docs/upstream/vscode-git-graph
 BASE=https://raw.githubusercontent.com/mhutchie/vscode-git-graph/master
+curl -sL "$BASE/web/main.ts"         -o $UPSTREAM/main.ts
+curl -sL "$BASE/src/dataSource.ts"   -o $UPSTREAM/dataSource.ts
+curl -sL "$BASE/web/graph.ts"        -o $UPSTREAM/graph.ts
+curl -sL "$BASE/web/contextMenu.ts"  -o $UPSTREAM/contextMenu.ts
+curl -sL "$BASE/CHANGELOG.md"        -o $UPSTREAM/CHANGELOG.md
+```
+
+大陆网络备选（raw.githubusercontent.com 常 TLS 通但数据 0 字节被卡，
+改用 jsDelivr CDN，须带钉住的 commit 而非 `master`）：
+
+```sh
+UPSTREAM=docs/upstream/vscode-git-graph
+BASE=https://cdn.jsdelivr.net/gh/mhutchie/vscode-git-graph@881a9e613045bacbbadf8940f6b6c5b8bd699335
 curl -sL "$BASE/web/main.ts"         -o $UPSTREAM/main.ts
 curl -sL "$BASE/src/dataSource.ts"   -o $UPSTREAM/dataSource.ts
 curl -sL "$BASE/web/graph.ts"        -o $UPSTREAM/graph.ts

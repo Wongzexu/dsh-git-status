@@ -8,7 +8,7 @@
 
 独立 Git 状态（Git Graph）插件：DSH Web 右缘 **Git 状态浮窗** —— commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。
 
-🔖 **v0.4.0** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v0.5.0** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -26,6 +26,9 @@
 - **未提交改动虚拟行**：工作区有改动时图顶部插入虚拟行（空心圆 + 灰色虚线连 HEAD），
   分类显示未暂存/已暂存处数；点击展开按「更改 / 暂存的更改」分组的详情
   （VS Code 语义：部分暂存文件两组各出现一次，未跟踪文件带徽标）
+- **暂存与提交**：右键未提交改动虚拟行可「暂存全部改动」（`git add -A`）、
+  「贮藏未提交改动」、提交已暂存内容或修订上一条提交；普通提交只包含已暂存内容，
+  多行提交信息使用 `Ctrl+Enter`（macOS `Cmd+Enter`）提交
 - **stash 显示**：`git reflog refs/stash` 插入图中（双层圆 + `stash@{n}` 徽标），
   展开详情（base 显式两树 diff + untracked 第三父快照追加）
 - **行内展开详情**：点击 commit 行 → 展开提交信息 + 变更文件（+/- 行数）+ 逐文件 diff
@@ -49,7 +52,7 @@
   remote 单选（默认 origin/首个）+ Set Upstream + Push Mode 三选一
   （normal / force-with-lease / force）；失败保留对话框可改模式重试
 - **stash 操作**：右键 stash 徽标「应用 / 弹出 / 从 stash 创建分支并检出 / 删除（确认框）」；
-  右键未提交改动虚拟行「暂存未提交改动」（说明 + 包含未跟踪文件）；
+  右键未提交改动虚拟行「贮藏未提交改动」（说明 + 包含未跟踪文件）；
   应用冲突（合并冲突 / 本地改动被覆盖）分类提示且 stash 保留
 - **冲突/进行中状态徽标**：头部实时显示「N 个未解决冲突」「合并/rebase 进行中」（`MERGE_HEAD` 等标记）
 - **SSE 即时刷新**：`/git/events` 订阅（2s 服务端状态键对比 + 变化推送 + 15s 心跳），
@@ -103,7 +106,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 4. 点击 commit 行展开详情（提交信息 / 变更文件 / 逐文件 diff）；点击文件行查看该文件 patch；
 5. 右键分支徽标：本地「切换到 x / 推送到远程… / 合并 x / 重命名 x / 删除 x（可强删）」；远程「创建本地分支 x 并检出」；
 6. 右键 tag 徽标「在 x 创建分支并检出」/「推送 tag 到 <远程>」/「删除 tag（可选同步远程）」；头部「＋ 新分支」：输入名称创建并检出新分支（非法名称即时拦截）；
-7. 右键 stash 徽标「应用 / 弹出 / 从 stash 创建分支并检出 / 删除」；右键未提交改动虚拟行「暂存未提交改动」；
+7. 右键 stash 徽标「应用 / 弹出 / 从 stash 创建分支并检出 / 删除」；右键未提交改动虚拟行「贮藏未提交改动」；
 8. 头部徽标提示未解决冲突 / 进行中操作；合并冲突时合并条提供「中止合并 / 继续合并」；
 9. 仓库配置了远程时，头部「⇣」按钮一键拉取全部远程（`git fetch --all`，prune 默认关），完成后图即时刷新。
 
@@ -127,7 +130,7 @@ dsh-git-status/
 ├── package.json          # dsh.bundle.patch + dsh.client.inject + platform: web
 ├── cordis.patch.yml      # 挂载 Node half
 ├── lib/
-│   ├── index.mjs         # Node half：git log/show/branch/fetch/push/remote/stash/events 八路由（末尾导出测试用纯函数）
+│   ├── index.mjs         # Node half：git log/show/branch/fetch/push/remote/stash/stage/commit/events 路由（末尾导出测试用纯函数）
 │   └── client.js         # client bundle（构建产物，__ModuleLoader__ 契约）
 ├── src/client/index.js   # client 源码（手写 CJS，单模块）
 ├── scripts/build-client.js  # 零依赖构建脚本（纯 Node）
@@ -138,6 +141,8 @@ dsh-git-status/
     ├── git-fetch.test.mjs    # 远程列表/名称校验/fetch 失败分类/真实拉取（file:// 裸仓库，含 prune）/写路由（含 CSRF）
     ├── git-push.test.mjs     # push 参数校验/失败分类/真实推送（set-upstream、non-fast-forward→force）/写路由（含 CSRF）
     ├── git-stash.test.mjs    # stash selector 校验/apply/pop/drop/branch/两种冲突形态/写路由（含 CSRF）
+    ├── git-stage.test.mjs    # git add -A 的新增/修改/删除/路由与 session 隔离
+    ├── git-commit.test.mjs   # staged commit/amend/错误分类/路由与 session 隔离
     ├── git-remote.test.mjs   # tag 名校验/删除远程分支（含降级）/推送与删除 tag（含同步远程）/写路由（含 CSRF）
     └── git-events.test.mjs   # SSE 订阅：初始推送/变化检测/心跳/断连清理
 ```
@@ -147,16 +152,17 @@ dsh-git-status/
 - **git 执行**：spawn 系统 `git`（`-C 工作区 --no-pager -c color.ui=false`、`GIT_OPTIONAL_LOCKS=0`、
   `LC_ALL=C` 强制英文输出、`GIT_EDITOR=true` 禁编辑器、15s 超时强杀；fetch/push 放宽到 120s）
 - **布局锚点**：官方 DOM 属性（`data-chat-flow`），不依赖 React 内部结构
-- **安全**：路由根限定**会话权威工作区**（请求带 `session=`，优先 `ctx.sessions.get(id).header.cwd`；
-  缺省回退注册表/进程 cwd），拒绝 `..` 分量与越界路径；只读命令白名单；
-  写路由（分支操作 + 拉取远程 + 推送 + 远程/标签操作 + stash）POST + 强制 `application/json` content-type（CSRF 防护），
+- **安全**：路由根限定**会话权威工作区**（请求必须带 `session=`，只使用
+  `ctx.sessions.get(id).header.cwd`；session 缺失/失效直接拒绝，不回退到其它项目），
+  拒绝 `..` 分量与越界路径；只读命令白名单；
+  写路由（分支操作 + 拉取远程 + 推送 + 远程/标签操作 + stash + stage + commit）POST + 强制 `application/json` content-type（CSRF 防护），
   分支名/remote 名/tag 名/stash selector 权威校验 + argv 数组（无 shell）+ 切换前守卫；fetch/push 超时放宽（120s）
 
 ## 开发
 
 ```sh
 node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js）
-npm test                       # node:test 套件（150 用例，真实 git fixture，零依赖）
+npm test                       # node:test 套件（214 用例，真实 git fixture，零依赖）
 ```
 
 改 Node half 直接改 `lib/index.mjs`（无构建步骤），改完跑 `npm test` 回归。

@@ -519,7 +519,7 @@ test('gitBranchAction.merge-abort: 无合并进行中', async (t) => {
 function fakeCtx(root) {
   const routes = []
   const ctx = {
-    sessions: { get: () => undefined },
+    sessions: { get: (id) => id === 'test-session' ? { header: { cwd: root } } : undefined },
     workspaceRegistry: { list: () => [{ path: root }] },
     webServer: {
       register: (route) => {
@@ -536,6 +536,10 @@ function fakeCtx(root) {
 function fakeReq({ method = 'GET', contentType, body = '' } = {}) {
   const headers = {}
   if (contentType !== undefined) headers['content-type'] = contentType
+  try {
+    const parsed = JSON.parse(body)
+    if (parsed !== null && typeof parsed === 'object') body = JSON.stringify({ ...parsed, session: 'test-session' })
+  } catch { /* malformed-body tests must stay malformed */ }
   return {
     method,
     headers,
@@ -596,7 +600,7 @@ test('写路由: 未知 action → 400', async (t) => {
   assert.equal(JSON.parse(res.payload).error, 'unknown action')
 })
 
-test('写路由: 合法 create 全链路成功（workspaceRoot 回退注册表）', async (t) => {
+test('写路由: 合法 create 全链路成功（严格绑定 session 工作区）', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
   const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')

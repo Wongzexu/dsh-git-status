@@ -1,6 +1,6 @@
 # @wongzexu/dsh-git-status 使用指南 · Usage Guide
 
-> 中英双语（Bilingual）：上方为中文版，下方为 [English version](#wongzexudsh-git-status-usage-guide)。与 [README](../README.md) 配套的详细文字版操作指南，覆盖从打开浮窗到分支操作、冲突处理、远程拉取的全流程。适用版本：v0.4.0+。
+> 中英双语（Bilingual）：上方为中文版，下方为 [English version](#wongzexudsh-git-status-usage-guide)。与 [README](../README.md) 配套的详细文字版操作指南，覆盖从打开浮窗到分支操作、冲突处理、远程拉取的全流程。适用版本：v0.5.0+。
 
 ## 中文版
 
@@ -89,6 +89,14 @@ dsh plugin --profile web add /path/to/dsh-git-status
 - 点击文件行 → 查看该文件 patch；
 - 详情盒高度自适应内容（≤340px 上限），点开 patch 不引起图跳动。
 
+#### 暂存、贮藏与提交
+
+- 右键未提交改动虚拟行 → **暂存全部改动**：执行 `git add -A`，包含新增、修改和删除；
+- **贮藏未提交改动**：将改动保存到 stash 并清理工作区，不等同于暂存；
+- **提交已暂存**：只提交 Git index 中已暂存的内容；没有已暂存改动时该项禁用；
+- **提交已暂存（修订）**：修改上一条提交，可不包含新的 staged 改动；
+- 提交框支持多行信息，普通 Enter 换行，Windows/Linux 使用 `Ctrl+Enter`，macOS 使用 `Cmd+Enter`。
+
 ### 5. 分支操作
 
 #### 右键本地分支徽标
@@ -167,7 +175,7 @@ dsh plugin --profile web remove @wongzexu/dsh-git-status
 
 # @wongzexu/dsh-git-status Usage Guide
 
-> Bilingual companion: English below, [中文版](#中文版) above. A detailed text-based usage guide for the [README](../README_EN.md), covering everything from opening the drawer to branch operations, conflict handling, and fetching from remotes. Applies to v0.4.0+.
+> Bilingual companion: English below, [中文版](#中文版) above. A detailed text-based usage guide for the [README](../README_EN.md), covering everything from opening the drawer to branch operations, conflict handling, and fetching from remotes. Applies to v0.5.0+.
 
 ## 1. Install & enable
 
@@ -253,6 +261,14 @@ Then:
 - Click a commit row to expand: commit message + changed files (+/- line counts) + per-file diffs (256 KB truncation);
 - Click a file row to view that file's patch;
 - The detail box height adapts to content (≤340px) and opening a patch does not shift the graph.
+
+### Staging, stashing, and committing
+
+- Right-click the uncommitted changes row → **Stage all changes**: runs `git add -A`, including added, modified, and deleted files;
+- **Stash uncommitted changes** saves changes to stash and cleans the worktree; it is not the same as staging;
+- **Commit staged changes** commits only the Git index; the item is disabled when nothing is staged;
+- **Commit staged changes (amend)** edits the previous commit and may run without new staged changes;
+- The commit dialog supports multiline messages. Press Enter for a newline, `Ctrl+Enter` on Windows/Linux, or `Cmd+Enter` on macOS to submit.
 
 ## 5. Branch operations
 
