@@ -91,6 +91,7 @@ const I18N = {
     gitErrRemoteUnreachable: '远程仓库不存在或不可达',
     gitErrSessionRequired: '当前会话不可用，请重新选择会话后重试',
     gitErrSessionNotFound: '当前会话已失效，请重新选择会话后重试',
+    gitErrSessionChanged: '会话已切换，请重新打开推送窗口',
     gitPush: '推送到远程…',
     gitPushTitle: '推送分支 {branch}',
     gitPushRemote: '推送目标远程',
@@ -316,6 +317,7 @@ const I18N = {
     gitErrRemoteUnreachable: 'Remote repository not found or unreachable',
     gitErrSessionRequired: 'The current session is unavailable; select a session and try again',
     gitErrSessionNotFound: 'The current session has expired; select a session and try again',
+    gitErrSessionChanged: 'The session changed; reopen the push dialog',
     gitPush: 'Push to remote…',
     gitPushTitle: 'Push branch {branch}',
     gitPushRemote: 'Push to remote',
@@ -1837,12 +1839,18 @@ module.exports = {
     })
     const gitFetch = async (silent, force) => {
       if (!silent) renderGitNote(t('gitLoading'))
+      const requestSession = currentSessionId()
+      if (requestSession === '') {
+        if (!silent) renderGitNote(gitErrText({ code: 'session-required' }))
+        return
+      }
       try {
         // 日志选项（分区三「显示」）：仅跟随第一父（--first-parent）/ 包含 reflog 提交
         // （--reflog）改的是服务端 log 参数，切换后必须重拉才生效。
         const logPrefs = gitSettingsStoreLoad()
         const r = await fetch(`${BASE}/git/log?n=500&scope=${gitScopeValue}&follow=${logPrefs.onlyFirstParent === true ? 1 : 0}&reflogs=${logPrefs.includeReflogs === true ? 1 : 0}${sessionQuery()}`)
         const data = await r.json()
+        if (requestSession !== currentSessionId()) return
         if (data.error !== undefined) throw data.error
         if (data.isRepo === false) {
           gitRows = []
@@ -1875,6 +1883,7 @@ module.exports = {
         renderGitGraph()
         renderGitState()
       } catch (err) {
+        if (requestSession !== currentSessionId()) return
         if (!silent) renderGitNote(gitErrText(err))
       }
     }
@@ -1948,6 +1957,10 @@ module.exports = {
     const gitEventsOpen = () => {
       if (gitEvents !== null) return
       const session = currentSessionId()
+      if (session === '') {
+        gitEventsSession = ''
+        return
+      }
       gitEventsSession = session
       try {
         gitEvents = new EventSource(`${BASE}/git/events?session=${encodeURIComponent(session)}`)
@@ -1958,8 +1971,7 @@ module.exports = {
       gitEvents.addEventListener('change', () => { gitFetch(true) })
     }
     const gitEventsClose = () => {
-      if (gitEvents === null) return
-      gitEvents.close()
+      if (gitEvents !== null) gitEvents.close()
       gitEvents = null
       gitEventsSession = ''
     }
@@ -3239,6 +3251,7 @@ module.exports = {
     gitPushBox.appendChild(gitPushActions)
     let gitPushBranch = ''
     let gitPushRemotes = []
+    let gitPushSession = ''
     // remote 选择记忆按 session 隔离：不同项目不能共享同名 remote 的选择。
     // session 不可用时只使用内存状态，不读写一个全局 fallback key。
     const gitPushRemotesKey = () => {
@@ -3259,8 +3272,13 @@ module.exports = {
       } catch { /* ignore */ }
       return null
     }
-    const gitPushClose = () => { gitPushBox.style.display = 'none' }
+    const gitPushClose = () => {
+      gitPushBox.style.display = 'none'
+      gitPushSession = ''
+    }
     const gitPushOpen = (branchName) => {
+      gitPushSession = currentSessionId()
+      if (gitPushSession === '') return
       gitPushBranch = branchName
       // 记忆的远程组合（仅保留当前仍存在的远程，按 gitRemotes 顺序）；
       // 无记忆或全部失效 → 回退默认 origin（存在时）或第一个远程
@@ -3310,6 +3328,14 @@ module.exports = {
     })
     const gitPushRun = async () => {
       gitPushSubmit.disabled = true
+      const session = currentSessionId()
+      if (gitPushSession === '' || session === '' || gitPushSession !== session) {
+        gitPushClose()
+        gitPushBranch = ''
+        gitPushRemotes = []
+        flash(t('gitErrSessionChanged'), 'error')
+        return
+      }
       const mode = gitPushModeBtns.find((b) => b.classList.contains('on'))?.dataset.mode ?? 'normal'
       try {
         await gitPost('/git/push', {
