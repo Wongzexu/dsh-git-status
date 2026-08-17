@@ -600,7 +600,7 @@ test('写路由: 未知 action → 400', async (t) => {
   assert.equal(JSON.parse(res.payload).error, 'unknown action')
 })
 
-test('写路由: 合法 create 全链路成功（workspaceRoot 回退注册表）', async (t) => {
+test('写路由: 合法 create 全链路成功（严格绑定 session 工作区）', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
   const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')

@@ -142,6 +142,23 @@ const I18N = {
     gitErrInvalidTagName: '无效的 tag 名',
     gitErrRemoteRefNotFound: '远程引用不存在',
     gitPushBtn: '推送',
+    gitStageAll: '暂存全部改动',
+    gitStageAllOk: '已暂存全部改动',
+    gitCommitStaged: '提交已暂存…',
+    gitCommitStagedTitle: '提交已暂存',
+    gitCommitStagedAmendTitle: '提交已暂存（修订）',
+    gitCommitStagedAmend: '提交已暂存（修订）…',
+    gitCommitMessage: '提交信息',
+    gitCommitOk: '已提交 `{hash}`',
+    gitCommitAmendOk: '已修订 `{hash}`',
+    gitCommitSubmit: '提交',
+    gitErrEmptyCommitMessage: '提交信息不能为空',
+    gitErrNothingToCommit: '没有已暂存的改动可提交',
+    gitErrIdentityMissing: 'git 未配置用户名/邮箱',
+    gitErrCommitHookFailed: '提交被 hook 拒绝',
+    gitErrUnmergedFiles: '存在未合并的冲突文件，无法提交',
+    gitErrNoCommitToAmend: '没有可修订的上一次提交',
+    gitErrCommitSessionChanged: '会话已切换，请重新打开提交窗口',
     gitStashApply: '应用 stash {selector}',
     gitStashPop: '弹出 stash {selector}',
     gitStashDrop: '删除 stash {selector}',
@@ -368,6 +385,23 @@ const I18N = {
     gitErrInvalidTagName: 'Invalid tag name',
     gitErrRemoteRefNotFound: 'Remote reference not found',
     gitPushBtn: 'Push',
+    gitStageAll: 'Stage all changes',
+    gitStageAllOk: 'All changes staged',
+    gitCommitStaged: 'Commit staged changes…',
+    gitCommitStagedTitle: 'Commit staged changes',
+    gitCommitStagedAmendTitle: 'Commit staged changes (amend)',
+    gitCommitStagedAmend: 'Commit staged changes (amend)…',
+    gitCommitMessage: 'Commit message',
+    gitCommitOk: 'Committed `{hash}`',
+    gitCommitAmendOk: 'Amended `{hash}`',
+    gitCommitSubmit: 'Commit',
+    gitErrEmptyCommitMessage: 'Commit message must not be empty',
+    gitErrNothingToCommit: 'No staged changes to commit',
+    gitErrIdentityMissing: 'git user.name/user.email is not configured',
+    gitErrCommitHookFailed: 'Commit rejected by a hook',
+    gitErrUnmergedFiles: 'Unmerged conflict files — cannot commit',
+    gitErrNoCommitToAmend: 'There is no commit to amend',
+    gitErrCommitSessionChanged: 'The session changed; reopen the commit dialog',
     gitStashApply: 'Apply stash {selector}',
     gitStashPop: 'Pop stash {selector}',
     gitStashDrop: 'Drop stash {selector}',
@@ -647,7 +681,7 @@ module.exports = {
 }
 [data-dsc-git-confirm] .dsc-git-confirm-ok-danger:hover { background: rgba(255,92,92,1); }
 /* push/stash/tag 对话框（浮层卡片，同 confirm/create 框风格）：选项行 + toggle 按钮 */
-[data-dsc-git-push], [data-dsc-git-stash], [data-dsc-git-tag] {
+[data-dsc-git-push], [data-dsc-git-stash], [data-dsc-git-commit], [data-dsc-git-tag] {
   position: fixed; z-index: 930; min-width: 250px; max-width: 340px;
   border-radius: 8px; padding: 10px 12px; display: none; font-size: 12px;
   box-sizing: border-box; color: var(--dsw-alias-text-1, #eee);
@@ -663,7 +697,7 @@ module.exports = {
 }
 [data-dsc-git-tag] .dsc-git-tag-actions [data-dsc-btn] { margin-left: auto; }
 [data-dsc-git-tag] .dsc-git-tag-push-label { opacity: .6; font-size: 11px; flex: none; }
-[data-dsc-git-push] .dsc-git-push-title, [data-dsc-git-stash] .dsc-git-stash-title, [data-dsc-git-tag] .dsc-git-tag-title {
+[data-dsc-git-push] .dsc-git-push-title, [data-dsc-git-stash] .dsc-git-stash-title, [data-dsc-git-commit] .dsc-git-commit-title, [data-dsc-git-tag] .dsc-git-tag-title {
   font-weight: 600; margin-bottom: 8px;
 }
 .dsc-git-opt-row {
@@ -672,12 +706,14 @@ module.exports = {
 }
 .dsc-git-opt-row label { opacity: .85; flex: 1; min-width: 0; }
 .dsc-git-opt-group { display: flex; gap: 4px; flex: none; }
-[data-dsc-git-stash] input[type='text'], [data-dsc-git-tag] input[type='text'] {
+[data-dsc-git-stash] input[type='text'], [data-dsc-git-tag] input[type='text'], [data-dsc-git-commit] textarea {
   width: 100%; box-sizing: border-box; padding: 4px 6px; border-radius: 6px;
   border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.25);
   color: inherit; font-size: 11px; outline: none; margin-bottom: 6px;
 }
-[data-dsc-git-stash] input[type='text']:focus, [data-dsc-git-tag] input[type='text']:focus { border-color: var(--dsw-alias-text-accent, #4c9aff); }
+[data-dsc-git-stash] input[type='text']:focus, [data-dsc-git-tag] input[type='text']:focus, [data-dsc-git-commit] textarea:focus { border-color: var(--dsw-alias-text-accent, #4c9aff); }
+[data-dsc-git-commit] textarea { min-height: 72px; max-height: 180px; resize: vertical; line-height: 1.4; }
+[data-dsc-git-commit] .dsc-git-commit-error { color: #ff8d8d; white-space: pre-wrap; line-height: 1.4; margin-top: 4px; }
 /* toggle 按钮（Set Upstream / Include Untracked / Push Mode 互斥组）：on 高亮 accent */
 .dsc-git-toggle {
   border: 1px solid rgba(255,255,255,.14); border-radius: 6px; padding: 2px 8px;
@@ -1936,8 +1972,8 @@ module.exports = {
     const gitBranchAction = (payload) => gitPost('/git/branch', payload)
 
     /** 写路由 POST；没有当前 session 时拒绝请求，避免误操作其它项目。 */
-    const gitPost = async (path, payload) => {
-      const session = currentSessionId()
+    const gitPost = async (path, payload, fixedSession = null) => {
+      const session = fixedSession === null ? currentSessionId() : fixedSession
       if (session === '') throw { code: 'session-required', message: t('gitErrSessionRequired') }
       const r = await fetch(`${BASE}${path}`, {
         method: 'POST',
@@ -1948,6 +1984,21 @@ module.exports = {
       if (data === null) throw { code: 'internal', message: t('gitErr') }
       if (data.ok === true) return data
       throw data.error ?? { code: 'internal', message: t('gitErr') }
+    }
+
+    let gitStageBusy = false
+    const gitStageRun = async () => {
+      if (gitStageBusy) return
+      gitStageBusy = true
+      try {
+        await gitPost('/git/stage', {})
+        flash(t('gitStageAllOk'))
+        gitFetch(true, true)
+      } catch (err) {
+        flash(gitErrText(err), 'error')
+      } finally {
+        gitStageBusy = false
+      }
     }
 
     // ---------- SSE 订阅（2.1）：/git/events，仓库状态变化即时刷新 ----------
@@ -2278,9 +2329,21 @@ module.exports = {
             // 未提交改动虚拟行右键：贮藏未提交改动（上游 Uncommitted Context Menu 核心项）
             ev.preventDefault()
             ev.stopPropagation()
+            const uncommitted = gitRows.find((commit) => commit.hash === 'UNCOMMITTED')
+            const stagedCount = uncommitted?.uncommitted?.staged ?? 0
             gitCtxOpen(ev.clientX, ev.clientY, [{
+              label: t('gitStageAll'),
+              onClick: () => gitStageRun(),
+            }, {
               label: t('gitStashUncommitted'),
               onClick: () => gitStashBoxOpen(),
+            }, {
+              label: t('gitCommitStaged'),
+              disabled: stagedCount === 0,
+              onClick: () => gitCommitBoxOpen(false),
+            }, {
+              label: t('gitCommitStagedAmend'),
+              onClick: () => gitCommitBoxOpen(true),
             }])
           } else if (row.dataset.hash !== '') {
             // 普通 commit 行右键：创建 tag / 新建分支（上游 Commit Context Menu：
@@ -3663,6 +3726,114 @@ module.exports = {
       if (!gitStashBox.contains(ev.target)) gitStashBoxClose()
     })
 
+    // ---------- 提交对话框（未提交行右键「提交已暂存」） ----------
+    const gitCommitBox = document.createElement('div')
+    gitCommitBox.setAttribute('data-dsc-git-commit', '')
+    body.appendChild(gitCommitBox)
+    const gitCommitTitle = document.createElement('div')
+    gitCommitTitle.className = 'dsc-git-commit-title'
+    const gitCommitMessage = document.createElement('textarea')
+    gitCommitMessage.placeholder = t('gitCommitMessage')
+    const gitCommitError = document.createElement('div')
+    gitCommitError.className = 'dsc-git-commit-error'
+    gitCommitError.style.display = 'none'
+    const gitCommitActions = document.createElement('div')
+    gitCommitActions.className = 'dsc-git-opt-actions'
+    const gitCommitSubmit = document.createElement('button')
+    gitCommitSubmit.type = 'button'
+    gitCommitSubmit.setAttribute('data-dsc-btn', '')
+    gitCommitSubmit.textContent = t('gitCommitSubmit')
+    const gitCommitCancel = document.createElement('button')
+    gitCommitCancel.type = 'button'
+    gitCommitCancel.setAttribute('data-dsc-btn', '')
+    gitCommitCancel.textContent = t('gitCancel')
+    gitCommitActions.appendChild(gitCommitSubmit)
+    gitCommitActions.appendChild(gitCommitCancel)
+    gitCommitBox.appendChild(gitCommitTitle)
+    gitCommitBox.appendChild(gitCommitMessage)
+    gitCommitBox.appendChild(gitCommitError)
+    gitCommitBox.appendChild(gitCommitActions)
+    let gitCommitAmend = false
+    let gitCommitSession = ''
+    let gitCommitBusy = false
+    let gitCommitRequestId = 0
+    const gitCommitBoxClose = (force = false) => {
+      if (gitCommitBusy && force !== true) return
+      gitCommitRequestId++
+      gitCommitBox.style.display = 'none'
+      gitCommitSession = ''
+    }
+    const gitCommitBoxOpen = (amend) => {
+      gitCommitSession = currentSessionId()
+      if (gitCommitSession === '') {
+        flash(t('gitErrSessionRequired'), 'error')
+        return
+      }
+      gitCommitAmend = amend === true
+      gitCommitBusy = false
+      gitCommitRequestId++
+      gitCommitTitle.textContent = t(gitCommitAmend ? 'gitCommitStagedAmendTitle' : 'gitCommitStagedTitle')
+      gitCommitMessage.value = ''
+      gitCommitError.textContent = ''
+      gitCommitError.style.display = 'none'
+      gitCommitSubmit.disabled = true
+      gitCommitBox.style.display = 'block'
+      const headRect = gitHead.getBoundingClientRect()
+      gitCommitBox.style.left = `${Math.min(headRect.left, window.innerWidth - 300)}px`
+      gitCommitBox.style.top = `${headRect.bottom + 6}px`
+      gitCommitMessage.focus()
+    }
+    const gitCommitBoxRun = async () => {
+      if (gitCommitBusy) return
+      const session = currentSessionId()
+      if (gitCommitSession === '' || session === '' || gitCommitSession !== session) {
+        gitCommitBoxClose()
+        flash(t('gitErrCommitSessionChanged'), 'error')
+        return
+      }
+      if (gitCommitMessage.value.trim() === '') return
+      const requestId = ++gitCommitRequestId
+      gitCommitBusy = true
+      gitCommitSubmit.disabled = true
+      gitCommitError.style.display = 'none'
+      try {
+        const result = await gitPost('/git/commit', {
+          message: gitCommitMessage.value,
+          amend: gitCommitAmend,
+        }, gitCommitSession)
+        if (requestId !== gitCommitRequestId) return
+        const shortHash = result.hash.slice(0, 7)
+        gitCommitBusy = false
+        gitCommitBoxClose()
+        flash(t(gitCommitAmend ? 'gitCommitAmendOk' : 'gitCommitOk', { hash: shortHash }))
+        gitFetch(true, true)
+      } catch (err) {
+        if (requestId !== gitCommitRequestId) return
+        gitCommitBusy = false
+        gitCommitError.textContent = gitErrText(err)
+        gitCommitError.style.display = 'block'
+        gitCommitSubmit.disabled = false
+      }
+    }
+    gitCommitMessage.addEventListener('input', () => {
+      gitCommitSubmit.disabled = gitCommitMessage.value.trim() === ''
+    })
+    gitCommitMessage.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') gitCommitBoxClose()
+      else if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
+        ev.preventDefault()
+        gitCommitBoxRun()
+      }
+    })
+    gitCommitSubmit.addEventListener('click', gitCommitBoxRun)
+    gitCommitCancel.addEventListener('click', gitCommitBoxClose)
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && gitCommitBox.style.display !== 'none') gitCommitBoxClose()
+    })
+    document.addEventListener('click', (ev) => {
+      if (gitCommitBox.style.display !== 'none' && !gitCommitBox.contains(ev.target)) gitCommitBoxClose()
+    })
+
     /** stash 徽标右键统一入口（apply/pop/drop）：成功 flash + 刷新。 */
     const gitStashRun = async (action, selector) => {
       const shortSel = selector.replace(/^refs\//, '')
@@ -3718,6 +3889,7 @@ module.exports = {
           gitPushClose()
           gitPushBranch = ''
           gitPushRemotes = []
+          gitCommitBoxClose(true)
           gitEventsClose()
           gitEventsOpen()
         }
