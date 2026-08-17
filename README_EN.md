@@ -116,7 +116,7 @@ dsh-git-status/
 - **Data channel**: the Node half registers `/plugins/dsh-gitstatus/*` routes (webServer); the client subscribes to SSE `/git/events` for live refresh with a 10s poll fallback
 - **git execution**: spawns the system `git` (`-C workspace --no-pager -c color.ui=false`, `GIT_OPTIONAL_LOCKS=0`, `LC_ALL=C` for stable English output, `GIT_EDITOR=true` to disable editors, 15s timeout hard kill; fetch relaxed to 120s)
 - **Layout anchor**: official DOM attributes (`data-chat-flow`), no dependency on React internals
-- **Security**: routes are rooted at the session's authoritative workspace (request carries `session=`, preferring `ctx.sessions.get(id).header.cwd`; falls back to registry/process cwd), rejecting `..` components and out-of-bounds paths; read-only command whitelist; write routes (branch operations + fetch) are POST with enforced `application/json` content-type (CSRF protection), authoritative branch-name validation + argv arrays (no shell) + pre-switch guards; fetch timeout relaxed (120s for slow networks and large repos)
+- **Security**: routes are rooted at the session's authoritative workspace (request must carry `session=` and only `ctx.sessions.get(id).header.cwd` is trusted; missing/invalid sessions are rejected instead of falling back to another project), rejecting `..` components and out-of-bounds paths; read-only command whitelist; write routes (branch operations + fetch) are POST with enforced `application/json` content-type (CSRF protection), authoritative branch-name validation + argv arrays (no shell) + pre-switch guards; fetch timeout relaxed (120s for slow networks and large repos)
 
 ## Development
 

@@ -147,8 +147,9 @@ dsh-git-status/
 - **git 执行**：spawn 系统 `git`（`-C 工作区 --no-pager -c color.ui=false`、`GIT_OPTIONAL_LOCKS=0`、
   `LC_ALL=C` 强制英文输出、`GIT_EDITOR=true` 禁编辑器、15s 超时强杀；fetch/push 放宽到 120s）
 - **布局锚点**：官方 DOM 属性（`data-chat-flow`），不依赖 React 内部结构
-- **安全**：路由根限定**会话权威工作区**（请求带 `session=`，优先 `ctx.sessions.get(id).header.cwd`；
-  缺省回退注册表/进程 cwd），拒绝 `..` 分量与越界路径；只读命令白名单；
+- **安全**：路由根限定**会话权威工作区**（请求必须带 `session=`，只使用
+  `ctx.sessions.get(id).header.cwd`；session 缺失/失效直接拒绝，不回退到其它项目），
+  拒绝 `..` 分量与越界路径；只读命令白名单；
   写路由（分支操作 + 拉取远程 + 推送 + 远程/标签操作 + stash）POST + 强制 `application/json` content-type（CSRF 防护），
   分支名/remote 名/tag 名/stash selector 权威校验 + argv 数组（无 shell）+ 切换前守卫；fetch/push 超时放宽（120s）
 

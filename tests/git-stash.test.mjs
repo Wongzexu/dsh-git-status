@@ -189,7 +189,7 @@ test('gitStashAction: 未知 action → internal', async (t) => {
 function fakeCtx(root) {
   const routes = []
   const ctx = {
-    sessions: { get: () => undefined },
+    sessions: { get: (id) => id === 'test-session' ? { header: { cwd: root } } : undefined },
     workspaceRegistry: { list: () => [{ path: root }] },
     webServer: {
       register: (route) => {
@@ -206,6 +206,10 @@ function fakeCtx(root) {
 function fakeReq({ method = 'GET', contentType, body = '', url = GIT_STASH_PATH } = {}) {
   const headers = {}
   if (contentType !== undefined) headers['content-type'] = contentType
+  try {
+    const parsed = JSON.parse(body)
+    if (parsed !== null && typeof parsed === 'object') body = JSON.stringify({ ...parsed, session: 'test-session' })
+  } catch { /* malformed-body tests must stay malformed */ }
   return {
     method,
     headers,

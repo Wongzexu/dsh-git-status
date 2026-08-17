@@ -11,7 +11,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 function fakeCtx(root, intervals) {
   const routes = []
   const ctx = {
-    sessions: { get: () => undefined },
+    sessions: { get: (id) => id === 'test-session' ? { header: { cwd: root } } : undefined },
     workspaceRegistry: { list: () => [{ path: root }] },
     webServer: {
       register: (route) => {
@@ -64,7 +64,7 @@ test('events: 连接即推初始状态，无变化不重复推，变化才推', 
   const req = fakeStream()
   req.method = 'GET'
   req.headers = {}
-  req.url = GIT_EVENTS_PATH
+  req.url = `${GIT_EVENTS_PATH}?session=test-session`
   await route.handler(req, res)
   t.after(() => req.emit('close'))
   await wait(150)
@@ -88,7 +88,7 @@ test('events: 断连后清理订阅，不再推送', async (t) => {
   const req = fakeStream()
   req.method = 'GET'
   req.headers = {}
-  req.url = GIT_EVENTS_PATH
+  req.url = `${GIT_EVENTS_PATH}?session=test-session`
   await route.handler(req, res)
   await wait(150)
   req.emit('close') // 客户端断开
@@ -107,7 +107,7 @@ test('events: 删除分支触发推送（refs 指纹）', async (t) => {
   const req = fakeStream()
   req.method = 'GET'
   req.headers = {}
-  req.url = GIT_EVENTS_PATH
+  req.url = `${GIT_EVENTS_PATH}?session=test-session`
   await route.handler(req, res)
   t.after(() => req.emit('close'))
   await wait(150)
@@ -128,7 +128,7 @@ test('events: stash drop 触发推送（stash 指纹）', async (t) => {
   const req = fakeStream()
   req.method = 'GET'
   req.headers = {}
-  req.url = GIT_EVENTS_PATH
+  req.url = `${GIT_EVENTS_PATH}?session=test-session`
   await route.handler(req, res)
   t.after(() => req.emit('close'))
   await wait(150)
@@ -147,7 +147,7 @@ test('events: 心跳注释保活（: ping）', async (t) => {
   const req = fakeStream()
   req.method = 'GET'
   req.headers = {}
-  req.url = GIT_EVENTS_PATH
+  req.url = `${GIT_EVENTS_PATH}?session=test-session`
   await route.handler(req, res)
   t.after(() => req.emit('close'))
   await wait(150)
@@ -162,7 +162,7 @@ test('events: 非 GET → 405', async (t) => {
   const req = fakeStream()
   req.method = 'POST'
   req.headers = {}
-  req.url = GIT_EVENTS_PATH
+  req.url = `${GIT_EVENTS_PATH}?session=test-session`
   await route.handler(req, res)
   assert.equal(res.status, 405)
 })

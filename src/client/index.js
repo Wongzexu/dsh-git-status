@@ -89,6 +89,8 @@ const I18N = {
     gitErrNetworkError: '网络或认证错误',
     gitErrRemoteNotFound: '远程不存在',
     gitErrRemoteUnreachable: '远程仓库不存在或不可达',
+    gitErrSessionRequired: '当前会话不可用，请重新选择会话后重试',
+    gitErrSessionNotFound: '当前会话已失效，请重新选择会话后重试',
     gitPush: '推送到远程…',
     gitPushTitle: '推送分支 {branch}',
     gitPushRemote: '推送目标远程',
@@ -312,6 +314,8 @@ const I18N = {
     gitErrNetworkError: 'Network or authentication error',
     gitErrRemoteNotFound: 'Remote not found',
     gitErrRemoteUnreachable: 'Remote repository not found or unreachable',
+    gitErrSessionRequired: 'The current session is unavailable; select a session and try again',
+    gitErrSessionNotFound: 'The current session has expired; select a session and try again',
     gitPush: 'Push to remote…',
     gitPushTitle: 'Push branch {branch}',
     gitPushRemote: 'Push to remote',
@@ -896,12 +900,20 @@ module.exports = {
       msgTimer = setTimeout(() => { msg.style.display = 'none' }, 1400)
     }
     // 当前会话 id（client 端 sessions 服务，better-sidebar 模式）：
-    // 惰性解析——每次请求时取最新选中会话；服务不可用时返回空串，
-    // 服务端自动回退 workspaceRegistry / process.cwd()。
+    // 惰性解析——每次请求时取最新选中会话。服务不可用时返回空串，
+    // 服务端会拒绝请求，绝不回退到其它工作区。
     const currentSessionId = () => {
       try {
         const sessions = ctx?.get?.('sessions')
-        return sessions?.list?.getSnapshot?.()?.current ?? ''
+        const snapshot = sessions?.list?.getSnapshot?.()
+        const current = snapshot?.current
+        if (typeof current === 'string') return current
+        if (current !== null && typeof current === 'object') {
+          if (typeof current.id === 'string') return current.id
+          if (typeof current.sessionId === 'string') return current.sessionId
+        }
+        if (typeof snapshot?.currentId === 'string') return snapshot.currentId
+        return ''
       } catch {
         return ''
       }
@@ -1831,7 +1843,7 @@ module.exports = {
         const logPrefs = gitSettingsStoreLoad()
         const r = await fetch(`${BASE}/git/log?n=500&scope=${gitScopeValue}&follow=${logPrefs.onlyFirstParent === true ? 1 : 0}&reflogs=${logPrefs.includeReflogs === true ? 1 : 0}${sessionQuery()}`)
         const data = await r.json()
-        if (data.error !== undefined) throw new Error(data.error)
+        if (data.error !== undefined) throw data.error
         if (data.isRepo === false) {
           gitRows = []
           gitRawRows = []
@@ -1862,8 +1874,8 @@ module.exports = {
         }
         renderGitGraph()
         renderGitState()
-      } catch {
-        if (!silent) renderGitNote(t('gitError'))
+      } catch (err) {
+        if (!silent) renderGitNote(gitErrText(err))
       }
     }
 
@@ -1914,12 +1926,14 @@ module.exports = {
     /** 分支操作 POST（写路由）；resolve { ok, branch }，reject { code, message, paths? }。 */
     const gitBranchAction = (payload) => gitPost('/git/branch', payload)
 
-    /** 写路由 POST（/git/branch、/git/fetch 共用）；resolve { ok, ... }，reject { code, message, paths? }。 */
+    /** 写路由 POST；没有当前 session 时拒绝请求，避免误操作其它项目。 */
     const gitPost = async (path, payload) => {
+      const session = currentSessionId()
+      if (session === '') throw { code: 'session-required', message: t('gitErrSessionRequired') }
       const r = await fetch(`${BASE}${path}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...payload, session: currentSessionId() }),
+        body: JSON.stringify({ ...payload, session }),
       })
       const data = await r.json().catch(() => null)
       if (data === null) throw { code: 'internal', message: t('gitErr') }
