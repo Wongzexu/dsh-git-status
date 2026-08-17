@@ -56,6 +56,17 @@ function parseFrames(text) {
 
 const changeCount = (res) => parseFrames(res.text()).filter((f) => f.event === 'change').length
 
+/** 轮询待 count 达到 minCount（最多 timeoutMs；负载下轮询周期可能拉长），返回最终计数。 */
+async function waitForChange(res, minCount, timeoutMs = 3000) {
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    const count = changeCount(res)
+    if (count >= minCount) return count
+    if (Date.now() >= deadline) return count
+    await wait(50)
+  }
+}
+
 test('events: 连接即推初始状态，无变化不重复推，变化才推', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
@@ -67,17 +78,15 @@ test('events: 连接即推初始状态，无变化不重复推，变化才推', 
   req.url = `${GIT_EVENTS_PATH}?session=test-session`
   await route.handler(req, res)
   t.after(() => req.emit('close'))
-  await wait(150)
   assert.equal(res.status, 200)
   assert.equal(res.headers['content-type'], 'text/event-stream; charset=utf-8')
-  assert.equal(changeCount(res), 1) // 初始推送
+  assert.equal(await waitForChange(res, 1), 1) // 初始推送
   const first = parseFrames(res.text()).find((f) => f.event === 'change')
   assert.ok(first.data.includes('"key"'))
   await wait(120)
   assert.equal(changeCount(res), 1) // 无变化不重复推
   await repo.commit('c2') // 仓库状态变化
-  await wait(200)
-  assert.ok(changeCount(res) >= 2, `expected >=2 change events, got ${changeCount(res)}`)
+  assert.ok((await waitForChange(res, 2)) >= 2, `expected >=2 change events, got ${changeCount(res)}`)
 })
 
 test('events: 断连后清理订阅，不再推送', async (t) => {
@@ -90,9 +99,8 @@ test('events: 断连后清理订阅，不再推送', async (t) => {
   req.headers = {}
   req.url = `${GIT_EVENTS_PATH}?session=test-session`
   await route.handler(req, res)
-  await wait(150)
+  const count = await waitForChange(res, 1) // 等初始推送落地
   req.emit('close') // 客户端断开
-  const count = changeCount(res)
   await repo.commit('c3')
   await wait(150)
   assert.equal(changeCount(res), count) // 清理后不再推
@@ -110,12 +118,10 @@ test('events: 删除分支触发推送（refs 指纹）', async (t) => {
   req.url = `${GIT_EVENTS_PATH}?session=test-session`
   await route.handler(req, res)
   t.after(() => req.emit('close'))
-  await wait(150)
-  assert.equal(changeCount(res), 1) // 初始推送
+  assert.equal(await waitForChange(res, 1), 1) // 初始推送
   // 删分支：HEAD/未提交/冲突/操作均不变，仅 refs 指纹变化 → 应推送
   await repo.git(['branch', '-D', 'feature'])
-  await wait(200)
-  assert.ok(changeCount(res) >= 2, `expected refs-change push, got ${changeCount(res)}`)
+  assert.ok((await waitForChange(res, 2)) >= 2, `expected refs-change push, got ${changeCount(res)}`)
 })
 
 test('events: stash drop 触发推送（stash 指纹）', async (t) => {
@@ -131,12 +137,10 @@ test('events: stash drop 触发推送（stash 指纹）', async (t) => {
   req.url = `${GIT_EVENTS_PATH}?session=test-session`
   await route.handler(req, res)
   t.after(() => req.emit('close'))
-  await wait(150)
-  assert.equal(changeCount(res), 1) // 初始推送
+  assert.equal(await waitForChange(res, 1), 1) // 初始推送
   // stash drop：工作区/HEAD/refs 均不变，仅 stash 首项指纹变化 → 应推送
   await repo.git(['stash', 'drop'])
-  await wait(200)
-  assert.ok(changeCount(res) >= 2, `expected stash-change push, got ${changeCount(res)}`)
+  assert.ok((await waitForChange(res, 2)) >= 2, `expected stash-change push, got ${changeCount(res)}`)
 })
 
 test('events: 心跳注释保活（: ping）', async (t) => {

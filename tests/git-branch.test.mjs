@@ -240,6 +240,31 @@ test('gitBranchAction.checkout: 远程 start-point 建本地跟踪分支', async
   assert.equal(await repo.currentBranch(), 'feat')
 })
 
+test('gitBranchAction.checkout: 远程名与已有本地分支冲突 → branch-already-exists（客户端据此转问检出已有分支/换名）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('feat')
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.git(['update-ref', 'refs/remotes/origin/feat', head])
+  const result = await gitBranchAction(repo.root, 'checkout', { branch: 'feat', remote: 'origin/feat' })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'branch-already-exists')
+  assert.equal(await repo.currentBranch(), 'main') // 未切换、本地 feat 未被覆盖
+})
+
+test('gitBranchAction.checkout: 远程 start-point + 自定义本地名（换名创建，跟踪上游）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  // 配了 remote（含标准 refspec）才可能映射上游；真实仓库必然已配置。
+  await repo.git(['remote', 'add', 'origin', '/tmp/nonexistent-remote'])
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.git(['update-ref', 'refs/remotes/origin/feat', head])
+  const result = await gitBranchAction(repo.root, 'checkout', { branch: 'feat-copy', remote: 'origin/feat' })
+  assert.deepEqual(result, { ok: true, branch: 'feat-copy' })
+  assert.equal(await repo.currentBranch(), 'feat-copy')
+  assert.equal((await repo.git(['rev-parse', 'feat-copy@{upstream}'])).trim(), head) // 建立上游跟踪
+})
+
 test('gitBranchAction.checkout: 本地改动会被覆盖 → 稳定错误码 + 被挡路径', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1', { files: { 'f.txt': 'A\n' } })

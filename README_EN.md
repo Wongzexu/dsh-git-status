@@ -23,7 +23,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 - **Inline expandable details**: click a commit row to expand commit message + changed files (+/- line counts) + per-file diffs (256 KB truncation); the detail box height adapts to content (≤340px) and opening a patch does not shift the graph
 - **Branch operations**:
   - Right-click a local branch badge: switch to x / merge x into current / rename x / delete x / force delete x (second confirmation when unmerged)
-  - Right-click a remote branch badge: "create local branch x and check out" (a collapsed count badge asks you to pick a remote first); right-click a tag badge: "create branch at x and check out"
+  - Right-click a remote branch badge: "create local branch x and check out" — if a same-named local branch already exists, a three-choice dialog appears: check out the existing branch / create a local branch with a different name (with upstream tracking) / cancel (mirroring the upstream checkoutBranchAction); (a collapsed count badge asks you to pick a remote first); right-click a tag badge: "create branch at x and check out"
   - Header "＋ New branch" dialog: instant client-side validation + authoritative server-side `check-ref-format` validation
   - Switch guard: unresolved conflicts / in-progress operations (`MERGE_HEAD` etc.) / target branch checked out in another worktree → stable error codes; with **tracked** uncommitted changes a "switch anyway" confirmation dialog appears (confirming proceeds with the `force` bypass; untracked-only changes do not block)
   - After a merge conflict: header badge + merge bar offer "abort merge / continue merge" (resolve conflicts, `git add`, then continue)
@@ -77,7 +77,7 @@ Replace `/path/to/dsh-git-status` with the actual plugin directory path (e.g. th
 2. Click the **branch icon** button outside the panel's top-right corner — the "Git status" drawer expands (draggable, position remembered; the button stays glued to the panel's top-right corner, and floats at that spot to reopen once the panel is closed; a one-time hint guides first use);
 3. The drawer header toggles "All branches / Current branch" and manual refresh (↻); while open, SSE live refresh applies (10s poll fallback on disconnect);
 4. Click a commit row to expand details (commit message / changed files / per-file diffs); click a file row to view that file's patch;
-5. Right-click branch badges: local — "switch to x / merge x / rename x / delete x (force delete)"; remote — "create local branch x and check out";
+5. Right-click branch badges: local — "switch to x / merge x / rename x / delete x (force delete)"; remote — "create local branch x and check out" (a same-named local branch triggers a three-choice dialog: check out the existing branch / create with a different name / cancel);
 6. Right-click a tag badge: "create branch at x and check out"; header "＋ New branch": type a name to create and check out (invalid names are rejected instantly);
 7. Header badges show unresolved conflicts / in-progress operations; on merge conflict the merge bar offers "abort merge / continue merge";
 8. When the repo has remotes configured, the header "⇣" button fetches all remotes at once (`git fetch --all`, prune off by default), then the graph refreshes immediately.
