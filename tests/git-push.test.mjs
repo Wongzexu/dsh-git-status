@@ -151,6 +151,8 @@ test('gitPushAction: 多远程顺序推，全部成功', async (t) => {
   const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
   assert.equal((await runGit(bare1, ['rev-parse', 'refs/heads/main'])).trim(), head)
   assert.equal((await runGit(bare2, ['rev-parse', 'refs/heads/main'])).trim(), head)
+  assert.equal((await repo.git(['config', 'branch.main.remote'])).trim(), 'origin')
+  assert.equal((await repo.git(['config', 'branch.main.merge'])).trim(), 'refs/heads/main')
 })
 
 test('gitPushAction: 多远程顺序推，某远程失败即停（前面已成功的保留）', async (t) => {

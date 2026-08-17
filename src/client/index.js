@@ -94,7 +94,7 @@ const I18N = {
     gitPush: '推送到远程…',
     gitPushTitle: '推送分支 {branch}',
     gitPushRemote: '推送目标远程',
-    gitPushSetUpstream: '设置上游（--set-upstream）',
+    gitPushSetUpstream: '设置上游（首个远程）',
     gitPushMode: '推送模式',
     gitPushModeNormal: '普通',
     gitPushModeForceWithLease: 'Force with lease',
@@ -319,7 +319,7 @@ const I18N = {
     gitPush: 'Push to remote…',
     gitPushTitle: 'Push branch {branch}',
     gitPushRemote: 'Push to remote',
-    gitPushSetUpstream: 'Set upstream (--set-upstream)',
+    gitPushSetUpstream: 'Set upstream (first remote)',
     gitPushMode: 'Push mode',
     gitPushModeNormal: 'Normal',
     gitPushModeForceWithLease: 'Force with lease',
@@ -3172,7 +3172,7 @@ module.exports = {
     })
 
     // ---------- 推送分支对话框（上游 Push Branch 对话框移植，本地简化版） ----------
-    // remote 单选（默认 origin/首个，同上游 getPushRemote 简化）+ Set Upstream toggle
+    // remote 多选（默认 origin/首个）+ Set Upstream toggle；多选时上游绑定首个远程
     // （默认开）+ Push Mode 三选一（normal / force-with-lease / force，同上游枚举）。
     const gitPushBox = document.createElement('div')
     gitPushBox.setAttribute('data-dsc-git-push', '')
