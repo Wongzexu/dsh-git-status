@@ -265,6 +265,54 @@ test('gitBranchAction.checkout: 远程 start-point + 自定义本地名（换名
   assert.equal((await repo.git(['rev-parse', 'feat-copy@{upstream}'])).trim(), head) // 建立上游跟踪
 })
 
+test('gitBranchAction.checkout: fastForward 祖先关系 → 快进到远程头并返回 fastForwarded', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('work') // work 与 main 同指 c1
+  await repo.commit('c2') // main 前进
+  const remoteHead = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.git(['update-ref', 'refs/remotes/gitee/work', remoteHead])
+  const result = await gitBranchAction(repo.root, 'checkout', { branch: 'work', fastForward: 'gitee/work' })
+  assert.deepEqual(result, { ok: true, branch: 'work', fastForwarded: true })
+  assert.equal(await repo.currentBranch(), 'work')
+  assert.equal((await repo.git(['rev-parse', 'work'])).trim(), remoteHead) // 本地 work 已快进到远程头
+})
+
+test('gitBranchAction.checkout: fastForward 本地与远端分叉 → cannot-fast-forward 且分支不被快进', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('work') // work 在 c1
+  await repo.commit('c2') // main → c2
+  const remoteHead = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.git(['update-ref', 'refs/remotes/gitee/work', remoteHead])
+  // 本地 work 增加一个 main/远端都没有的提交 → 分叉
+  await repo.checkout('work')
+  await repo.write('w.txt', 'w')
+  await repo.git(['add', '-A'])
+  await repo.git(['commit', '-m', 'work side'])
+  const workHead = (await repo.git(['rev-parse', 'work'])).trim()
+  await repo.checkout('main')
+  const result = await gitBranchAction(repo.root, 'checkout', { branch: 'work', fastForward: 'gitee/work' })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'cannot-fast-forward')
+  assert.equal(await repo.currentBranch(), 'work') // 切换已发生
+  assert.equal((await repo.git(['rev-parse', 'work'])).trim(), workHead) // 但分支未被快进
+})
+
+test('gitBranchAction.checkout: fastForward 目标不存在 / 非法 ref → 稳定错误码且不切换', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('work')
+  const missing = await gitBranchAction(repo.root, 'checkout', { branch: 'work', fastForward: 'gitee/nope' })
+  assert.equal(missing.ok, false)
+  assert.equal(missing.error.code, 'target-branch-not-found')
+  assert.equal(await repo.currentBranch(), 'main') // 目标坏了 → 未切换（不做半状态）
+  const bad = await gitBranchAction(repo.root, 'checkout', { branch: 'work', fastForward: 'bad ref' })
+  assert.equal(bad.ok, false)
+  assert.equal(bad.error.code, 'invalid-branch-name')
+  assert.equal(await repo.currentBranch(), 'main')
+})
+
 test('gitBranchAction.checkout: 本地改动会被覆盖 → 稳定错误码 + 被挡路径', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1', { files: { 'f.txt': 'A\n' } })
@@ -690,4 +738,23 @@ test('写路由: checkout 脏仓库 → uncommitted-changes-present；force 全�
   )
   assert.deepEqual(JSON.parse(res2.payload), { ok: true, branch: 'other' })
   assert.equal(await repo.currentBranch(), 'other')
+})
+
+test('写路由: checkout + fastForward 全链路成功（payload.fastForward 透传）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('work')
+  await repo.commit('c2')
+  const remoteHead = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.git(['update-ref', 'refs/remotes/gitee/work', remoteHead])
+  const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')
+  const res = fakeRes()
+  await route.handler(
+    fakeReq({ method: 'POST', contentType: 'application/json', body: JSON.stringify({ action: 'checkout', branch: 'work', fastForward: 'gitee/work' }) }),
+    res,
+  )
+  assert.equal(res.status, 200)
+  assert.deepEqual(JSON.parse(res.payload), { ok: true, branch: 'work', fastForwarded: true })
+  assert.equal(await repo.currentBranch(), 'work')
+  assert.equal((await repo.git(['rev-parse', 'work'])).trim(), remoteHead)
 })
