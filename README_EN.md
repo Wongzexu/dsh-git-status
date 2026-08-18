@@ -8,7 +8,7 @@
 
 A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations.
 
-🔖 **v0.5.0** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v0.5.1** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
