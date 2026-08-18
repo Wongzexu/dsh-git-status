@@ -40,3 +40,15 @@
 4. Issue 编号是字母数字串（如 `IK8X7H`），不是顺序数字。
 5. 认证：令牌走环境变量或 600 权限文件（本项目：
    `~/.config/dsh-git-status/gitee-token`），不回显、不入对话/代码。
+
+## 平台经验：UI 问题用 webprobe 实测
+
+1. **排查 UI 样式/布局问题时，先用全局工具 `webprobe` 实测复现与验证**，不要凭代码静态猜测。
+   典型用例（提示框被外部同名 CSS 规则拉伸）：
+   - 体检：`webprobe <url> scan-abnormal`
+   - 查元素命中的全部 CSS 规则：`webprobe <url> rules-of --selector '[data-x]'`
+   - 回归断言（超限退出码 1）：`webprobe <url> assert-size --selector '[data-x]' --max-height 60`
+2. **工具位置**：`~/dev/webprobe`（命令 `webprobe` 已在 PATH；零 npm 依赖，
+   Node ≥ 22 + 任意 Chromium，自动复用 `~/.cache/ms-playwright` 缓存，可用 `CHROME_PATH` 覆盖）。
+3. **本机没有该工具时**：从 `git@gitee.com:wongzexu/webprobe.git` 克隆到任意目录，
+   用 `webprobe` 命令（或 `node webprobe.mjs`）运行；详见仓库 README。

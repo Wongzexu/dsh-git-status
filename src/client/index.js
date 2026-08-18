@@ -33,7 +33,7 @@ const I18N = {
     gitCurrentBranch: '（当前分支）',
     gitRemoteSubs: '{branch} 的远程分支：{remotes}',
     gitCreateFromRemote: '创建本地分支 {branch} 并检出（{remote}）',
-    gitCreateFromCommit: '在 {hash} 新建分支并检出',
+    gitCreateFromCommit: '在 {hash} 新建分支并检出…',
     gitCreateBtn: '＋ 新分支',
     gitCreateTitle: '创建并检出新分支',
     gitCreatePlaceholder: '新分支名',
@@ -60,6 +60,7 @@ const I18N = {
     gitErrInvalidStartPoint: '无效的起始点',
     gitConflicts: '存在 {n} 个未解决冲突',
     gitOpMerge: '合并进行中',
+    gitOpSquash: 'Squash 合并进行中',
     gitOpCherryPick: 'cherry-pick 进行中',
     gitOpRevert: 'revert 进行中',
     gitOpRebase: 'rebase 进行中',
@@ -67,22 +68,35 @@ const I18N = {
     gitOpSequencer: 'sequencer 进行中',
     gitMergeAbort: '中止合并',
     gitMergeContinue: '继续合并',
-    gitMergeInto: '合并 {branch} 到当前分支',
-    gitRenameBranch: '重命名分支 {branch}',
+    gitMergeInto: '合并 {branch} 到当前分支…',
+    gitRenameBranch: '重命名分支 {branch}…',
     gitRenameTitle: '重命名分支',
     gitRenameSubmit: '重命名',
     gitRenameOk: '已重命名 {from} → {name}',
-    gitDeleteBranch: '删除分支 {branch}',
-    gitDeleteBranchForce: '强制删除分支 {branch}（未合并）',
+    gitDeleteBranch: '删除分支 {branch}…',
+    gitDeleteBranchForce: '强制删除分支 {branch}（未合并）…',
     gitDeleteConfirm: '确定删除分支 {branch}？',
     gitDeleteForceConfirm: '确定强制删除未合并分支 {branch}？此操作不可恢复。',
     gitDeleteOk: '已删除分支 {branch}',
     gitDeleteBtn: '删除',
     gitDeleteForceBtn: '强制删除',
     gitMergeOk: '已合并 {branch}',
+    gitMergeOkSquash: '已 Squash 合并 {branch}',
+    gitMergeDialogTitle: '合并 {branch} 到当前分支？',
+    gitMergeModeDefault: '合并提交（默认）',
+    gitMergeModeNoFF: 'NoFF（禁用快进）',
+    gitMergeModeSquash: 'Squash 合并',
+    gitMergeHintDefault: '能快进则快进，否则生成合并提交',
+    gitMergeHintNoFF: '始终生成合并提交（可快进也强制，--no-ff）',
+    gitMergeHintSquash: '压平为一个提交，无合并提交、无分叉线',
+    gitMergeBtn: '合并',
+    gitMergeSquashMsgLabel: '提交信息',
+    gitMergeSquashMessage: 'Squash 合并 {branch}',
+    gitMergeSquashUseFixed: '使用固定文案「{message}」',
+    gitErrSquashMsgEmpty: '请填写提交信息，或勾选使用固定文案',
     gitMergeAborted: '已中止合并',
     gitMergeContinued: '合并已完成',
-    gitCreateFromTag: '在 {tag} 创建分支并检出',
+    gitCreateFromTag: '在 {tag} 创建分支并检出…',
     gitFetch: '从所有远程拉取',
     gitFetching: '拉取中…',
     gitFetchOk: '已从远程拉取',
@@ -104,16 +118,16 @@ const I18N = {
     gitErrPushRejected: '推送被拒绝（远程有本地没有的提交，先拉取或改用 force 模式）',
     gitErrRemoteRejected: '远程拒绝推送（服务端规则/hook）',
     gitErrInvalidPushMode: '无效的推送模式',
-    gitDeleteRemoteBranch: '删除远程分支 {branch}',
+    gitDeleteRemoteBranch: '删除远程分支 {branch}…',
     gitDeleteRemoteBranchConfirm: '确定删除远程分支 {remote}/{branch}？此操作不可恢复。',
     gitDeleteRemoteBranchOk: '已删除远程分支 {remote}/{branch}',
     gitDeleteRemoteBranchDegraded: '远程分支已不存在，已清理本地跟踪引用',
     gitPushTag: '推送 tag {tag}',
-    gitPushTagTo: '推送 tag {tag} 到 {remote}',
+    gitPushTagTo: '推送 tag {tag} 到 {remote}…',
     gitPushTagOk: '已推送 tag {tag} → {remote}',
     gitDeleteTag: '删除 tag {tag}',
-    gitDeleteTagLocalOnly: '仅删除本地 tag {tag}',
-    gitDeleteTagWithRemote: '删除本地并同步删除远程 {remote} 的 {tag}',
+    gitDeleteTagLocalOnly: '仅删除本地 tag {tag}…',
+    gitDeleteTagWithRemote: '删除本地并同步删除远程 {remote} 的 {tag}…',
     gitDeleteTagConfirm: '确定删除 tag {tag}？此操作不可恢复。',
     gitDeleteTagOk: '已删除 tag {tag}',
     gitAddTag: '创建 tag…',
@@ -144,6 +158,10 @@ const I18N = {
     gitPushBtn: '推送',
     gitStageAll: '暂存全部改动',
     gitStageAllOk: '已暂存全部改动',
+    gitDiscardAll: '放弃全部未提交…',
+    gitDiscardBtn: '放弃',
+    gitDiscardAllConfirm: '将放弃所有未提交的改动，已暂存、未暂存及未跟踪文件全部删除。此操作不可恢复。',
+    gitDiscardAllOk: '已放弃全部未提交改动',
     gitCommitStaged: '提交已暂存…',
     gitCommitStagedTitle: '提交已暂存',
     gitCommitStagedAmendTitle: '提交已暂存（修订）',
@@ -161,9 +179,9 @@ const I18N = {
     gitErrCommitSessionChanged: '会话已切换，请重新打开提交窗口',
     gitStashApply: '应用 stash {selector}',
     gitStashPop: '弹出 stash {selector}',
-    gitStashDrop: '删除 stash {selector}',
+    gitStashDrop: '删除 stash {selector}…',
     gitStashDropConfirm: '确定删除 stash {selector}？此操作不可恢复。',
-    gitStashBranch: '从 stash {selector} 创建分支并检出',
+    gitStashBranch: '从 stash {selector} 创建分支并检出…',
     gitStashBranchTitle: '从 stash 创建分支',
     gitStashUncommitted: '贮藏未提交改动…',
     gitStashUncommittedTitle: '贮藏未提交改动',
@@ -285,7 +303,7 @@ const I18N = {
     gitCurrentBranch: '(current)',
     gitRemoteSubs: 'Remote branches of {branch}: {remotes}',
     gitCreateFromRemote: 'Create local branch {branch} and check out ({remote})',
-    gitCreateFromCommit: 'Create branch from {hash} and check out',
+    gitCreateFromCommit: 'Create branch from {hash} and check out…',
     gitCreateBtn: '+ New branch',
     gitCreateTitle: 'Create and check out new branch',
     gitCreatePlaceholder: 'new branch name',
@@ -312,6 +330,7 @@ const I18N = {
     gitErrInvalidStartPoint: 'Invalid start point',
     gitConflicts: '{n} unresolved conflict(s)',
     gitOpMerge: 'Merge in progress',
+    gitOpSquash: 'Squash merge in progress',
     gitOpCherryPick: 'Cherry-pick in progress',
     gitOpRevert: 'Revert in progress',
     gitOpRebase: 'Rebase in progress',
@@ -319,22 +338,35 @@ const I18N = {
     gitOpSequencer: 'Sequencer in progress',
     gitMergeAbort: 'Abort merge',
     gitMergeContinue: 'Continue merge',
-    gitMergeInto: 'Merge {branch} into current',
-    gitRenameBranch: 'Rename branch {branch}',
+    gitMergeInto: 'Merge {branch} into current…',
+    gitRenameBranch: 'Rename branch {branch}…',
     gitRenameTitle: 'Rename branch',
     gitRenameSubmit: 'Rename',
     gitRenameOk: 'Renamed {from} → {name}',
-    gitDeleteBranch: 'Delete branch {branch}',
-    gitDeleteBranchForce: 'Force-delete branch {branch} (unmerged)',
+    gitDeleteBranch: 'Delete branch {branch}…',
+    gitDeleteBranchForce: 'Force-delete branch {branch} (unmerged)…',
     gitDeleteConfirm: 'Delete branch {branch}?',
     gitDeleteForceConfirm: 'Force-delete unmerged branch {branch}? This cannot be undone.',
     gitDeleteOk: 'Branch {branch} deleted',
     gitDeleteBtn: 'Delete',
     gitDeleteForceBtn: 'Force delete',
     gitMergeOk: 'Merged {branch}',
+    gitMergeOkSquash: 'Squash-merged {branch}',
+    gitMergeDialogTitle: 'Merge {branch} into current?',
+    gitMergeModeDefault: 'Merge commit (default)',
+    gitMergeModeNoFF: 'NoFF (no fast-forward)',
+    gitMergeModeSquash: 'Squash merge',
+    gitMergeHintDefault: 'Fast-forward when possible, otherwise a merge commit',
+    gitMergeHintNoFF: 'Always create a merge commit (--no-ff)',
+    gitMergeHintSquash: 'Flatten into one commit; no merge commit',
+    gitMergeBtn: 'Merge',
+    gitMergeSquashMsgLabel: 'Commit message',
+    gitMergeSquashMessage: 'Squash merge {branch}',
+    gitMergeSquashUseFixed: 'Use fixed text "{message}"',
+    gitErrSquashMsgEmpty: 'Enter a commit message or check "use fixed text"',
     gitMergeAborted: 'Merge aborted',
     gitMergeContinued: 'Merge completed',
-    gitCreateFromTag: 'Create branch from {tag} and check out',
+    gitCreateFromTag: 'Create branch from {tag} and check out…',
     gitFetch: 'Fetch from all remotes',
     gitFetching: 'Fetching…',
     gitFetchOk: 'Fetched from remote(s)',
@@ -356,16 +388,16 @@ const I18N = {
     gitErrPushRejected: 'Push rejected (remote has commits you lack — pull first or use a force mode)',
     gitErrRemoteRejected: 'Push rejected by the remote (server rules/hook)',
     gitErrInvalidPushMode: 'Invalid push mode',
-    gitDeleteRemoteBranch: 'Delete remote branch {branch}',
+    gitDeleteRemoteBranch: 'Delete remote branch {branch}…',
     gitDeleteRemoteBranchConfirm: 'Delete remote branch {remote}/{branch}? This cannot be undone.',
     gitDeleteRemoteBranchOk: 'Deleted remote branch {remote}/{branch}',
     gitDeleteRemoteBranchDegraded: 'Remote branch no longer exists — cleaned up the local tracking reference',
     gitPushTag: 'Push tag {tag}',
-    gitPushTagTo: 'Push tag {tag} to {remote}',
+    gitPushTagTo: 'Push tag {tag} to {remote}…',
     gitPushTagOk: 'Pushed tag {tag} → {remote}',
     gitDeleteTag: 'Delete tag {tag}',
-    gitDeleteTagLocalOnly: 'Delete local tag {tag} only',
-    gitDeleteTagWithRemote: 'Delete local tag {tag} and on remote {remote}',
+    gitDeleteTagLocalOnly: 'Delete local tag {tag} only…',
+    gitDeleteTagWithRemote: 'Delete local tag {tag} and on remote {remote}…',
     gitDeleteTagConfirm: 'Delete tag {tag}? This cannot be undone.',
     gitDeleteTagOk: 'Deleted tag {tag}',
     gitAddTag: 'Add Tag…',
@@ -396,6 +428,10 @@ const I18N = {
     gitPushBtn: 'Push',
     gitStageAll: 'Stage all changes',
     gitStageAllOk: 'All changes staged',
+    gitDiscardAll: 'Discard all uncommitted changes…',
+    gitDiscardBtn: 'Discard',
+    gitDiscardAllConfirm: 'All uncommitted changes will be discarded: staged, unstaged and untracked files are all deleted. This cannot be undone.',
+    gitDiscardAllOk: 'All uncommitted changes discarded',
     gitCommitStaged: 'Commit staged changes…',
     gitCommitStagedTitle: 'Commit staged changes',
     gitCommitStagedAmendTitle: 'Commit staged changes (amend)',
@@ -413,9 +449,9 @@ const I18N = {
     gitErrCommitSessionChanged: 'The session changed; reopen the commit dialog',
     gitStashApply: 'Apply stash {selector}',
     gitStashPop: 'Pop stash {selector}',
-    gitStashDrop: 'Drop stash {selector}',
+    gitStashDrop: 'Drop stash {selector}…',
     gitStashDropConfirm: 'Drop stash {selector}? This cannot be undone.',
-    gitStashBranch: 'Create branch from stash {selector} and check out',
+    gitStashBranch: 'Create branch from stash {selector} and check out…',
     gitStashBranchTitle: 'Create branch from stash',
     gitStashUncommitted: 'Stash uncommitted changes…',
     gitStashUncommittedTitle: 'Stash uncommitted changes',
@@ -576,6 +612,11 @@ module.exports = {
   font-family: system-ui; color: #fff; background: rgba(56,142,60,.95);
   box-shadow: var(--dsw-shadow-lv3); border: 1px solid rgba(255,255,255,.18);
   display: none; pointer-events: none;
+  /* 隔离：显式重置定位/变换属性。外部插件同名 [data-dsc-msg] 规则写的
+     top/bottom/left/right/transform 会与 flash() 的 inline top+left 叠加，
+     fixed 元素 top+bottom 同时有值时 height:auto 被强制拉伸（长条提示框）。
+     同特异性下本规则后注入胜出，彻底免疫外部干扰；flash() 仍用 inline 定位不受影响。 */
+  top: auto; bottom: auto; left: auto; right: auto; transform: none;
 }
 [data-dsc-msg].error { background: rgba(211,47,47,.95); }
 /* 首次使用提示气泡（跟随开关按钮，只显示一次） */
@@ -587,6 +628,8 @@ module.exports = {
   color: var(--dsw-alias-text-1, #eee);
   background: var(--dsw-hovercard-bg, #2C2C2E); box-shadow: var(--dsw-shadow-lv3);
   border: 1px solid rgba(255,255,255,.08); display: none; pointer-events: none;
+  /* 同 [data-dsc-msg]：显式重置定位/变换，免疫外部同名规则叠加拉伸 */
+  top: auto; bottom: auto; left: auto; right: auto; transform: none;
 }
 [data-dsc-bm-time] { opacity: .5; font-size: 10px; flex: none; }
 [data-dsc-git] {
@@ -704,8 +747,8 @@ module.exports = {
   background: rgba(232,73,73,.92); color: #fff;
 }
 [data-dsc-git-confirm] .dsc-git-confirm-ok-danger:hover { background: rgba(255,92,92,1); }
-/* push/stash/tag 对话框（浮层卡片，同 confirm/create 框风格）：选项行 + toggle 按钮 */
-[data-dsc-git-push], [data-dsc-git-stash], [data-dsc-git-commit], [data-dsc-git-tag] {
+/* push/stash/commit/tag/merge 对话框（浮层卡片，同 confirm/create 框风格）：选项行 + toggle 按钮 */
+[data-dsc-git-push], [data-dsc-git-stash], [data-dsc-git-commit], [data-dsc-git-tag], [data-dsc-git-merge] {
   position: fixed; z-index: 930; min-width: 250px; max-width: 340px;
   border-radius: 8px; padding: 10px 12px; display: none; font-size: 12px;
   box-sizing: border-box; color: var(--dsw-alias-text-1, #eee);
@@ -721,7 +764,7 @@ module.exports = {
 }
 [data-dsc-git-tag] .dsc-git-tag-actions [data-dsc-btn] { margin-left: auto; }
 [data-dsc-git-tag] .dsc-git-tag-push-label { opacity: .6; font-size: 11px; flex: none; }
-[data-dsc-git-push] .dsc-git-push-title, [data-dsc-git-stash] .dsc-git-stash-title, [data-dsc-git-commit] .dsc-git-commit-title, [data-dsc-git-tag] .dsc-git-tag-title {
+[data-dsc-git-push] .dsc-git-push-title, [data-dsc-git-stash] .dsc-git-stash-title, [data-dsc-git-commit] .dsc-git-commit-title, [data-dsc-git-tag] .dsc-git-tag-title, [data-dsc-git-merge] .dsc-git-merge-title {
   font-weight: 600; margin-bottom: 8px;
 }
 .dsc-git-opt-row {
@@ -730,14 +773,20 @@ module.exports = {
 }
 .dsc-git-opt-row label { opacity: .85; flex: 1; min-width: 0; }
 .dsc-git-opt-group { display: flex; gap: 4px; flex: none; }
-[data-dsc-git-stash] input[type='text'], [data-dsc-git-tag] input[type='text'], [data-dsc-git-commit] textarea {
+[data-dsc-git-stash] input[type='text'], [data-dsc-git-tag] input[type='text'], [data-dsc-git-commit] textarea, [data-dsc-git-merge] input[type='text'] {
   width: 100%; box-sizing: border-box; padding: 4px 6px; border-radius: 6px;
   border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.25);
   color: inherit; font-size: 11px; outline: none; margin-bottom: 6px;
 }
-[data-dsc-git-stash] input[type='text']:focus, [data-dsc-git-tag] input[type='text']:focus, [data-dsc-git-commit] textarea:focus { border-color: var(--dsw-alias-text-accent, #4c9aff); }
+[data-dsc-git-stash] input[type='text']:focus, [data-dsc-git-tag] input[type='text']:focus, [data-dsc-git-commit] textarea:focus, [data-dsc-git-merge] input[type='text']:focus { border-color: var(--dsw-alias-text-accent, #4c9aff); }
 [data-dsc-git-commit] textarea { min-height: 72px; max-height: 180px; resize: vertical; line-height: 1.4; }
 [data-dsc-git-commit] .dsc-git-commit-error { color: #ff8d8d; white-space: pre-wrap; line-height: 1.4; margin-top: 4px; }
+/* merge 对话框专属：合并方式单选列（按钮纵向堆叠、左对齐、整行可点）+ 说明行 + squash 提交信息行 */
+[data-dsc-git-merge] .dsc-git-merge-modes { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
+[data-dsc-git-merge] .dsc-git-merge-modes .dsc-git-toggle { width: 100%; text-align: left; }
+[data-dsc-git-merge] .dsc-git-merge-hint { opacity: .6; font-size: 11px; line-height: 1.4; margin-bottom: 6px; min-height: 14px; }
+[data-dsc-git-merge] .dsc-git-merge-squash { display: none; }
+[data-dsc-git-merge] .dsc-git-merge-squash.on { display: block; }
 /* toggle 按钮（Set Upstream / Include Untracked / Push Mode 互斥组）：on 高亮 accent */
 .dsc-git-toggle {
   border: 1px solid rgba(255,255,255,.14); border-radius: 6px; padding: 2px 8px;
@@ -1853,6 +1902,7 @@ module.exports = {
     let gitState = { conflicts: 0, operation: null }
     const OPERATION_LABELS = {
       MERGE_HEAD: 'Merge',
+      SQUASH_MSG: 'Squash',
       CHERRY_PICK_HEAD: 'CherryPick',
       REVERT_HEAD: 'Revert',
       BISECT_LOG: 'Bisect',
@@ -1875,13 +1925,16 @@ module.exports = {
         el.textContent = t(`gitOp${label}`)
         gitStateBadge.appendChild(el)
       }
-      const isMerge = gitState.operation === 'MERGE_HEAD'
+      // 合并进行中条：普通合并（MERGE_HEAD）与 squash 合并（SQUASH_MSG，无 MERGE_HEAD）
+      // 都提供中止/继续（squash 的服务端实现见 gitBranchAction merge-abort/merge-continue）。
+      const isMerge = gitState.operation === 'MERGE_HEAD' || gitState.operation === 'SQUASH_MSG'
       gitMergeBar.style.display = isMerge ? 'flex' : 'none'
-      if (isMerge) gitMergeBarText.textContent = t('gitOpMerge')
+      if (isMerge) gitMergeBarText.textContent = gitState.operation === 'SQUASH_MSG' ? t('gitOpSquash') : t('gitOpMerge')
     }
     gitMergeAbort.addEventListener('click', async () => {
       try {
         await gitBranchAction({ action: 'merge-abort' })
+        gitMergePending = null
         flash(t('gitMergeAborted'))
         gitFetch(true, true)
       } catch (err) {
@@ -1890,7 +1943,10 @@ module.exports = {
     })
     gitMergeContinue.addEventListener('click', async () => {
       try {
-        await gitBranchAction({ action: 'merge-continue' })
+        // squash 冲突继续：把发起时记住的提交信息带回服务端（commit 收尾）
+        const isSquash = gitState.operation === 'SQUASH_MSG'
+        await gitBranchAction({ action: 'merge-continue', message: isSquash ? (gitMergePending?.message ?? '') : '' })
+        gitMergePending = null
         flash(t('gitMergeContinued'))
         gitFetch(true, true)
       } catch (err) {
@@ -2400,6 +2456,23 @@ module.exports = {
             }, {
               label: t('gitCommitStagedAmend'),
               onClick: () => gitCommitBoxOpen(true),
+            }, {
+              label: t('gitDiscardAll'),
+              onClick: () => gitConfirmOpen({
+                title: t('gitDiscardAll'),
+                text: t('gitDiscardAllConfirm'),
+                okText: t('gitDiscardBtn'),
+                danger: true,
+                onOk: async () => {
+                  try {
+                    await gitPost('/git/discard', {})
+                    flash(t('gitDiscardAllOk'))
+                    gitFetch(true, true)
+                  } catch (err) {
+                    flash(gitErrText(err), 'error')
+                  }
+                },
+              }),
             }])
           } else if (row.dataset.hash !== '') {
             // 普通 commit 行右键：创建 tag / 新建分支（上游 Commit Context Menu：
@@ -2465,15 +2538,7 @@ module.exports = {
           {
             label: t('gitMergeInto', { branch: branchName }),
             disabled: isCurrent,
-            onClick: async () => {
-              try {
-                const result = await gitBranchAction({ action: 'merge', branch: branchName })
-                flash(t('gitMergeOk', { branch: result.branch }))
-                gitFetch(true, true)
-              } catch (err) {
-                flash(gitErrText(err), 'error')
-              }
-            },
+            onClick: () => gitMergeOpen(branchName),
           },
           {
             label: t('gitRenameBranch', { branch: branchName }),
@@ -3514,6 +3579,163 @@ module.exports = {
       if (!gitPushBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitPushClose()
     })
 
+    // ---------- 合并确认对话框（右键「合并 x 到当前分支」二级确认） ----------
+    // 合并方式三选一：合并提交（默认，能快进则快进）/ NoFF 禁用快进（始终合并提交）/
+    // Squash 合并（压平为一个提交）。Squash 额外提供提交信息输入 +「使用固定文案」勾选
+    // （默认勾选，取消后必填）。发起时记住 message，供冲突后「继续合并」带回服务端
+    // （squash 冲突无 MERGE_HEAD，continue 走 commit 路径）。
+    const gitMergeBox = document.createElement('div')
+    gitMergeBox.setAttribute('data-dsc-git-merge', '')
+    body.appendChild(gitMergeBox)
+    const gitMergeTitle = document.createElement('div')
+    gitMergeTitle.className = 'dsc-git-merge-title'
+    const gitMergeModes = document.createElement('div')
+    gitMergeModes.className = 'dsc-git-merge-modes'
+    const MERGE_MODE_KEYS = ['default', 'noff', 'squash']
+    const MERGE_MODE_TEXTS = ['gitMergeModeDefault', 'gitMergeModeNoFF', 'gitMergeModeSquash']
+    const MERGE_MODE_HINTS = ['gitMergeHintDefault', 'gitMergeHintNoFF', 'gitMergeHintSquash']
+    const gitMergeModeBtns = MERGE_MODE_KEYS.map((mode, i) => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'dsc-git-toggle' + (mode === 'default' ? ' on' : '')
+      btn.textContent = t(MERGE_MODE_TEXTS[i])
+      btn.dataset.mode = mode
+      btn.addEventListener('click', () => {
+        for (const b of gitMergeModeBtns) b.classList.toggle('on', b === btn)
+        gitMergeHint.textContent = t(MERGE_MODE_HINTS[gitMergeModeBtns.findIndex((b) => b.classList.contains('on'))])
+        gitMergeSquashRow.classList.toggle('on', btn.dataset.mode === 'squash')
+        if (btn.dataset.mode === 'squash' && gitMergeFixed === false) gitMergeInput.focus()
+      })
+      gitMergeModes.appendChild(btn)
+      return btn
+    })
+    const gitMergeHint = document.createElement('div')
+    gitMergeHint.className = 'dsc-git-merge-hint'
+    gitMergeHint.textContent = t('gitMergeHintDefault')
+    // Squash 专属区块（仅选中 Squash 时显示）：提交信息输入 + 固定文案勾选
+    const gitMergeSquashRow = document.createElement('div')
+    gitMergeSquashRow.className = 'dsc-git-merge-squash'
+    const gitMergeMsgLabel = document.createElement('label')
+    gitMergeMsgLabel.textContent = t('gitMergeSquashMsgLabel')
+    gitMergeMsgLabel.style.display = 'block'
+    gitMergeMsgLabel.style.opacity = '.85'
+    gitMergeMsgLabel.style.marginBottom = '4px'
+    gitMergeMsgLabel.style.fontSize = '11px'
+    const gitMergeInput = document.createElement('input')
+    gitMergeInput.type = 'text'
+    gitMergeInput.placeholder = t('gitMergeSquashMsgLabel')
+    const gitMergeFixedRow = document.createElement('div')
+    gitMergeFixedRow.className = 'dsc-git-opt-row'
+    const gitMergeFixedLabel = document.createElement('label')
+    const gitMergeFixedToggle = document.createElement('button')
+    gitMergeFixedToggle.type = 'button'
+    gitMergeFixedToggle.className = 'dsc-git-toggle on'
+    gitMergeFixedToggle.textContent = '✓'
+    gitMergeFixedToggle.addEventListener('click', () => {
+      gitMergeFixedToggle.classList.toggle('on')
+      if (!gitMergeFixedToggle.classList.contains('on')) gitMergeInput.focus()
+    })
+    gitMergeFixedRow.appendChild(gitMergeFixedLabel)
+    gitMergeFixedRow.appendChild(gitMergeFixedToggle)
+    gitMergeSquashRow.appendChild(gitMergeMsgLabel)
+    gitMergeSquashRow.appendChild(gitMergeInput)
+    gitMergeSquashRow.appendChild(gitMergeFixedRow)
+    const gitMergeActions = document.createElement('div')
+    gitMergeActions.className = 'dsc-git-opt-actions'
+    const gitMergeOk = document.createElement('button')
+    gitMergeOk.type = 'button'
+    gitMergeOk.setAttribute('data-dsc-btn', '')
+    gitMergeOk.textContent = t('gitMergeBtn')
+    const gitMergeCancel = document.createElement('button')
+    gitMergeCancel.type = 'button'
+    gitMergeCancel.setAttribute('data-dsc-btn', '')
+    gitMergeCancel.textContent = t('gitCancel')
+    gitMergeActions.appendChild(gitMergeOk)
+    gitMergeActions.appendChild(gitMergeCancel)
+    gitMergeBox.appendChild(gitMergeTitle)
+    gitMergeBox.appendChild(gitMergeModes)
+    gitMergeBox.appendChild(gitMergeHint)
+    gitMergeBox.appendChild(gitMergeSquashRow)
+    gitMergeBox.appendChild(gitMergeActions)
+    let gitMergeBranch = ''
+    let gitMergeSession = ''
+    let gitMergePending = null // { message }：squash 冲突后继续合并用
+    const gitMergeClose = () => {
+      gitMergeBox.style.display = 'none'
+      gitMergeBranch = ''
+      gitMergeSession = ''
+    }
+    const gitMergeOpen = (branchName) => {
+      gitMergeSession = currentSessionId()
+      if (gitMergeSession === '') return
+      gitMergeBranch = branchName
+      gitMergeTitle.textContent = t('gitMergeDialogTitle', { branch: branchName })
+      for (const b of gitMergeModeBtns) b.classList.toggle('on', b.dataset.mode === 'default')
+      gitMergeHint.textContent = t('gitMergeHintDefault')
+      gitMergeSquashRow.classList.remove('on')
+      gitMergeInput.value = ''
+      gitMergeFixedToggle.classList.add('on')
+      gitMergeFixedLabel.textContent = t('gitMergeSquashUseFixed', { message: t('gitMergeSquashMessage', { branch: branchName }) })
+      gitMergeOk.disabled = false
+      gitMergeBox.style.display = 'block'
+      const headRect = gitHead.getBoundingClientRect()
+      gitMergeBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`
+      gitMergeBox.style.top = `${headRect.bottom + 6}px`
+      gitMergeOk.focus()
+    }
+    const gitMergeRun = async () => {
+      gitMergeOk.disabled = true
+      const session = currentSessionId()
+      if (gitMergeSession === '' || session === '' || gitMergeSession !== session) {
+        gitMergeClose()
+        flash(t('gitErrSessionChanged'), 'error')
+        return
+      }
+      const mode = gitMergeModeBtns.find((b) => b.classList.contains('on'))?.dataset.mode ?? 'default'
+      let message = ''
+      if (mode === 'squash') {
+        message = gitMergeFixedToggle.classList.contains('on')
+          ? t('gitMergeSquashMessage', { branch: gitMergeBranch })
+          : gitMergeInput.value.trim()
+        if (message === '') {
+          flash(t('gitErrSquashMsgEmpty'), 'error')
+          gitMergeOk.disabled = false
+          gitMergeInput.focus()
+          return
+        }
+      }
+      try {
+        const result = await gitBranchAction({
+          action: 'merge',
+          branch: gitMergeBranch,
+          noff: mode === 'noff',
+          squash: mode === 'squash',
+          message,
+        })
+        gitMergeClose()
+        flash(mode === 'squash' ? t('gitMergeOkSquash', { branch: result.branch }) : t('gitMergeOk', { branch: result.branch }))
+        gitFetch(true, true)
+      } catch (err) {
+        // squash 冲突：合并条（中止/继续）接管；记住 message 供「继续合并」携带；
+        // 冲突类错误仓库状态已变（合并进行中 + 冲突文件），立即刷新让徽标/合并条出现
+        if (err.code === 'merge-conflicts' || err.code === 'merge-conflicts-remain') {
+          if (err.code === 'merge-conflicts' && mode === 'squash') gitMergePending = { message }
+          gitFetch(true, true)
+        }
+        flash(gitErrText(err), 'error')
+        gitMergeOk.disabled = false
+      }
+    }
+    gitMergeOk.addEventListener('click', gitMergeRun)
+    gitMergeCancel.addEventListener('click', gitMergeClose)
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && gitMergeBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitMergeClose()
+    })
+    document.addEventListener('click', (ev) => {
+      if (gitMergeBox.style.display === 'none') return
+      if (!gitMergeBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitMergeClose()
+    })
+
     // ---------- 创建 tag 对话框（镜像上游 Add Tag 对话框：名称 + 类型 + message + 推送远程） ----------
     // 入口：右键 commit 行「创建 tag…」。类型二选一（附注默认，同上游 dialogDefaults.addTag.type），
     // 附注时显示备注输入；推送目标为底部左侧下拉多选（镜像 push 对话框 remote 多选菜单：
@@ -4052,6 +4274,7 @@ module.exports = {
       gitCreateBox.remove()
       gitConfirmBox.remove()
       gitPushBox.remove()
+      gitMergeBox.remove()
       gitStashBox.remove()
       msg.remove()
       gitHint.remove()

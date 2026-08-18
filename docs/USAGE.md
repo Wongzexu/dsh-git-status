@@ -50,7 +50,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 - **手动刷新**：↻；
 - **从远程拉取**：⇣（仅仓库配置了远程时显示）—— 一键 `git fetch --all`（无对话框，prune 默认关）；
 - **＋ 新分支**：输入名称创建并检出新分支；
-- **状态徽标**：实时显示「N 个未解决冲突」「合并/rebase 进行中」（基于 `MERGE_HEAD` 等标记）；
+- **状态徽标**：实时显示「N 个未解决冲突」「合并/rebase 进行中」（基于 `MERGE_HEAD` / `SQUASH_MSG`（squash 合并）等标记）；
 - **关闭按钮**：面板右上角（即开关按钮，关闭后原位悬浮）。
 
 #### 图区（commit DAG 泳道图）
@@ -102,9 +102,9 @@ dsh plugin --profile web add /path/to/dsh-git-status
 #### 右键本地分支徽标
 
 - **切换到 x**：切换前执行守卫检查（见下）；
-- **合并 x 到当前分支**；
-- **重命名 x**；
-- **删除 x / 强制删除 x**（未合并时二次确认）。
+- **合并 x 到当前分支…**；
+- **重命名 x…**；
+- **删除 x… / 强制删除 x…**（未合并时二次确认）。
 
 #### 右键远程分支徽标
 
@@ -133,15 +133,22 @@ dsh plugin --profile web add /path/to/dsh-git-status
 以下情况**拒绝切换**并返回稳定错误码：
 
 - 未解决冲突；
-- 进行中操作（`MERGE_HEAD` 等标记）；
+- 进行中操作（`MERGE_HEAD` / `SQUASH_MSG`（squash 合并）等标记）；
 - 目标分支在其他 worktree 检出。
 
 存在**已跟踪**未提交改动时：弹「仍然切换」确认框，确认后带 `force` 旁路切换；**仅未跟踪文件不拦截**。
 
 ### 6. 合并与冲突处理
 
-1. 右键分支 → 「合并 x 到当前分支」；
-2. 若产生冲突：头部徽标提示「N 个未解决冲突」，合并条提供「**中止合并 / 继续合并**」；
+1. 右键分支 → 「合并 x 到当前分支…」→ 弹出二级确认框，合并方式三选一（单选按钮组）：
+   - **合并提交（默认）**：能快进则快进，分叉时生成合并提交（`git merge --no-edit`）；
+   - **NoFF（禁用快进）**：始终生成合并提交（`git merge --no-edit --no-ff`，可快进也强制）；
+   - **Squash 合并**：压平为一个提交，无合并提交、无分叉线（`git merge --squash` + 自动提交）。
+     仅此项显示「提交信息」输入 +「使用固定文案」勾选（默认勾选，文案为 `Squash 合并 x`；取消勾选后必须填写）。
+2. 若产生冲突：头部徽标提示「N 个未解决冲突」，合并条提供「**中止合并 / 继续合并**」
+   （普通合并走 `git merge --abort/--continue`；**squash 合并无 `MERGE_HEAD`**，中止为
+   `git reset --hard` + 清理合并新增文件，继续为冲突解决并 `git add` 后 `git commit`
+   （提交信息沿用发起时填写的内容））；
 3. 解决冲突 → `git add` 已解决文件 → 点「继续合并」完成；
 4. 想放弃合并：直接点「中止合并」。
 
@@ -223,7 +230,7 @@ Then:
 - **Manual refresh**: ↻;
 - **Fetch from remotes**: ⇣ (shown only when the repo has remotes) — one-click `git fetch --all` (no dialog, prune off by default);
 - **＋ New branch**: type a name to create and check out a new branch;
-- **Status badges**: real-time "N unresolved conflicts" and "merge/rebase in progress" (based on `MERGE_HEAD` etc.);
+- **Status badges**: real-time "N unresolved conflicts" and "merge/rebase in progress" (based on `MERGE_HEAD` / `SQUASH_MSG` (squash merge) etc.);
 - **Close button**: top-right corner of the panel (the toggle button; it stays floating at that spot once the panel is closed).
 
 ### Graph area (commit DAG lane graph)
@@ -275,9 +282,9 @@ Then:
 ### Right-click a local branch badge
 
 - **Switch to x** (guards are checked before switching, see below);
-- **Merge x into current**;
-- **Rename x**;
-- **Delete x / Force delete x** (second confirmation when unmerged).
+- **Merge x into current…**;
+- **Rename x…**;
+- **Delete x… / Force delete x…** (second confirmation when unmerged).
 
 ### Right-click a remote branch badge
 
@@ -297,15 +304,19 @@ Then:
 Switching is **rejected** with stable error codes when:
 
 - There are unresolved conflicts;
-- An operation is in progress (`MERGE_HEAD` etc.);
+- An operation is in progress (`MERGE_HEAD` / `SQUASH_MSG` (squash merge) etc.);
 - The target branch is checked out in another worktree.
 
 With **tracked** uncommitted changes, a "switch anyway" confirmation dialog appears; confirming proceeds with the `force` bypass. **Untracked-only changes do not block.**
 
 ## 6. Merge & conflict handling
 
-1. Right-click a branch → "Merge x into current";
-2. On conflict: the header badge shows "N unresolved conflicts" and the merge bar offers "**abort merge / continue merge**";
+1. Right-click a branch → "Merge x into current…" → a secondary confirmation dialog appears with three merge modes (radio group):
+   - **Merge commit (default)**: fast-forward when possible, otherwise a merge commit (`git merge --no-edit`);
+   - **NoFF (no fast-forward)**: always creates a merge commit (`git merge --no-edit --no-ff`);
+   - **Squash merge**: flattened into one commit — no merge commit, no divergence line (`git merge --squash` + auto `git commit`).
+     Only this mode shows the "commit message" input + "use fixed text" checkbox (checked by default; the fixed text is `Squash merge x`; unchecking requires a message).
+2. On conflict: the header badge shows "N unresolved conflicts" and the merge bar offers "**abort merge / continue merge**" (plain merges use `git merge --abort/--continue`; a **squash merge has no `MERGE_HEAD`** — abort runs `git reset --hard` plus cleanup of files the merge added, continue commits after resolving conflicts and `git add`, reusing the message from the dialog);
 3. Resolve conflicts → `git add` the resolved files → click "continue merge" to finish;
 4. To give up: click "abort merge".
 

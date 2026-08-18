@@ -2,7 +2,7 @@
 // 零依赖：node:test + 真实 git fixture 仓库 + 伪造 cordis ctx。
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -15,6 +15,8 @@ import {
   gitGuardBlock,
   gitBranchAction,
   gitRefExists,
+  gitOperationMarker,
+  gitConflicts,
   apply,
 } from '../lib/index.mjs'
 import { makeRepo, makeConflictedRepo } from './fixtures/repo.mjs'
@@ -587,6 +589,125 @@ test('gitBranchAction.merge-abort: 无合并进行中', async (t) => {
   assert.equal(result.error.code, 'no-merge-in-progress')
 })
 
+// ---------- gitBranchAction：squash 合并（2.4 扩展） ----------
+
+test('gitBranchAction.merge: squash 压平为一个提交（固定文案，快进场景）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('other')
+  await repo.checkout('other')
+  await repo.commit('other a')
+  await repo.commit('other b')
+  await repo.checkout('main')
+  const result = await gitBranchAction(repo.root, 'merge', { branch: 'other', squash: true, message: '' })
+  assert.equal(result.ok, true)
+  assert.equal(result.squash, true)
+  assert.equal(result.branch, 'other')
+  // 单一提交、无合并提交（--merges = 0）；main 只有 c1 + squash 提交
+  assert.equal((await repo.git(['rev-list', '--count', '--merges', 'main'])).trim(), '0')
+  assert.equal((await repo.git(['rev-list', '--count', 'main'])).trim(), '2')
+  // 提交信息为服务端固定文案兜底（Squash 合并 <branch>）
+  assert.equal((await repo.git(['log', '-1', '--format=%s'])).trim(), 'Squash 合并 other')
+  // 工作树干净、SQUASH_MSG 标记已随提交清除
+  assert.equal((await repo.git(['status', '--porcelain'])).trim(), '')
+  const sqPath = (await repo.git(['rev-parse', '--git-path', 'SQUASH_MSG'])).trim()
+  assert.ok(!existsSync(join(repo.root, sqPath)))
+})
+
+test('gitBranchAction.merge: squash 自定义提交信息', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('other')
+  await repo.checkout('other')
+  await repo.commit('other work')
+  await repo.checkout('main')
+  const result = await gitBranchAction(repo.root, 'merge', { branch: 'other', squash: true, message: '自定义合并信息' })
+  assert.equal(result.ok, true)
+  assert.equal((await repo.git(['log', '-1', '--format=%s'])).trim(), '自定义合并信息')
+})
+
+test('gitBranchAction.merge: squash 冲突 → merge-conflicts + SQUASH_MSG 标记；abort 恢复（含新增文件清理）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('base', { files: { 'c.txt': 'base\n' } })
+  await repo.branch('side')
+  await repo.commit('main change', { files: { 'c.txt': 'main\n' } })
+  await repo.checkout('side')
+  await repo.write('c.txt', 'side\n')
+  await repo.write('s.txt', 'new file from side\n')
+  await repo.git(['add', '-A'])
+  await repo.git(['commit', '-m', 'side change'])
+  await repo.checkout('main')
+  const result = await gitBranchAction(repo.root, 'merge', { branch: 'side', squash: true, message: '' })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'merge-conflicts')
+  // squash 无 MERGE_HEAD（git merge --abort 不可用），但有 SQUASH_MSG 标记——
+  // operation 检测把它识别为进行中操作（status 徽标 + 合并条据此显示）
+  const mhPath = (await repo.git(['rev-parse', '--git-path', 'MERGE_HEAD'])).trim()
+  assert.ok(!existsSync(join(repo.root, mhPath)))
+  const sqPath = (await repo.git(['rev-parse', '--git-path', 'SQUASH_MSG'])).trim()
+  assert.ok(existsSync(join(repo.root, sqPath)))
+  assert.equal(await gitOperationMarker(repo.root), 'SQUASH_MSG')
+  assert.equal(await gitConflicts(repo.root), 1)
+  // 中止：冲突文件还原、合并新增文件被清理、标记清除、工作树干净
+  const aborted = await gitBranchAction(repo.root, 'merge-abort')
+  assert.deepEqual(aborted, { ok: true, branch: '' })
+  assert.equal((await repo.git(['status', '--porcelain'])).trim(), '')
+  assert.ok(!existsSync(join(repo.root, sqPath)))
+  assert.ok(!existsSync(join(repo.root, 's.txt')))
+  assert.equal(readFileSync(join(repo.root, 'c.txt'), 'utf8'), 'main\n')
+  assert.equal(await gitOperationMarker(repo.root), null)
+})
+
+test('gitBranchAction.merge-continue: squash 冲突未解决拒绝；解决后携带 message 收尾', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('base', { files: { 'c.txt': 'base\n' } })
+  await repo.branch('side')
+  await repo.commit('main change', { files: { 'c.txt': 'main\n' } })
+  await repo.checkout('side')
+  await repo.write('c.txt', 'side\n')
+  await repo.git(['add', '-A'])
+  await repo.git(['commit', '-m', 'side change'])
+  await repo.checkout('main')
+  const result = await gitBranchAction(repo.root, 'merge', { branch: 'side', squash: true, message: '发起时的信息' })
+  assert.equal(result.ok, false)
+  assert.equal(result.error.code, 'merge-conflicts')
+  // 未解决冲突：continue 拒绝
+  const refused = await gitBranchAction(repo.root, 'merge-continue', { message: '发起时的信息' })
+  assert.equal(refused.ok, false)
+  assert.equal(refused.error.code, 'merge-conflicts-remain')
+  // 解决 + add → continue：以携带的 message 提交收尾，无合并提交、标记清除
+  await repo.write('c.txt', 'resolved\n')
+  await repo.git(['add', 'c.txt'])
+  const done = await gitBranchAction(repo.root, 'merge-continue', { message: '发起时的信息' })
+  assert.deepEqual(done, { ok: true, branch: '' })
+  assert.equal((await repo.git(['log', '-1', '--format=%s'])).trim(), '发起时的信息')
+  assert.equal((await repo.git(['rev-list', '--count', '--merges', 'main'])).trim(), '0')
+  const sqPath = (await repo.git(['rev-parse', '--git-path', 'SQUASH_MSG'])).trim()
+  assert.ok(!existsSync(join(repo.root, sqPath)))
+  assert.equal((await repo.git(['status', '--porcelain'])).trim(), '')
+})
+
+test('gitBranchAction.merge-continue: squash 兜底用 SQUASH_MSG 内容（无 message）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('base', { files: { 'c.txt': 'base\n' } })
+  await repo.branch('side')
+  await repo.commit('main change', { files: { 'c.txt': 'main\n' } })
+  await repo.checkout('side')
+  await repo.write('c.txt', 'side\n')
+  await repo.git(['add', '-A'])
+  await repo.git(['commit', '-m', 'side change'])
+  await repo.checkout('main')
+  await gitBranchAction(repo.root, 'merge', { branch: 'side', squash: true, message: '' })
+  await repo.write('c.txt', 'resolved\n')
+  await repo.git(['add', 'c.txt'])
+  const done = await gitBranchAction(repo.root, 'merge-continue', { message: '' })
+  assert.deepEqual(done, { ok: true, branch: '' })
+  // 兜底：SQUASH_MSG 首行（Squashed commit of…）进入提交信息
+  const subject = (await repo.git(['log', '-1', '--format=%s'])).trim()
+  assert.match(subject, /^Squashed commit/)
+  assert.equal(await gitOperationMarker(repo.root), null)
+})
+
 // ---------- 写路由（伪造 cordis ctx）：CSRF / 方法 / 载荷 ----------
 
 function fakeCtx(root) {
@@ -703,6 +824,25 @@ test('写路由: merge + noff 全链路成功（payload.noff 透传）', async (
   assert.equal(res.status, 200)
   assert.deepEqual(JSON.parse(res.payload), { ok: true, branch: 'other' })
   assert.equal((await repo.git(['rev-list', '--count', '--merges', 'main'])).trim(), '1')
+})
+
+test('写路由: merge + squash 全链路成功（payload.squash/message 透传）', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.branch('other')
+  await repo.checkout('other')
+  await repo.commit('other work')
+  await repo.checkout('main')
+  const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')
+  const res = fakeRes()
+  await route.handler(
+    fakeReq({ method: 'POST', contentType: 'application/json', body: JSON.stringify({ action: 'merge', branch: 'other', squash: true, message: '通过路由的 squash' }) }),
+    res,
+  )
+  assert.equal(res.status, 200)
+  assert.deepEqual(JSON.parse(res.payload), { ok: true, branch: 'other', squash: true })
+  assert.equal((await repo.git(['rev-list', '--count', '--merges', 'main'])).trim(), '0')
+  assert.equal((await repo.git(['log', '-1', '--format=%s'])).trim(), '通过路由的 squash')
 })
 
 test('写路由: 非 git 仓库 → 稳定错误', async (t) => {
