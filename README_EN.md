@@ -8,7 +8,7 @@
 
 A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations.
 
-🔖 **v0.5.2** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v0.5.3** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -36,6 +36,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 - **Conflict/in-progress badges**: the header shows "N unresolved conflicts" and "merge/rebase in progress" in real time (`MERGE_HEAD` / `SQUASH_MSG` (squash merge) etc.)
 - **SSE live refresh**: `/git/events` subscription (2s server-side state-key comparison + change push + 15s heartbeat); the graph refreshes instantly when another terminal checks out or commits; a 10s poll remains as a disconnect fallback
 - **Scope switching**: all branches / current branch; auto refresh + manual refresh; non-git-repo hint
+- **Settings page**: default behaviors (auto-checkout after creating a branch / include untracked files when stashing / default merge mode, unified dropdowns) and display options (uncommitted changes, HEAD badge, commit author, commit time — each independently toggleable)
 
 ## Installation
 
@@ -130,7 +131,7 @@ dsh-git-status/
 
 ```sh
 node scripts/build-client.js   # rebuild the client bundle (lib/client.js) after editing src/client/index.js
-npm test                       # node:test suite (214 cases, real git fixtures, zero dependencies)
+npm test                       # node:test suite (233 cases, real git fixtures, zero dependencies)
 ```
 
 Edit the Node half directly in `lib/index.mjs` (no build step); run `npm test` after changes.
@@ -140,17 +141,18 @@ After rebuilding the client, **refresh the browser page** to see changes (no web
 
 ### Publishing a new version
 
-```sh
-npm version patch          # or minor / major — syncs package.json version
-npm publish --access=public --registry=https://registry.npmjs.org
-```
-
-> Note: publishing requires 2FA on the npm account (security key / browser authorization); if your global registry is a mirror (e.g. npmmirror), always pass `--registry=https://registry.npmjs.org` explicitly.
+1. Bump the version and changelog in README / README_EN;
+2. `npm version patch` (or minor / major) — syncs package.json and creates a `vX.Y.Z` tag;
+3. `git push --follow-tags` — push code and the tag;
+4. On GitHub: **Releases** → Draft a new release (pick the tag just pushed) → Publish release;
+5. `.github/workflows/publish.yml` runs automatically: `npm ci` → `npm run build` → `npm publish`
+   (GitHub Actions **Trusted Publishing** (OIDC), tokenless; authorize the repository as a
+   Trusted Publisher on npmjs.org once before the first release).
 
 ## Roadmap
 
 - Optimize git status change push: fs.watch detection (currently 2s polling with state-key comparison)
-- Release form: npm live (`@wongzexu/dsh-git-status`); GitHub releases (tag/Release) planned
+- Release form: npm live (`@wongzexu/dsh-git-status`); GitHub Release auto-publishes to npm via Actions
 
 ## License
 

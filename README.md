@@ -8,7 +8,7 @@
 
 独立 Git 状态（Git Graph）插件：DSH Web 右缘 **Git 状态浮窗** —— commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。
 
-🔖 **v0.5.2** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v0.5.3** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -69,6 +69,8 @@
 - **SSE 即时刷新**：`/git/events` 订阅（2s 服务端状态键对比 + 变化推送 + 15s 心跳），
   其他终端 checkout/提交时图即时刷新；10s 轮询保留作断连兜底
 - 范围切换：所有分支 / 当前分支；自动刷新 + 手动刷新；非 git 仓库提示
+- **设置页**：默认行为（创建分支后自动检出 / 贮藏时包含未跟踪文件 / 默认合并方式，统一下拉选择）
+  与显示选项（未提交改动、HEAD 徽标、提交作者、提交时间，可独立显隐）
 
 ## 安装指南
 
@@ -176,7 +178,7 @@ dsh-git-status/
 
 ```sh
 node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js）
-npm test                       # node:test 套件（214 用例，真实 git fixture，零依赖）
+npm test                       # node:test 套件（233 用例，真实 git fixture，零依赖）
 ```
 
 改 Node half 直接改 `lib/index.mjs`（无构建步骤），改完跑 `npm test` 回归。
@@ -197,17 +199,18 @@ stash 全链路（push/apply/pop/drop/branch/两种冲突形态 / CSRF）、远�
 
 ### 发布新版本
 
-```sh
-npm version patch          # 或 minor / major，同步 package.json 版本号
-npm publish --access=public --registry=https://registry.npmjs.org
-```
-
-> 注意：发布需要 npm 账号的两步验证（安全密钥/浏览器授权）；若全局 registry 配置了镜像（如 npmmirror），发布必须显式带 `--registry=https://registry.npmjs.org`。
+1. 更新 README / README_EN 的版本号与变更说明；
+2. `npm version patch`（或 minor / major）—— 同步 package.json 版本号并创建 `vX.Y.Z` tag；
+3. `git push --follow-tags` 推送代码与 tag；
+4. GitHub 网页 **Releases** → Draft a new release（选刚推的 tag）→ Publish release；
+5. `.github/workflows/publish.yml` 自动触发：`npm ci` → `npm run build` → `npm publish`
+   （GitHub Actions **Trusted Publishing**（OIDC）免 token 发布；首次需在 npmjs.org
+   为该仓库授权 Trusted Publisher）。
 
 ## 路线
 
 - git 状态变化推送降级优化：fs.watch 检测（当前为 2s 轮询对比状态键）
-- 发布形态：npm 已上线（`@wongzexu/dsh-git-status`）；GitHub Releases（tag/Release）待做
+- 发布形态：npm 已上线（`@wongzexu/dsh-git-status`），GitHub Release 发布后经 Actions 自动发布到 npm
 
 ## 许可
 
