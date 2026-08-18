@@ -22,13 +22,18 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 - **Stash display**: `git reflog refs/stash` rows are inserted into the graph (double circle + `stash@{n}` badge); expanding shows details (explicit two-tree diff of the base + untracked third-parent snapshot appended)
 - **Inline expandable details**: click a commit row to expand commit message + changed files (+/- line counts) + per-file diffs (256 KB truncation); the detail box height adapts to content (≤340px) and opening a patch does not shift the graph
 - **Branch operations**:
-  - Right-click a local branch badge: switch to x / merge x into current / rename x / delete x / force delete x (second confirmation when unmerged)
+  - Right-click a local branch badge: switch to x / merge x into current… / rename x… / delete x… / force delete x… (second confirmation when unmerged)
+  - "Merge x into current…" opens a secondary confirmation dialog with three merge modes:
+    **Merge commit (default)** (fast-forward when possible, otherwise a merge commit) / **NoFF (no fast-forward)**
+    (`--no-ff`, always creates a merge commit) / **Squash merge** (flattened into one commit, no merge commit);
+    Squash offers a commit-message input with a "use fixed text" checkbox (checked by default; unchecked requires a message);
+    on conflict the merge bar takes over (squash has no `MERGE_HEAD` — abort goes through `reset --hard`, continue finishes via `commit`)
   - Right-click a remote branch badge: "create local branch x and check out" — if a same-named local branch already exists, a three-choice dialog appears: check out the existing branch and fast-forward to the remote's latest (`git merge --ff-only`; refused when diverged) / create a local branch with a different name (with upstream tracking) / cancel (mirroring the upstream checkoutBranchAction); (a collapsed count badge asks you to pick a remote first); right-click a tag badge: "create branch at x and check out"
   - Header "＋ New branch" dialog: instant client-side validation + authoritative server-side `check-ref-format` validation
   - Switch guard: unresolved conflicts / in-progress operations (`MERGE_HEAD` etc.) / target branch checked out in another worktree → stable error codes; with **tracked** uncommitted changes a "switch anyway" confirmation dialog appears (confirming proceeds with the `force` bypass; untracked-only changes do not block)
-  - After a merge conflict: header badge + merge bar offer "abort merge / continue merge" (resolve conflicts, `git add`, then continue)
+  - After a merge conflict: header badge + merge bar offer "abort merge / continue merge" (resolve conflicts, `git add`, then continue); squash-merge conflicts are handled by the same merge bar (badge shows "squash merge in progress")
 - **Fetch from remotes**: header "⇣" button (shown only when the repo has remotes), one-click `git fetch --all` (mirrors the upstream Git Graph toolbar Fetch from Remote(s) form: no dialog, prune off by default); the graph refreshes immediately on success or failure (multiple remotes may partially succeed); categorized failure hints (network/auth errors, remote missing, remote repo missing or unreachable)
-- **Conflict/in-progress badges**: the header shows "N unresolved conflicts" and "merge/rebase in progress" in real time (`MERGE_HEAD` etc.)
+- **Conflict/in-progress badges**: the header shows "N unresolved conflicts" and "merge/rebase in progress" in real time (`MERGE_HEAD` / `SQUASH_MSG` (squash merge) etc.)
 - **SSE live refresh**: `/git/events` subscription (2s server-side state-key comparison + change push + 15s heartbeat); the graph refreshes instantly when another terminal checks out or commits; a 10s poll remains as a disconnect fallback
 - **Scope switching**: all branches / current branch; auto refresh + manual refresh; non-git-repo hint
 
@@ -79,7 +84,7 @@ Replace `/path/to/dsh-git-status` with the actual plugin directory path (e.g. th
 4. Click a commit row to expand details (commit message / changed files / per-file diffs); click a file row to view that file's patch;
 5. Right-click branch badges: local — "switch to x / merge x / rename x / delete x (force delete)"; remote — "create local branch x and check out" (a same-named local branch triggers a three-choice dialog: check out the existing branch & fast-forward / create with a different name / cancel);
 6. Right-click a tag badge: "create branch at x and check out"; header "＋ New branch": type a name to create and check out (invalid names are rejected instantly);
-7. Header badges show unresolved conflicts / in-progress operations; on merge conflict the merge bar offers "abort merge / continue merge";
+7. Header badges show unresolved conflicts / in-progress operations; on merge conflict the merge bar offers "abort merge / continue merge"; "Merge x into current…" opens a confirmation dialog first — merge commit (default) / NoFF (no fast-forward) / squash merge (custom message or fixed-text checkbox);
 8. When the repo has remotes configured, the header "⇣" button fetches all remotes at once (`git fetch --all`, prune off by default), then the graph refreshes immediately.
 
 > Tip: when the current session's workspace is not a git repo, the drawer shows a hint; switch to a session whose workspace is a git repo.
