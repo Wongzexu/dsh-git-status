@@ -569,9 +569,10 @@ module.exports = {
    居中（tooltip 式，贴顶时 fallback 面板下方）；成功绿底 / 错误红底，与面板
    背景明显区分。 */
 [data-dsc-msg] {
-  position: fixed; z-index: 932; width: fit-content; max-width: 260px;
-  box-sizing: border-box; overflow-wrap: anywhere; padding: 6px 14px;
-  border-radius: 999px; font-size: 12px;
+  position: fixed; z-index: 932; width: max-content; height: auto;
+  min-width: 0; min-height: 0; max-height: none; flex: none;
+  box-sizing: border-box; overflow-wrap: anywhere; max-width: 260px; padding: 6px 14px;
+  border-radius: 999px; font-size: 12px; line-height: 1.4; white-space: normal;
   font-family: system-ui; color: #fff; background: rgba(56,142,60,.95);
   box-shadow: var(--dsw-shadow-lv3); border: 1px solid rgba(255,255,255,.18);
   display: none; pointer-events: none;
@@ -579,9 +580,10 @@ module.exports = {
 [data-dsc-msg].error { background: rgba(211,47,47,.95); }
 /* 首次使用提示气泡（跟随开关按钮，只显示一次） */
 [data-dsc-hint] {
-  position: fixed; z-index: 931; width: fit-content; max-width: 240px;
-  box-sizing: border-box; overflow-wrap: anywhere; padding: 6px 10px;
-  border-radius: 8px; font-size: 12px; line-height: 1.5; font-family: system-ui;
+  position: fixed; z-index: 931; width: max-content; height: auto;
+  min-width: 0; min-height: 0; max-height: none; flex: none;
+  box-sizing: border-box; overflow-wrap: anywhere; max-width: 240px; padding: 6px 10px;
+  border-radius: 8px; font-size: 12px; line-height: 1.5; white-space: normal; font-family: system-ui;
   color: var(--dsw-alias-text-1, #eee);
   background: var(--dsw-hovercard-bg, #2C2C2E); box-shadow: var(--dsw-shadow-lv3);
   border: 1px solid rgba(255,255,255,.08); display: none; pointer-events: none;
@@ -944,7 +946,7 @@ module.exports = {
     const flash = (text, kind = 'success') => {
       msg.textContent = text
       msg.classList.toggle('error', kind === 'error')
-      msg.style.display = 'block'
+      msg.style.display = 'inline-block'
       msg.style.visibility = 'hidden' // 先测量实际尺寸再定位
       const w = msg.offsetWidth
       const h = msg.offsetHeight
@@ -4018,7 +4020,7 @@ module.exports = {
     }
     const showGitHint = () => {
       if (localStorage.getItem('dsc-git-hint') === '1') return
-      gitHint.style.display = 'block'
+      gitHint.style.display = 'inline-block'
       gitHint.style.visibility = 'hidden' // 先测量实际尺寸再定位
       const w = gitHint.offsetWidth
       const h = gitHint.offsetHeight
