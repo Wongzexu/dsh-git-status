@@ -8,7 +8,7 @@
 
 独立 Git 状态（Git Graph）插件：DSH Web 右缘 **Git 状态浮窗** —— commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。
 
-🔖 **v0.5.1** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v0.5.2** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 

@@ -5,7 +5,7 @@
     "type": "git",
     "url": "git+https://github.com/Wongzexu/dsh-git-status.git"
   },
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "module",
   "main": "lib/index.mjs",
   "exports": {
