@@ -27,7 +27,9 @@
   分类显示未暂存/已暂存处数；点击展开按「更改 / 暂存的更改」分组的详情
   （VS Code 语义：部分暂存文件两组各出现一次，未跟踪文件带徽标）
 - **暂存与提交**：右键未提交改动虚拟行可「暂存全部改动」（`git add -A`）、
-  「贮藏未提交改动」、提交已暂存内容或修订上一条提交；普通提交只包含已暂存内容，
+  「贮藏未提交改动」、「放弃全部未提交」（`git reset --hard HEAD` + `git clean -fd`，
+  含未跟踪文件，保留被忽略文件；红色确认框二次确认，不可恢复）、
+  提交已暂存内容或修订上一条提交；普通提交只包含已暂存内容，
   多行提交信息使用 `Ctrl+Enter`（macOS `Cmd+Enter`）提交
 - **stash 显示**：`git reflog refs/stash` 插入图中（双层圆 + `stash@{n}` 徽标），
   展开详情（base 显式两树 diff + untracked 第三父快照追加）
@@ -109,7 +111,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 5. 右键分支徽标：本地「切换到 x / 推送到远程… / 合并 x / 重命名 x / 删除 x（可强删）」；远程「创建本地分支 x 并检出」
    （本地已有同名分支时弹框三选：检出已有分支并快进 / 其他名称从远程创建 / 取消）；
 6. 右键 tag 徽标「在 x 创建分支并检出」/「推送 tag 到 <远程>」/「删除 tag（可选同步远程）」；头部「＋ 新分支」：输入名称创建并检出新分支（非法名称即时拦截）；
-7. 右键 stash 徽标「应用 / 弹出 / 从 stash 创建分支并检出 / 删除」；右键未提交改动虚拟行「贮藏未提交改动」；
+7. 右键 stash 徽标「应用 / 弹出 / 从 stash 创建分支并检出 / 删除」；右键未提交改动虚拟行「暂存全部改动 / 贮藏未提交改动 / 提交已暂存 / 提交已暂存（修订）/ 放弃全部未提交（红色确认框）」；
 8. 头部徽标提示未解决冲突 / 进行中操作；合并冲突时合并条提供「中止合并 / 继续合并」；
 9. 仓库配置了远程时，头部「⇣」按钮一键拉取全部远程（`git fetch --all`，prune 默认关），完成后图即时刷新。
 
@@ -133,7 +135,7 @@ dsh-git-status/
 ├── package.json          # dsh.bundle.patch + dsh.client.inject + platform: web
 ├── cordis.patch.yml      # 挂载 Node half
 ├── lib/
-│   ├── index.mjs         # Node half：git log/show/branch/fetch/push/remote/stash/stage/commit/events 路由（末尾导出测试用纯函数）
+│   ├── index.mjs         # Node half：git log/show/branch/fetch/push/remote/stash/stage/discard/commit/events 路由（末尾导出测试用纯函数）
 │   └── client.js         # client bundle（构建产物，__ModuleLoader__ 契约）
 ├── src/client/index.js   # client 源码（手写 CJS，单模块）
 ├── scripts/build-client.js  # 零依赖构建脚本（纯 Node）
@@ -145,6 +147,7 @@ dsh-git-status/
     ├── git-push.test.mjs     # push 参数校验/失败分类/真实推送（set-upstream、non-fast-forward→force）/写路由（含 CSRF）
     ├── git-stash.test.mjs    # stash selector 校验/apply/pop/drop/branch/两种冲突形态/写路由（含 CSRF）
     ├── git-stage.test.mjs    # git add -A 的新增/修改/删除/路由与 session 隔离
+    ├── git-discard.test.mjs  # 放弃全部未提交：已暂存/未暂存/未跟踪/保留忽略文件/unborn/路由与 session 隔离
     ├── git-commit.test.mjs   # staged commit/amend/错误分类/路由与 session 隔离
     ├── git-remote.test.mjs   # tag 名校验/删除远程分支（含降级）/推送与删除 tag（含同步远程）/写路由（含 CSRF）
     └── git-events.test.mjs   # SSE 订阅：初始推送/变化检测/心跳/断连清理
@@ -158,7 +161,7 @@ dsh-git-status/
 - **安全**：路由根限定**会话权威工作区**（请求必须带 `session=`，只使用
   `ctx.sessions.get(id).header.cwd`；session 缺失/失效直接拒绝，不回退到其它项目），
   拒绝 `..` 分量与越界路径；只读命令白名单；
-  写路由（分支操作 + 拉取远程 + 推送 + 远程/标签操作 + stash + stage + commit）POST + 强制 `application/json` content-type（CSRF 防护），
+  写路由（分支操作 + 拉取远程 + 推送 + 远程/标签操作 + stash + stage + 放弃全部未提交 + commit）POST + 强制 `application/json` content-type（CSRF 防护），
   分支名/remote 名/tag 名/stash selector 权威校验 + argv 数组（无 shell）+ 切换前守卫；fetch/push 超时放宽（120s）
 
 ## 开发
@@ -173,7 +176,7 @@ npm test                       # node:test 套件（214 用例，真实 git fixt
 stash 第三父、show 详情、冲突/进行中状态、分支名校验、切换守卫
 （冲突/进行中/其他 worktree/**未提交改动确认**：staged/未暂存/未跟踪三组计数、
 仅未跟踪放行、force 旁路带改动切换）、增删改合全路径（含合并冲突 abort/continue）、
-失败 stderr 分类、写路由 CSRF（content-type 强校验）与全链路、SSE 订阅
+失败 stderr 分类、写路由 CSRF（content-type 强校验）与全链路、放弃全部未提交（已暂存/未暂存/未跟踪/保留忽略文件/unborn）、SSE 订阅
 （初始推送/变化检测/心跳/断连清理/删分支与 stash 变化推送）、fetch 全链路
 （--all/单远程/prune 语义/失败分类/CSRF，file:// 裸仓库真实拉取）、push 全链路
 （set-upstream tracking / non-fast-forward → force 覆盖 / 失败分类 / CSRF）、

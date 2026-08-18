@@ -18,7 +18,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 - **Commit DAG lane graph**: first-parent chains as lines, greedy leftmost column assignment, lane reuse, merge-commit connectors; SVG grid rendering (shadow + dual-color paths, elbow transitions, right-edge gradient fade, bold HEAD dot)
 - **Inline refs badges**: H (red, detached HEAD) / branches (gold) / remotes (blue) / tags (green); the currently checked-out branch pill is highlighted in bright gold (denser background + gold inset border + bold, hover tooltip "current"); a local branch and its same-named remote are merged into one pill: `⎇ main [gitee]`; with ≥2 same-named remotes the sub-badges collapse into a count badge `⎇ main [2]` (hovering anywhere on the pill shows the full remote ref list, right-click picks a remote first); remote HEAD symbolic refs (`gitee/HEAD`) are filtered by default
 - **Uncommitted changes virtual row**: when the worktree has changes, a virtual row is inserted at the top of the graph (hollow circle + gray dashed line to HEAD), showing staged/unstaged counts; click to expand details grouped by "Changes / Staged Changes" (VS Code semantics: partially staged files appear in both groups, untracked files carry a badge)
-- **Staging and committing**: right-click the uncommitted changes row to "Stage all changes" (`git add -A`), stash changes, commit staged content, or amend the previous commit; normal commits include staged content only, and multiline messages submit with `Ctrl+Enter` (`Cmd+Enter` on macOS)
+- **Staging and committing**: right-click the uncommitted changes row to "Stage all changes" (`git add -A`), stash changes, "Discard all uncommitted changes" (`git reset --hard HEAD` + `git clean -fd`; includes untracked files, keeps ignored files; red confirmation dialog, irreversible), commit staged content, or amend the previous commit; normal commits include staged content only, and multiline messages submit with `Ctrl+Enter` (`Cmd+Enter` on macOS)
 - **Stash display**: `git reflog refs/stash` rows are inserted into the graph (double circle + `stash@{n}` badge); expanding shows details (explicit two-tree diff of the base + untracked third-parent snapshot appended)
 - **Inline expandable details**: click a commit row to expand commit message + changed files (+/- line counts) + per-file diffs (256 KB truncation); the detail box height adapts to content (≤340px) and opening a patch does not shift the graph
 - **Branch operations**:
@@ -102,7 +102,7 @@ dsh-git-status/
 ├── package.json          # dsh.bundle.patch + dsh.client.inject + platform: web
 ├── cordis.patch.yml      # mounts the Node half
 ├── lib/
-│   ├── index.mjs         # Node half: git log/show/branch/fetch/push/remote/stash/stage/commit/events routes (pure functions exported at the end for tests)
+│   ├── index.mjs         # Node half: git log/show/branch/fetch/push/remote/stash/stage/discard/commit/events routes (pure functions exported at the end for tests)
 │   └── client.js         # client bundle (build artifact, __ModuleLoader__ contract)
 ├── src/client/index.js   # client source (hand-written CJS, single module)
 ├── scripts/build-client.js  # zero-dependency build script (pure Node)
@@ -129,7 +129,7 @@ npm test                       # node:test suite (214 cases, real git fixtures, 
 ```
 
 Edit the Node half directly in `lib/index.mjs` (no build step); run `npm test` after changes.
-Test coverage: decoration string classification, uncommitted XY status classification, UNCOMMITTED/stash virtual row assembly, stash third parent, show details, conflict/in-progress status, branch name validation, switch guards (conflict/in-progress/other worktree/**uncommitted confirmation**: staged/unstaged/untracked counts, untracked-only pass, force bypass with changes), full CRUD/merge paths (incl. merge-conflict abort/continue), failure stderr classification, write-route CSRF (content-type enforcement) and full chains, SSE subscription (initial push/change detection/heartbeat/disconnect cleanup), fetch full chains (--all/single remote/prune semantics/failure classification/CSRF, real fetch from file:// bare repos).
+Test coverage: decoration string classification, uncommitted XY status classification, UNCOMMITTED/stash virtual row assembly, stash third parent, show details, conflict/in-progress status, branch name validation, switch guards (conflict/in-progress/other worktree/**uncommitted confirmation**: staged/unstaged/untracked counts, untracked-only pass, force bypass with changes), full CRUD/merge paths (incl. merge-conflict abort/continue), failure stderr classification, write-route CSRF (content-type enforcement) and full chains, discard-all action (staged/unstaged/untracked/ignored-preserved/unborn head, route validation + session scoping), SSE subscription (initial push/change detection/heartbeat/disconnect cleanup), fetch full chains (--all/single remote/prune semantics/failure classification/CSRF, real fetch from file:// bare repos).
 
 After rebuilding the client, **refresh the browser page** to see changes (no web service restart needed); after editing the Node half, **restart the web service**.
 
