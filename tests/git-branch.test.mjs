@@ -198,6 +198,15 @@ test('gitBranchAction.create: 合法名成功并检出', async (t) => {
   assert.equal(await repo.currentBranch(), 'feat/new')
 })
 
+test('gitBranchAction.create: checkout=false 只创建分支并保留当前分支', async (t) => {
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  const result = await gitBranchAction(repo.root, 'create', { name: 'feat/no-checkout', checkout: false })
+  assert.deepEqual(result, { ok: true, branch: 'feat/no-checkout' })
+  assert.equal(await repo.currentBranch(), 'main')
+  assert.equal((await repo.git(['rev-parse', '--verify', '--quiet', 'refs/heads/feat/no-checkout'])).trim().length, 40)
+})
+
 test('gitBranchAction.create: 非法名拒绝', async (t) => {
   const repo = await makeRepo(t)
   await repo.commit('c1')
