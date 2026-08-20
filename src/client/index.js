@@ -295,6 +295,53 @@ const I18N = {
     gitErrInvalidRemoteName: '远程名称非法',
     gitErrInvalidRemoteUrl: '远程 URL 非法',
     gitErrRemoteNotFound: '远程不存在',
+    // ---- 历史操作（rebase/reset/cherry-pick/revert/pull，见 issue IK91UG）----
+    gitCherryPick: '摘取 {hash}…',
+    gitRevert: '还原 {hash}…',
+    gitRebaseOnCommit: '将当前分支变基到 {hash}…',
+    gitResetToCommit: '将当前分支重置到 {hash}…',
+    gitRebaseBranch: '将当前分支变基到 {branch}…',
+    gitPullInto: '拉取 {branch} 到当前分支…',
+    gitCherryPickOk: 'Cherry-pick 完成',
+    gitCherryPickNoCommitOk: '已 Cherry-pick 到暂存区（未提交）',
+    gitRevertOk: '已还原提交',
+    gitResetOk: '已重置',
+    gitRebaseOk: '变基完成',
+    gitPullOk: '已拉取并合并',
+    gitCherryPickTitle: 'Cherry-pick {hash}？',
+    gitCherryPickBtn: 'Cherry-pick',
+    gitCherryPickParentLabel: '合并提交：主父提交',
+    gitCherryPickParentOption: '父提交 {n}（{hash}）',
+    gitCherryPickRecordOrigin: '记录来源（-x）',
+    gitCherryPickNoCommit: '不提交（仅应用到暂存区）',
+    gitRevertTitle: '还原提交 {hash}？',
+    gitRevertBtn: '还原',
+    gitRevertParentLabel: '合并提交：主父提交',
+    gitResetTitle: '重置当前分支到 {hash}？',
+    gitResetModeSoft: 'Soft',
+    gitResetModeMixed: 'Mixed',
+    gitResetModeHard: 'Hard',
+    gitResetHintSoft: '仅移动分支指针，工作区与暂存区不变',
+    gitResetHintMixed: '移动指针并清空暂存区（默认）',
+    gitResetHintHard: '移动指针并丢弃工作区改动（危险）',
+    gitResetBtn: '重置',
+    gitResetDangerTitle: '目标提交不在当前分支历史',
+    gitResetDangerText: '重置会把当前分支移到这个不相关的提交，当前分支独有的提交将被丢弃（仅可从 reflog 找回）。仍要重置？',
+    gitPullTitle: '拉取 {remote}/{branch} 到当前分支？',
+    gitPullBtn: '拉取',
+    gitRebaseRiskTitle: '将当前分支变基到 {target}？',
+    gitRebaseRiskText: '变基会重写当前分支的历史（提交哈希将被替换），仅适合未被他人共享的分支。继续？',
+    gitRebaseBtn: '变基',
+    gitErrTargetNotFound: '目标提交不存在',
+    gitErrInvalidTarget: '无效的目标提交',
+    gitErrInvalidResetMode: '无效的重置模式',
+    gitErrResetNotAncestor: '目标提交不是当前分支祖先；重置将丢弃该分支独有的提交',
+    gitErrInvalidMainline: '合并提交需指定主父提交（-m）',
+    gitErrRebaseConflicts: '变基冲突：请解决后执行 git rebase --continue 或 --abort',
+    gitErrCherryPickConflicts: 'Cherry-pick 冲突：请解决后执行 git cherry-pick --continue 或 --abort',
+    gitErrRevertConflicts: '还原冲突：请解决后执行 git revert --continue 或 --abort',
+    gitErrRebaseUncommitted: '有未提交改动，变基被拒；请先提交或暂存改动',
+    gitErrNotOnBranch: '当前不在任何分支上（游离 HEAD），无法执行该操作',
   },
   en: {
     copied: 'Copied to clipboard',
@@ -585,6 +632,53 @@ const I18N = {
     gitErrInvalidRemoteName: 'Invalid remote name',
     gitErrInvalidRemoteUrl: 'Invalid remote URL',
     gitErrRemoteNotFound: 'Remote does not exist',
+    // ---- History ops (rebase/reset/cherry-pick/revert/pull, issue IK91UG) ----
+    gitCherryPick: 'Cherry-pick {hash}…',
+    gitRevert: 'Revert {hash}…',
+    gitRebaseOnCommit: 'Rebase current branch on {hash}…',
+    gitResetToCommit: 'Reset current branch to {hash}…',
+    gitRebaseBranch: 'Rebase current branch on {branch}…',
+    gitPullInto: 'Pull {branch} into current…',
+    gitCherryPickOk: 'Cherry-picked',
+    gitCherryPickNoCommitOk: 'Cherry-picked to index (no commit)',
+    gitRevertOk: 'Commit reverted',
+    gitResetOk: 'Reset done',
+    gitRebaseOk: 'Rebase done',
+    gitPullOk: 'Pulled and merged',
+    gitCherryPickTitle: 'Cherry-pick {hash}?',
+    gitCherryPickBtn: 'Cherry-pick',
+    gitCherryPickParentLabel: 'Merge commit: mainline parent',
+    gitCherryPickParentOption: 'Parent {n} ({hash})',
+    gitCherryPickRecordOrigin: 'Record origin (-x)',
+    gitCherryPickNoCommit: 'No commit (stage only)',
+    gitRevertTitle: 'Revert commit {hash}?',
+    gitRevertBtn: 'Revert',
+    gitRevertParentLabel: 'Merge commit: mainline parent',
+    gitResetTitle: 'Reset current branch to {hash}?',
+    gitResetModeSoft: 'Soft',
+    gitResetModeMixed: 'Mixed',
+    gitResetModeHard: 'Hard',
+    gitResetHintSoft: 'Move the branch pointer only; working tree and index unchanged',
+    gitResetHintMixed: 'Move the pointer and unstage everything (default)',
+    gitResetHintHard: 'Move the pointer and discard working-tree changes (dangerous)',
+    gitResetBtn: 'Reset',
+    gitResetDangerTitle: 'Target is not in current branch history',
+    gitResetDangerText: 'Reset would move the current branch to an unrelated commit; commits unique to this branch would be orphaned (recoverable via reflog). Reset anyway?',
+    gitPullTitle: 'Pull {remote}/{branch} into current?',
+    gitPullBtn: 'Pull',
+    gitRebaseRiskTitle: 'Rebase current branch onto {target}?',
+    gitRebaseRiskText: 'Rebase rewrites the history of the current branch (commit hashes change). Only safe when the branch is not shared. Continue?',
+    gitRebaseBtn: 'Rebase',
+    gitErrTargetNotFound: 'Target commit does not exist',
+    gitErrInvalidTarget: 'Invalid target commit',
+    gitErrInvalidResetMode: 'Invalid reset mode',
+    gitErrResetNotAncestor: 'Target is not an ancestor of the current branch; reset would orphan the unique commits of this branch',
+    gitErrInvalidMainline: 'A merge commit needs a mainline parent (-m)',
+    gitErrRebaseConflicts: 'Rebase conflict: resolve, then run git rebase --continue or --abort',
+    gitErrCherryPickConflicts: 'Cherry-pick conflict: resolve, then run git cherry-pick --continue or --abort',
+    gitErrRevertConflicts: 'Revert conflict: resolve, then run git revert --continue or --abort',
+    gitErrRebaseUncommitted: 'Uncommitted changes block the rebase; commit or stash them first',
+    gitErrNotOnBranch: 'Not on any branch (detached HEAD) — cannot run this operation',
   },
 }
 
@@ -706,8 +800,8 @@ module.exports = {
 [data-dsc-git-body] { overflow-y: auto; flex: 1; scrollbar-gutter: stable; }
 [data-dsc-git-rows] { position: relative; }
 [data-dsc-git-svg] { position: absolute; left: 0; top: 0; pointer-events: none; overflow: hidden; }
-.dsc-gline-shadow { fill: none; stroke: rgba(0,0,0,.4); stroke-width: 3.4; }
-.dsc-gline { fill: none; stroke-width: 2; }
+.dsc-gline-shadow { fill: none; stroke: rgba(0,0,0,.22); stroke-width: 2.2; }
+.dsc-gline { fill: none; stroke-width: 1.4; }
 .dsc-gline-dash { stroke: #808080; stroke-dasharray: 2px 3px; opacity: .9; }
 [data-dsc-git-row] {
   display: flex; align-items: center; gap: 5px; padding: 0 8px; cursor: pointer;
@@ -728,7 +822,7 @@ module.exports = {
 [data-dsc-git-row]:hover [data-dsc-git-copy] { opacity: .7; }
 [data-dsc-git-copy]:hover { opacity: 1 !important; }
 .dsc-gref {
-  flex: none; border-radius: 4px; padding: 0 5px; font-size: 10px; line-height: 16px;
+  flex: none; border-radius: 6px; padding: 0 5px; font-size: 10px; line-height: 16px;
   white-space: nowrap; font-weight: 600;
 }
 .dsc-gref-head { background: rgba(255,69,58,.22); color: #ff6961; }
@@ -775,7 +869,7 @@ module.exports = {
   margin: 0; accent-color: var(--dsw-alias-text-accent, #4c9aff);
 }
 /* 面板内按钮（头部/合并条/创建对话框）：跟随面板字号，覆盖 UA 表单控件默认 13.3333px */
-[data-dsc-git] [data-dsc-btn], [data-dsc-git-create] [data-dsc-btn], [data-dsc-git-confirm] [data-dsc-btn], [data-dsc-git-tag] [data-dsc-btn] { font-size: inherit; }
+[data-dsc-git] [data-dsc-btn], [data-dsc-git-create] [data-dsc-btn], [data-dsc-git-confirm] [data-dsc-btn], [data-dsc-git-tag] [data-dsc-btn], [data-dsc-git-reset] [data-dsc-btn], [data-dsc-git-cherrypick] [data-dsc-btn], [data-dsc-git-revert] [data-dsc-btn], [data-dsc-git-pull] [data-dsc-btn] { font-size: inherit; }
 /* 切换确认框（未提交改动提醒）：标题 + 正文 + 右对齐按钮行。
    z-index 940：高于设置弹窗（930）与右键菜单（935）——从设置弹窗内触发
    （如删除远程）时确认框必须浮在弹窗之上，否则同层叠被 DOM 靠后的弹窗盖住。 */
@@ -783,13 +877,18 @@ module.exports = {
 [data-dsc-git-confirm] .dsc-git-confirm-title { font-weight: 600; margin-bottom: 6px; }
 [data-dsc-git-confirm] .dsc-git-confirm-text { opacity: .85; line-height: 1.5; white-space: pre-line; }
 [data-dsc-git-confirm] .dsc-git-confirm-actions { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; }
-/* 危险操作确认按钮（删除分支等不可恢复操作）：红色实底，与普通确认（仍然切换）区分 */
-[data-dsc-git-confirm] .dsc-git-confirm-ok-danger {
+/* 危险操作确认按钮（删除分支等不可恢复操作）：红色实底，与普通确认（仍然切换）区分。
+   也用于历史操作对话框（reset 的 hard 模式确认钮沿用同款危险样式）。 */
+[data-dsc-git-confirm] .dsc-git-confirm-ok-danger,
+[data-dsc-git-reset] .dsc-git-reset-ok-danger {
   background: rgba(232,73,73,.92); color: #fff;
 }
-[data-dsc-git-confirm] .dsc-git-confirm-ok-danger:hover { background: rgba(255,92,92,1); }
-/* push/stash/commit/tag/merge 对话框（浮层卡片，同 confirm/create 框风格）：选项行 + toggle 按钮 */
-[data-dsc-git-push], [data-dsc-git-stash], [data-dsc-git-commit], [data-dsc-git-tag], [data-dsc-git-merge] {
+[data-dsc-git-confirm] .dsc-git-confirm-ok-danger:hover,
+[data-dsc-git-reset] .dsc-git-reset-ok-danger:hover { background: rgba(255,92,92,1); }
+/* push/stash/commit/tag/merge 对话框（浮层卡片，同 confirm/create 框风格）：选项行 + toggle 按钮
+   reset/cherry-pick/revert/pull 同款（历史操作，见 issue IK91UG） */
+[data-dsc-git-push], [data-dsc-git-stash], [data-dsc-git-commit], [data-dsc-git-tag], [data-dsc-git-merge],
+[data-dsc-git-reset], [data-dsc-git-cherrypick], [data-dsc-git-revert], [data-dsc-git-pull] {
   position: fixed; z-index: 930; min-width: 250px; max-width: 340px;
   border-radius: 8px; padding: 10px 12px; display: none; font-size: 12px;
   box-sizing: border-box; color: var(--dsw-alias-text-1, #eee);
@@ -805,7 +904,8 @@ module.exports = {
 }
 [data-dsc-git-tag] .dsc-git-tag-actions [data-dsc-btn] { margin-left: auto; }
 [data-dsc-git-tag] .dsc-git-tag-push-label { opacity: .6; font-size: 11px; flex: none; }
-[data-dsc-git-push] .dsc-git-push-title, [data-dsc-git-stash] .dsc-git-stash-title, [data-dsc-git-commit] .dsc-git-commit-title, [data-dsc-git-tag] .dsc-git-tag-title, [data-dsc-git-merge] .dsc-git-merge-title {
+[data-dsc-git-push] .dsc-git-push-title, [data-dsc-git-stash] .dsc-git-stash-title, [data-dsc-git-commit] .dsc-git-commit-title, [data-dsc-git-tag] .dsc-git-tag-title, [data-dsc-git-merge] .dsc-git-merge-title,
+[data-dsc-git-reset] .dsc-git-reset-title, [data-dsc-git-cherrypick] .dsc-git-cherrypick-title, [data-dsc-git-revert] .dsc-git-revert-title, [data-dsc-git-pull] .dsc-git-pull-title {
   font-weight: 600; margin-bottom: 8px;
 }
 .dsc-git-opt-row {
@@ -828,6 +928,17 @@ module.exports = {
 [data-dsc-git-merge] .dsc-git-merge-hint { opacity: .6; font-size: 11px; line-height: 1.4; margin-bottom: 6px; min-height: 14px; }
 [data-dsc-git-merge] .dsc-git-merge-squash { display: none; }
 [data-dsc-git-merge] .dsc-git-merge-squash.on { display: block; }
+/* 历史操作对话框专属：reset/pull 模式单选列（同 merge 模式列）+ cherry-pick/revert 父提交下拉 */
+[data-dsc-git-reset] .dsc-git-reset-modes, [data-dsc-git-pull] .dsc-git-pull-modes {
+  display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px;
+}
+[data-dsc-git-reset] .dsc-git-reset-modes .dsc-git-toggle, [data-dsc-git-pull] .dsc-git-pull-modes .dsc-git-toggle { width: 100%; text-align: left; }
+[data-dsc-git-reset] .dsc-git-reset-hint, [data-dsc-git-pull] .dsc-git-pull-hint { opacity: .6; font-size: 11px; line-height: 1.4; margin-bottom: 6px; min-height: 14px; }
+[data-dsc-git-cherrypick] select, [data-dsc-git-revert] select {
+  width: 100%; box-sizing: border-box; padding: 4px 6px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.25);
+  color: inherit; font-size: 11px; outline: none; margin-bottom: 6px;
+}
 /* toggle 按钮（Set Upstream / Include Untracked / Push Mode 互斥组）：on 高亮 accent */
 .dsc-git-toggle {
   border: 1px solid rgba(255,255,255,.14); border-radius: 6px; padding: 2px 8px;
@@ -1084,8 +1195,8 @@ module.exports = {
     // - 列分配贪心最左：registerUnavailable 把被占用的点往右推（nextX）
     // - 泳道复用：availableColours[i] 记每色最后使用行，新线只占"已在上方结束"的旧泳道
     // - 合并提交的第二父向下连到已存在的父分支线（pointConnectingTo）
-    // - 渲染：网格制 + shadow/彩色双 path + 折角过渡（Angular），右缘渐变淡出
-    const GIT_GRID = { x: 18, y: 26, offsetX: 10, offsetY: 13, expandY: 340 }
+    // - 渲染：网格制 + shadow/彩色双 path + 折角过渡（Angular）
+    const GIT_GRID = { x: 14, y: 28, offsetX: 7, offsetY: 14.5, expandY: 340 }
     // 行内展开动态高度：默认 = GIT_GRID.expandY（上限）。详情内容渲染完成后按实际
     // 高度收缩（≤ 上限）。图高度 / 线拉伸 / 盒子高度三者都跟随它，保证一致不穿帮。
     let gitExpandY = GIT_GRID.expandY
@@ -2386,6 +2497,12 @@ module.exports = {
           onClick: () => gitCheckout({ branch: branchName, remote: fullRef }),
         },
         {
+          // 拉取远程分支到当前分支（决策：并入远程分支右键、紧邻「创建本地分支并检出」，不加独立按钮）
+          label: t('gitPullInto', { branch: branchName }),
+          disabled: (gitRows.find((c) => c.refs.isHead)?.refs.headName ?? null) === null,
+          onClick: () => gitPullOpen(remoteName, branchName),
+        },
+        {
           label: t('gitDeleteRemoteBranch', { branch: branchName }),
           onClick: () => gitConfirmOpen({
             title: t('gitDeleteRemoteBranch', { branch: branchName }),
@@ -2568,19 +2685,36 @@ module.exports = {
               }),
             }])
           } else if (row.dataset.hash !== '') {
-            // 普通 commit 行右键：创建 tag / 新建分支（上游 Commit Context Menu：
-            // Add Tag… 与 Create Branch…，均复用已有对话框）
+            // 普通 commit 行右键：创建 tag / 新建分支 / 历史操作（Cherry-pick / Revert /
+            // Rebase onto this commit / Reset to this commit，镜像上游 Commit Context Menu）。
             ev.preventDefault()
             ev.stopPropagation()
             const hash = row.dataset.hash
+            const shortHash = hash.slice(0, 7)
             gitCtxOpen(ev.clientX, ev.clientY, [
               {
                 label: t('gitAddTag'),
                 onClick: () => gitTagOpen(hash),
               },
               {
-                label: t('gitCreateFromCommit', { hash: hash.slice(0, 7) }),
+                label: t('gitCreateFromCommit', { hash: shortHash }),
                 onClick: () => gitCreateOpen({ start: hash }),
+              },
+              {
+                label: t('gitCherryPick', { hash: shortHash }),
+                onClick: () => gitCherryPickOpen(hash),
+              },
+              {
+                label: t('gitRevert', { hash: shortHash }),
+                onClick: () => gitRevertOpen(hash),
+              },
+              {
+                label: t('gitRebaseOnCommit', { hash: shortHash }),
+                onClick: () => gitRebaseRun(hash),
+              },
+              {
+                label: t('gitResetToCommit', { hash: shortHash }),
+                onClick: () => gitResetOpen(hash),
               },
             ])
           }
@@ -2632,6 +2766,12 @@ module.exports = {
             label: t('gitMergeInto', { branch: branchName }),
             disabled: isCurrent,
             onClick: () => gitMergeOpen(branchName),
+          },
+          {
+            // 变基当前分支到该分支（重写历史，危险确认；非当前分支才可用）
+            label: t('gitRebaseBranch', { branch: branchName }),
+            disabled: isCurrent,
+            onClick: () => gitRebaseRun(branchName),
           },
           {
             label: t('gitRenameBranch', { branch: branchName }),
@@ -3916,6 +4056,455 @@ module.exports = {
       if (!gitMergeBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitMergeClose()
     })
 
+    // ---------- 历史操作（rebase/reset/cherry-pick/revert/pull，见 issue IK91UG） ----------
+    // 服务端 /git/history 路由。入口：commit 行右键（Cherry-pick / Revert / Rebase /
+    // Reset）、本地分支右键（Rebase onto branch）、远程分支右键（Pull into current branch）。
+    // 决策落点：rebase 仅非交互 + 危险确认；reset 祖先守卫（非祖先需危险确认 + force 重发）；
+    // cherry-pick/revert 对 merge commit 选 mainline parent；pull 并入远程分支右键
+    // （squash/noff toggle，冲突归现有 merge 分类由合并条接管）；rebase/cherry-pick/revert
+    // 冲突本期只做失败分类（abort/continue 放下期统一合并条）。
+    const gitHistoryPost = (payload) => gitPost('/git/history', payload)
+    let gitHistorySession = ''
+    const gitHistorySessionGuard = (box) => {
+      const session = currentSessionId()
+      if (gitHistorySession === '' || session === '' || gitHistorySession !== session) {
+        box.style.display = 'none'
+        flash(t('gitErrSessionChanged'), 'error')
+        return false
+      }
+      return true
+    }
+    // 历史操作后强制刷新（结果必然变化，跳过签名比较）
+    const gitHistoryRefresh = () => gitFetch(true, true)
+
+    // --- rebase：危险确认（重写历史）后直跑，非交互 ---
+    const gitRebaseRun = (target) => {
+      const label = /^[0-9a-f]{7,40}$/i.test(target) ? target.slice(0, 7) : target
+      gitConfirmOpen({
+        title: t('gitRebaseRiskTitle', { target: label }),
+        text: t('gitRebaseRiskText'),
+        okText: t('gitRebaseBtn'),
+        danger: true,
+        onOk: async () => {
+          try {
+            await gitHistoryPost({ action: 'rebase', target })
+            flash(t('gitRebaseOk'))
+            gitHistoryRefresh()
+          } catch (err) {
+            flash(gitErrText(err), 'error')
+            if ((err.code ?? '').endsWith('-conflicts')) gitHistoryRefresh()
+          }
+        },
+      })
+    }
+
+    // --- reset：模式三选（soft/mixed/hard）+ 祖先守卫 ---
+    // 非祖先（目标不在当前分支历史）→ 服务端拒绝 reset-not-ancestor → 危险确认后带 force 重发。
+    const gitResetBox = document.createElement('div')
+    gitResetBox.setAttribute('data-dsc-git-reset', '')
+    body.appendChild(gitResetBox)
+    const gitResetTitle = document.createElement('div')
+    gitResetTitle.className = 'dsc-git-reset-title'
+    const RESET_MODE_KEYS = ['soft', 'mixed', 'hard']
+    const RESET_MODE_TEXTS = ['gitResetModeSoft', 'gitResetModeMixed', 'gitResetModeHard']
+    const RESET_MODE_HINTS = ['gitResetHintSoft', 'gitResetHintMixed', 'gitResetHintHard']
+    const gitResetModes = document.createElement('div')
+    gitResetModes.className = 'dsc-git-reset-modes'
+    const gitResetBtns = RESET_MODE_KEYS.map((mode, i) => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'dsc-git-toggle' + (mode === 'mixed' ? ' on' : '')
+      btn.textContent = t(RESET_MODE_TEXTS[i])
+      btn.dataset.mode = mode
+      btn.addEventListener('click', () => {
+        for (const b of gitResetBtns) b.classList.toggle('on', b === btn)
+        gitResetHint.textContent = t(RESET_MODE_HINTS[gitResetBtns.findIndex((b) => b.classList.contains('on'))])
+        gitResetOk.classList.toggle('dsc-git-reset-ok-danger', btn.dataset.mode === 'hard')
+      })
+      gitResetModes.appendChild(btn)
+      return btn
+    })
+    const gitResetHint = document.createElement('div')
+    gitResetHint.className = 'dsc-git-reset-hint'
+    gitResetHint.textContent = t('gitResetHintMixed')
+    const gitResetActions = document.createElement('div')
+    gitResetActions.className = 'dsc-git-opt-actions'
+    const gitResetOk = document.createElement('button')
+    gitResetOk.type = 'button'
+    gitResetOk.setAttribute('data-dsc-btn', '')
+    gitResetOk.textContent = t('gitResetBtn')
+    const gitResetCancel = document.createElement('button')
+    gitResetCancel.type = 'button'
+    gitResetCancel.setAttribute('data-dsc-btn', '')
+    gitResetCancel.textContent = t('gitCancel')
+    gitResetActions.appendChild(gitResetOk)
+    gitResetActions.appendChild(gitResetCancel)
+    gitResetBox.appendChild(gitResetTitle)
+    gitResetBox.appendChild(gitResetModes)
+    gitResetBox.appendChild(gitResetHint)
+    gitResetBox.appendChild(gitResetActions)
+    let gitResetHash = ''
+    let gitResetMode = 'mixed'
+    // 关闭仅隐藏（保留 hash/mode：非祖先确认后 force 重发还要用）
+    const gitResetClose = () => { gitResetBox.style.display = 'none' }
+    const gitResetOpen = (hash) => {
+      gitHistorySession = currentSessionId()
+      if (gitHistorySession === '') return
+      gitResetHash = hash
+      gitResetMode = 'mixed'
+      gitResetTitle.textContent = t('gitResetTitle', { hash: hash.slice(0, 7) })
+      for (const b of gitResetBtns) b.classList.toggle('on', b.dataset.mode === 'mixed')
+      gitResetHint.textContent = t('gitResetHintMixed')
+      gitResetOk.classList.remove('dsc-git-reset-ok-danger')
+      gitResetOk.disabled = false
+      gitResetBox.style.display = 'block'
+      const headRect = gitHead.getBoundingClientRect()
+      gitResetBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`
+      gitResetBox.style.top = `${headRect.bottom + 6}px`
+      gitResetOk.focus()
+    }
+    const gitResetRun = async (retried = false) => {
+      if (!retried && !gitHistorySessionGuard(gitResetBox)) return
+      gitResetMode = gitResetBtns.find((b) => b.classList.contains('on'))?.dataset.mode ?? 'mixed'
+      gitResetOk.disabled = true
+      try {
+        await gitHistoryPost({ action: 'reset', hash: gitResetHash, mode: gitResetMode, force: retried === true })
+        gitResetClose()
+        flash(t('gitResetOk'))
+        gitHistoryRefresh()
+      } catch (err) {
+        if (!retried && err.code === 'reset-not-ancestor') {
+          // 非祖先：放下 reset 框，弹危险确认；确认后带 force 重发（同切换守卫旁路模式）
+          gitResetClose()
+          gitConfirmOpen({
+            title: t('gitResetDangerTitle'),
+            text: t('gitResetDangerText'),
+            okText: t('gitResetBtn'),
+            danger: true,
+            onOk: () => gitResetRun(true),
+          })
+          return
+        }
+        flash(gitErrText(err), 'error')
+        gitResetOk.disabled = false
+      }
+    }
+    gitResetOk.addEventListener('click', () => gitResetRun(false))
+    gitResetCancel.addEventListener('click', gitResetClose)
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && gitResetBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitResetClose()
+    })
+    document.addEventListener('click', (ev) => {
+      if (gitResetBox.style.display === 'none') return
+      if (!gitResetBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitResetClose()
+    })
+
+    // --- cherry-pick：mainline parent（merge commit）+ -x / -n ---
+    const gitCherryPickBox = document.createElement('div')
+    gitCherryPickBox.setAttribute('data-dsc-git-cherrypick', '')
+    body.appendChild(gitCherryPickBox)
+    const gitCherryPickTitle = document.createElement('div')
+    gitCherryPickTitle.className = 'dsc-git-cherrypick-title'
+    const gitCherryPickParentRow = document.createElement('div')
+    gitCherryPickParentRow.className = 'dsc-git-opt-row'
+    const gitCherryPickParentLabel = document.createElement('label')
+    gitCherryPickParentLabel.textContent = t('gitCherryPickParentLabel')
+    const gitCherryPickParentSel = document.createElement('select')
+    gitCherryPickParentRow.appendChild(gitCherryPickParentLabel)
+    gitCherryPickParentRow.appendChild(gitCherryPickParentSel)
+    const gitCherryPickXRow = document.createElement('div')
+    gitCherryPickXRow.className = 'dsc-git-opt-row'
+    const gitCherryPickXLabel = document.createElement('label')
+    gitCherryPickXLabel.textContent = t('gitCherryPickRecordOrigin')
+    const gitCherryPickXToggle = document.createElement('button')
+    gitCherryPickXToggle.type = 'button'
+    gitCherryPickXToggle.className = 'dsc-git-toggle'
+    gitCherryPickXToggle.addEventListener('click', () => gitCherryPickXToggle.classList.toggle('on'))
+    gitCherryPickXRow.appendChild(gitCherryPickXLabel)
+    gitCherryPickXRow.appendChild(gitCherryPickXToggle)
+    const gitCherryPickNRow = document.createElement('div')
+    gitCherryPickNRow.className = 'dsc-git-opt-row'
+    const gitCherryPickNLabel = document.createElement('label')
+    gitCherryPickNLabel.textContent = t('gitCherryPickNoCommit')
+    const gitCherryPickNToggle = document.createElement('button')
+    gitCherryPickNToggle.type = 'button'
+    gitCherryPickNToggle.className = 'dsc-git-toggle'
+    gitCherryPickNToggle.addEventListener('click', () => gitCherryPickNToggle.classList.toggle('on'))
+    gitCherryPickNRow.appendChild(gitCherryPickNLabel)
+    gitCherryPickNRow.appendChild(gitCherryPickNToggle)
+    const gitCherryPickActions = document.createElement('div')
+    gitCherryPickActions.className = 'dsc-git-opt-actions'
+    const gitCherryPickOk = document.createElement('button')
+    gitCherryPickOk.type = 'button'
+    gitCherryPickOk.setAttribute('data-dsc-btn', '')
+    gitCherryPickOk.textContent = t('gitCherryPickBtn')
+    const gitCherryPickCancel = document.createElement('button')
+    gitCherryPickCancel.type = 'button'
+    gitCherryPickCancel.setAttribute('data-dsc-btn', '')
+    gitCherryPickCancel.textContent = t('gitCancel')
+    gitCherryPickActions.appendChild(gitCherryPickOk)
+    gitCherryPickActions.appendChild(gitCherryPickCancel)
+    gitCherryPickBox.appendChild(gitCherryPickTitle)
+    gitCherryPickBox.appendChild(gitCherryPickParentRow)
+    gitCherryPickBox.appendChild(gitCherryPickXRow)
+    gitCherryPickBox.appendChild(gitCherryPickNRow)
+    gitCherryPickBox.appendChild(gitCherryPickActions)
+    let gitCherryPickHash = ''
+    let gitCherryPickMerge = false
+    const gitCherryPickClose = () => {
+      gitCherryPickBox.style.display = 'none'
+      gitCherryPickHash = ''
+      gitCherryPickMerge = false
+    }
+    const gitCherryPickOpen = (hash) => {
+      gitHistorySession = currentSessionId()
+      if (gitHistorySession === '') return
+      gitCherryPickHash = hash
+      const commit = gitRows.find((c) => c.hash === hash)
+      const parents = Array.isArray(commit?.parents) ? commit.parents : []
+      gitCherryPickMerge = parents.length > 1
+      gitCherryPickParentRow.style.display = gitCherryPickMerge ? '' : 'none'
+      gitCherryPickParentSel.replaceChildren()
+      if (gitCherryPickMerge) {
+        parents.forEach((ph, i) => {
+          const opt = document.createElement('option')
+          opt.value = String(i + 1)
+          opt.textContent = t('gitCherryPickParentOption', { n: i + 1, hash: ph.slice(0, 7) })
+          gitCherryPickParentSel.appendChild(opt)
+        })
+        gitCherryPickParentSel.value = '1'
+      }
+      gitCherryPickXToggle.classList.remove('on')
+      gitCherryPickNToggle.classList.remove('on')
+      gitCherryPickTitle.textContent = t('gitCherryPickTitle', { hash: hash.slice(0, 7) })
+      gitCherryPickOk.disabled = false
+      gitCherryPickBox.style.display = 'block'
+      const headRect = gitHead.getBoundingClientRect()
+      gitCherryPickBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`
+      gitCherryPickBox.style.top = `${headRect.bottom + 6}px`
+      gitCherryPickOk.focus()
+    }
+    const gitCherryPickRun = async () => {
+      if (!gitHistorySessionGuard(gitCherryPickBox)) return
+      gitCherryPickOk.disabled = true
+      const parent = gitCherryPickMerge ? Number(gitCherryPickParentSel.value) : 0
+      const recordOrigin = gitCherryPickXToggle.classList.contains('on')
+      const noCommit = gitCherryPickNToggle.classList.contains('on')
+      try {
+        await gitHistoryPost({ action: 'cherry-pick', hash: gitCherryPickHash, parent, recordOrigin, noCommit })
+        gitCherryPickClose()
+        flash(noCommit ? t('gitCherryPickNoCommitOk') : t('gitCherryPickOk'))
+        gitHistoryRefresh()
+      } catch (err) {
+        flash(gitErrText(err), 'error')
+        if ((err.code ?? '').endsWith('-conflicts')) {
+          gitCherryPickClose()
+          gitHistoryRefresh()
+        } else {
+          gitCherryPickOk.disabled = false
+        }
+      }
+    }
+    gitCherryPickOk.addEventListener('click', gitCherryPickRun)
+    gitCherryPickCancel.addEventListener('click', gitCherryPickClose)
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && gitCherryPickBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitCherryPickClose()
+    })
+    document.addEventListener('click', (ev) => {
+      if (gitCherryPickBox.style.display === 'none') return
+      if (!gitCherryPickBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitCherryPickClose()
+    })
+
+    // --- revert：mainline parent（merge commit），--no-edit ---
+    const gitRevertBox = document.createElement('div')
+    gitRevertBox.setAttribute('data-dsc-git-revert', '')
+    body.appendChild(gitRevertBox)
+    const gitRevertTitle = document.createElement('div')
+    gitRevertTitle.className = 'dsc-git-revert-title'
+    const gitRevertParentRow = document.createElement('div')
+    gitRevertParentRow.className = 'dsc-git-opt-row'
+    const gitRevertParentLabel = document.createElement('label')
+    gitRevertParentLabel.textContent = t('gitRevertParentLabel')
+    const gitRevertParentSel = document.createElement('select')
+    gitRevertParentRow.appendChild(gitRevertParentLabel)
+    gitRevertParentRow.appendChild(gitRevertParentSel)
+    const gitRevertActions = document.createElement('div')
+    gitRevertActions.className = 'dsc-git-opt-actions'
+    const gitRevertOk = document.createElement('button')
+    gitRevertOk.type = 'button'
+    gitRevertOk.setAttribute('data-dsc-btn', '')
+    gitRevertOk.textContent = t('gitRevertBtn')
+    const gitRevertCancel = document.createElement('button')
+    gitRevertCancel.type = 'button'
+    gitRevertCancel.setAttribute('data-dsc-btn', '')
+    gitRevertCancel.textContent = t('gitCancel')
+    gitRevertActions.appendChild(gitRevertOk)
+    gitRevertActions.appendChild(gitRevertCancel)
+    gitRevertBox.appendChild(gitRevertTitle)
+    gitRevertBox.appendChild(gitRevertParentRow)
+    gitRevertBox.appendChild(gitRevertActions)
+    let gitRevertHash = ''
+    let gitRevertMerge = false
+    const gitRevertClose = () => {
+      gitRevertBox.style.display = 'none'
+      gitRevertHash = ''
+      gitRevertMerge = false
+    }
+    const gitRevertOpen = (hash) => {
+      gitHistorySession = currentSessionId()
+      if (gitHistorySession === '') return
+      gitRevertHash = hash
+      const commit = gitRows.find((c) => c.hash === hash)
+      const parents = Array.isArray(commit?.parents) ? commit.parents : []
+      gitRevertMerge = parents.length > 1
+      gitRevertParentRow.style.display = gitRevertMerge ? '' : 'none'
+      gitRevertParentSel.replaceChildren()
+      if (gitRevertMerge) {
+        parents.forEach((ph, i) => {
+          const opt = document.createElement('option')
+          opt.value = String(i + 1)
+          opt.textContent = t('gitCherryPickParentOption', { n: i + 1, hash: ph.slice(0, 7) })
+          gitRevertParentSel.appendChild(opt)
+        })
+        gitRevertParentSel.value = '1'
+      }
+      gitRevertTitle.textContent = t('gitRevertTitle', { hash: hash.slice(0, 7) })
+      gitRevertOk.disabled = false
+      gitRevertBox.style.display = 'block'
+      const headRect = gitHead.getBoundingClientRect()
+      gitRevertBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`
+      gitRevertBox.style.top = `${headRect.bottom + 6}px`
+      gitRevertOk.focus()
+    }
+    const gitRevertRun = async () => {
+      if (!gitHistorySessionGuard(gitRevertBox)) return
+      gitRevertOk.disabled = true
+      const parent = gitRevertMerge ? Number(gitRevertParentSel.value) : 0
+      try {
+        await gitHistoryPost({ action: 'revert', hash: gitRevertHash, parent })
+        gitRevertClose()
+        flash(t('gitRevertOk'))
+        gitHistoryRefresh()
+      } catch (err) {
+        flash(gitErrText(err), 'error')
+        if ((err.code ?? '').endsWith('-conflicts')) {
+          gitRevertClose()
+          gitHistoryRefresh()
+        } else {
+          gitRevertOk.disabled = false
+        }
+      }
+    }
+    gitRevertOk.addEventListener('click', gitRevertRun)
+    gitRevertCancel.addEventListener('click', gitRevertClose)
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && gitRevertBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitRevertClose()
+    })
+    document.addEventListener('click', (ev) => {
+      if (gitRevertBox.style.display === 'none') return
+      if (!gitRevertBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitRevertClose()
+    })
+
+    // --- pull：拉到当前分支，模式三选（默认/NoFF/Squash，复用合并模式语义） ---
+    const gitPullBox = document.createElement('div')
+    gitPullBox.setAttribute('data-dsc-git-pull', '')
+    body.appendChild(gitPullBox)
+    const gitPullTitle = document.createElement('div')
+    gitPullTitle.className = 'dsc-git-pull-title'
+    const PULL_MODE_KEYS = ['default', 'noff', 'squash']
+    const PULL_MODE_TEXTS = ['gitMergeModeDefault', 'gitMergeModeNoFF', 'gitMergeModeSquash']
+    const PULL_MODE_HINTS = ['gitMergeHintDefault', 'gitMergeHintNoFF', 'gitMergeHintSquash']
+    const gitPullModes = document.createElement('div')
+    gitPullModes.className = 'dsc-git-pull-modes'
+    const gitPullModeBtns = PULL_MODE_KEYS.map((mode, i) => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'dsc-git-toggle' + (mode === 'default' ? ' on' : '')
+      btn.textContent = t(PULL_MODE_TEXTS[i])
+      btn.dataset.mode = mode
+      btn.addEventListener('click', () => {
+        for (const b of gitPullModeBtns) b.classList.toggle('on', b === btn)
+        gitPullHint.textContent = t(PULL_MODE_HINTS[gitPullModeBtns.findIndex((b) => b.classList.contains('on'))])
+      })
+      gitPullModes.appendChild(btn)
+      return btn
+    })
+    const gitPullHint = document.createElement('div')
+    gitPullHint.className = 'dsc-git-pull-hint'
+    gitPullHint.textContent = t('gitMergeHintDefault')
+    const gitPullActions = document.createElement('div')
+    gitPullActions.className = 'dsc-git-opt-actions'
+    const gitPullOk = document.createElement('button')
+    gitPullOk.type = 'button'
+    gitPullOk.setAttribute('data-dsc-btn', '')
+    gitPullOk.textContent = t('gitPullBtn')
+    const gitPullCancel = document.createElement('button')
+    gitPullCancel.type = 'button'
+    gitPullCancel.setAttribute('data-dsc-btn', '')
+    gitPullCancel.textContent = t('gitCancel')
+    gitPullActions.appendChild(gitPullOk)
+    gitPullActions.appendChild(gitPullCancel)
+    gitPullBox.appendChild(gitPullTitle)
+    gitPullBox.appendChild(gitPullModes)
+    gitPullBox.appendChild(gitPullHint)
+    gitPullBox.appendChild(gitPullActions)
+    let gitPullRemote = ''
+    let gitPullBranch = ''
+    const gitPullClose = () => {
+      gitPullBox.style.display = 'none'
+      gitPullRemote = ''
+      gitPullBranch = ''
+    }
+    const gitPullOpen = (remote, branch) => {
+      gitHistorySession = currentSessionId()
+      if (gitHistorySession === '') return
+      gitPullRemote = remote
+      gitPullBranch = branch
+      gitPullTitle.textContent = t('gitPullTitle', { remote, branch })
+      for (const b of gitPullModeBtns) b.classList.toggle('on', b.dataset.mode === 'default')
+      gitPullHint.textContent = t('gitMergeHintDefault')
+      gitPullOk.disabled = false
+      gitPullBox.style.display = 'block'
+      const headRect = gitHead.getBoundingClientRect()
+      gitPullBox.style.left = `${Math.min(headRect.left, window.innerWidth - 280)}px`
+      gitPullBox.style.top = `${headRect.bottom + 6}px`
+      gitPullOk.focus()
+    }
+    const gitPullRun = async () => {
+      if (!gitHistorySessionGuard(gitPullBox)) return
+      gitPullOk.disabled = true
+      const mode = gitPullModeBtns.find((b) => b.classList.contains('on'))?.dataset.mode ?? 'default'
+      try {
+        await gitHistoryPost({
+          action: 'pull',
+          remote: gitPullRemote,
+          branch: gitPullBranch,
+          noff: mode === 'noff',
+          squash: mode === 'squash',
+        })
+        gitPullClose()
+        flash(t('gitPullOk'))
+        gitHistoryRefresh()
+      } catch (err) {
+        flash(gitErrText(err), 'error')
+        if (err.code === 'merge-conflicts' || (err.code ?? '').endsWith('-conflicts')) {
+          gitPullClose()
+          gitHistoryRefresh()
+        } else {
+          gitPullOk.disabled = false
+        }
+      }
+    }
+    gitPullOk.addEventListener('click', gitPullRun)
+    gitPullCancel.addEventListener('click', gitPullClose)
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && gitPullBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitPullClose()
+    })
+    document.addEventListener('click', (ev) => {
+      if (gitPullBox.style.display === 'none') return
+      if (!gitPullBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitPullClose()
+    })
+
     // ---------- 创建 tag 对话框（镜像上游 Add Tag 对话框：名称 + 类型 + message + 推送远程） ----------
     // 入口：右键 commit 行「创建 tag…」。类型二选一（附注默认，同上游 dialogDefaults.addTag.type），
     // 附注时显示备注输入；推送目标为底部左侧下拉多选（镜像 push 对话框 remote 多选菜单：
@@ -4459,6 +5048,10 @@ module.exports = {
       gitConfirmBox.remove()
       gitPushBox.remove()
       gitMergeBox.remove()
+      gitResetBox.remove()
+      gitCherryPickBox.remove()
+      gitRevertBox.remove()
+      gitPullBox.remove()
       gitStashBox.remove()
       msg.remove()
       gitHint.remove()

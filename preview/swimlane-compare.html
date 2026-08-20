@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>泳道图 · 离线调试测试页</title>
+<style>
+  :root {
+    --bg: #1c1c1f; --panel: #2C2C2E; --line: rgba(255,255,255,.08);
+    --text: #eee; --muted: rgba(255,255,255,.55); --accent: #4c9aff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; padding: 16px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 14px; }
+  header h1 { font-size: 16px; margin: 0 0 2px; }
+  header p { margin: 0; color: var(--muted); font-size: 12px; max-width: 640px; line-height: 1.5; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 14px; background: rgba(255,255,255,.02); }
+  .ctrl { display: flex; flex-direction: column; gap: 3px; }
+  .ctrl label { color: var(--muted); font-size: 11px; }
+  .ctrl input[type=range] { width: 120px; }
+  .ctrl input[type=checkbox] { margin: 0; vertical-align: -2px; }
+  .ctrl button { cursor: pointer; }
+  button { background: rgba(255,255,255,.07); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  button:hover { background: rgba(255,255,255,.12); }
+  #config-out {
+    width: 100%; max-width: 560px; margin-top: 2px; padding: 6px 8px;
+    background: rgba(0,0,0,.25); color: #9cdcfe; border: 1px solid var(--line);
+    border-radius: 6px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px;
+  }
+  .notes { margin-top: 18px; max-width: 900px; border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; background: rgba(255,255,255,.02); font-size: 12px; line-height: 1.75; }
+  .notes h2 { font-size: 13px; margin: 0 0 8px; color: var(--accent); font-weight: 600; }
+  .notes ul { margin: 0; padding-left: 18px; }
+  .notes li { margin: 2px 0; }
+  .notes code, header code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: rgba(255,255,255,.07); padding: 0 4px; border-radius: 4px; font-size: 11px; }
+  #stage { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+  .panel { flex: 1 1 400px; max-width: 620px; }
+  .panel h3 { font-size: 13px; margin: 0 0 8px; color: var(--accent); font-weight: 600; }
+  .panel h3 em { font-style: normal; font-weight: 400; color: var(--muted); font-size: 11px; }
+  /* ---------- 插件泳道图样式（自 src/client/index.js 移植，类名打了 gx- 前缀避免冲突） ---------- */
+  .card {
+    --row-h: 26px; --gap: 5px; --pill-r: 4px;
+    position: relative; border-radius: 12px; overflow: hidden;
+    background: var(--panel); border: 1px solid var(--line);
+    box-shadow: 0 8px 30px rgba(0,0,0,.4); font-size: 12px;
+  }
+  .card .rows { position: relative; }
+  .card .graph-svg { position: absolute; left: 0; top: 0; pointer-events: none; overflow: hidden; }
+  .card .gx-gline-shadow { fill: none; }
+  .card .gx-gline { fill: none; }
+  .card .gx-gline-dash { stroke-dasharray: 2px 3px; opacity: .9; }
+  .card .gx-row {
+    display: flex; align-items: center; gap: var(--gap, 5px); padding: 0 8px; cursor: pointer;
+    height: var(--row-h, 26px); box-sizing: border-box; overflow: hidden;
+  }
+  .card .gx-row:hover { background: rgba(255,255,255,.06); }
+  .card .gx-row.sel { background: rgba(76,154,255,.16); }
+  .card .gx-subject { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .card .gx-row.sel .gx-subject { color: var(--accent); }
+  .card .gx-meta { display: flex; flex: none; gap: 6px; opacity: .55; font-size: 10px; white-space: nowrap; }
+  .card .gx-gref {
+    flex: none; border-radius: var(--pill-r, 4px); padding: 0 5px; font-size: 10px; line-height: 16px;
+    white-space: nowrap; font-weight: 600;
+  }
+  .card .gx-gref-head { background: rgba(255,69,58,.22); color: #ff6961; }
+  .card .gx-gref-branch { background: rgba(245,166,35,.18); color: #f7b84d; }
+  .card .gx-gref-branch.current { background: rgba(245,166,35,.36); color: #ffe3a8; font-weight: 700; box-shadow: inset 0 0 0 1px rgba(245,166,35,.5); }
+  .card .gx-gref-remote { background: rgba(76,154,255,.18); color: #7ab8ff; }
+  .card .gx-gref-tag { background: rgba(52,199,89,.16); color: #5fd97f; }
+  .card .gx-gref-stash { background: rgba(175,82,222,.18); color: #d47fff; }
+  .card .gx-gref-remote-sub { margin-left: 5px; padding: 0 4px; border-radius: 3px; background: rgba(76,154,255,.22); color: #7ab8ff; font-size: 9px; line-height: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>泳道图 · 离线调试测试页</h1>
+    <p>泳道图渲染的<b>离线调试 / 回归测试页</b>（不依赖 DSH 运行时）：算法与样例数据为插件 <code>src/client/index.js</code> 的移植快照。左面板<b>基线</b> = 插件<b>现役渲染值</b>；右面板为<b>参数试验台</b> —— 滑块实时改、自动保存（刷新不丢）、一键复制参数。</p>
+  </div>
+  <button id="reset">恢复默认（= 基线）</button>
+  <button id="copy">复制参数给 AI</button>
+  <input id="config-out" readonly spellcheck="false" placeholder="点击上方按钮，生成你要发给 AI 的参数 JSON" />
+</header>
+
+<div class="controls" id="controls">
+  <div class="ctrl"><label>行高 y <b id="v-y">28</b>（基线 28）</label><input id="c-y" type="range" min="22" max="36" step="1" value="28"></div>
+  <div class="ctrl"><label>列宽 x <b id="v-x">14</b>（基线 14）</label><input id="c-x" type="range" min="10" max="28" step="1" value="14"></div>
+  <div class="ctrl"><label>主线宽 <b id="v-lw">1.4</b>（基线 1.4）</label><input id="c-lw" type="range" min="1" max="4" step="0.1" value="1.4"></div>
+  <div class="ctrl"><label>阴影宽 <b id="v-sw">2.2</b>（基线 2.2）</label><input id="c-sw" type="range" min="0" max="7" step="0.1" value="2.2"></div>
+  <div class="ctrl"><label>阴影深度 <b id="v-sa">0.22</b>（基线 0.22）</label><input id="c-sa" type="range" min="0" max="0.6" step="0.02" value="0.22"></div>
+  <div class="ctrl"><label>折角圆角 <b id="v-r">0</b>px（基线 0 = 直角）</label><input id="c-r" type="range" min="0" max="6" step="0.5" value="0"></div>
+  <div class="ctrl"><label><input id="c-cap" type="checkbox"> 圆头线帽/圆结（stroke-linecap/join: round）</label></div>
+  <div class="ctrl"><label>行内元素间距 <b id="v-gap">5</b>（基线 5）</label><input id="c-gap" type="range" min="3" max="12" step="1" value="5"></div>
+  <div class="ctrl"><label>refs 徽标圆角 <b id="v-pr">6</b>（基线 6）</label><input id="c-pr" type="range" min="2" max="10" step="1" value="6"></div>
+</div>
+
+<div id="stage">
+  <div class="panel"><h3>基线 · 现役渲染 <em>—— 泳道 14 · 行高 28 · 细线 1.4 · 浅阴影 .22/宽 2.2 · 徽标圆角 6（与 src/client/index.js 同步）</em></h3><div class="card" data-card="base"></div></div>
+  <div class="panel"><h3>调试台 · 参数试验 <em>—— 拖动滑块实时预览；恢复默认即回基线；复制参数可写回插件</em></h3><div class="card" data-card="beauty"></div></div>
+</div>
+
+<section class="notes">
+  <h2>说明</h2>
+  <ul>
+    <li><b>本页作用</b>：泳道图（commit DAG）渲染的离线调试 / 回归测试页 —— 不依赖 DSH 运行时与真实仓库即可预览、调参、留档对比。</li>
+    <li><b>数据与算法</b>：样例 DAG 见 <code>MOCK_ROWS</code>（覆盖：未提交改动虚拟行、stash、合并提交、多分支、同名本地/远程 refs、tag）；布局算法 <code>buildGitGraph</code> 与 <code>graphPaths</code> 自 <code>src/client/index.js</code> <b>逐行移植</b> —— 改源码算法时请同步本页。</li>
+    <li><b>基线面板</b>：固定渲染插件<b>现役参数</b>（<code>SHIPPED</code>，对应源码 <code>GIT_GRID</code> 与 <code>.dsc-gline*</code>/<code>.dsc-gref</code> CSS）；它是回归对照，不随右侧控件变化。</li>
+    <li><b>试验台面板</b>：滑块实时改变量并重排；参数<b>自动持久化</b>到 <code>localStorage</code>（刷新不丢）；「恢复默认（= 基线）」清除存档并回到现役值。</li>
+    <li><b>复制参数给 AI</b>：把当前试验参数序列化为 JSON 复制到剪贴板（下方输入框同步显示，可手动 Ctrl+C），便于把定稿参数写回插件源码。</li>
+    <li><b>接口约定</b>：试验台 offset 由 <code>offsetX = x/2</code>、<code>offsetY = y/2 + 0.5</code> 派生；<code>roundR = 0</code> 即直角折角；<code>roundCap</code> 控制线帽/线结是否圆头。</li>
+  </ul>
+</section>
+
+<script id="fixture">
+'use strict'
+const $ = (s, r) => (r || document).querySelector(s)
+const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s))
+
+// ================== 样例 commit DAG（与插件 gitRows 同构） ==================
+const MOCK_ROWS = [
+  { hash: 'UNCOMMITTED', parents: ['HEAD'], refs: { heads: [], remotes: [], tags: [], isHead: false, headName: null }, stash: null, uncommitted: { staged: 2, unstaged: 5 }, subject: '未提交改动（2 已暂存 · 5 未暂存）', ago: '' },
+  { hash: 'S0', parents: ['C6'], refs: { heads: [], remotes: [], tags: [], isHead: false, headName: null }, stash: { selector: 'stash@{0}', baseHash: 'C6' }, subject: 'WIP: 泳道图美化草稿', ago: '2 小时前' },
+  { hash: 'HEAD', parents: ['MERGE'], refs: { heads: ['main'], remotes: ['origin/main'], tags: ['v0.5.3'], isHead: true, headName: 'main' }, stash: null, subject: 'docs: 移除过期说明（右缘渐变淡出）', ago: '刚刚' },
+  { hash: 'MERGE', parents: ['C7', 'C5'], refs: { heads: [], remotes: [], tags: [], isHead: false, headName: null }, stash: null, subject: 'Merge branch feature into main', ago: '10 分钟前' },
+  { hash: 'C7', parents: ['C6'], refs: { heads: [], remotes: [], tags: [], isHead: false, headName: null }, stash: null, subject: 'feat: 泳道复用正则化', ago: '40 分钟前' },
+  { hash: 'C6', parents: ['C4'], refs: { heads: [], remotes: [], tags: [], isHead: false, headName: null }, stash: null, subject: 'fix: 展开区线段拉伸边界', ago: '2 小时前' },
+  { hash: 'C5', parents: ['C3'], refs: { heads: ['feature'], remotes: [], tags: [], isHead: false, headName: null }, stash: null, subject: 'feat(feature): 圆角折角草案', ago: '3 小时前' },
+  { hash: 'C4', parents: ['C2'], refs: { heads: [], remotes: [], tags: [], isHead: false, headName: null }, stash: null, subject: 'refactor: 抽出 graphPaths', ago: '5 小时前' },
+  { hash: 'C3', parents: ['C2'], refs: { heads: [], remotes: [], tags: [], isHead: false, headName: null }, stash: null, subject: 'chore: 初始化 feature', ago: '6 小时前' },
+  { hash: 'C2', parents: ['C1'], refs: { heads: [], remotes: [], tags: [], isHead: false, headName: null }, stash: null, subject: 'feat: Git Graph 泳道算法移植', ago: '1 天前' },
+  { hash: 'C1', parents: [], refs: { heads: [], remotes: [], tags: [], isHead: false, headName: null }, stash: null, subject: 'init: 初始提交', ago: '2 天前' },
+]
+const MOCK_GITCOLORS = ['#e57373', '#f06292', '#ba68c8', '#9575cd', '#7986cb', '#64b5f6', '#4fc3f7', '#4dd0e1', '#4db6ac', '#81c784', '#aed581', '#ffb74d', '#ff8a65', '#a1887f']
+
+// ================== 泳道布局算法（自 src/client/index.js buildGitGraph 逐行移植） ==================
+const NULLV = -1
+function buildGitGraph(commits, grid) {
+  const hashIndex = new Map()
+  commits.forEach((c, i) => hashIndex.set(c.hash, i))
+  const vertices = commits.map((c, i) => ({ id: i, onBranch: null, x: 0, nextX: 0, connections: [], parents: [], children: [], processed: 0 }))
+  for (let i = 0; i < commits.length; i++) {
+    for (const p of commits[i].parents) {
+      const pi = hashIndex.get(p)
+      vertices[i].parents.push(typeof pi === 'number' ? pi : NULLV)
+      if (typeof pi === 'number') vertices[pi].children.push(i)
+    }
+  }
+  const point = (v) => ({ x: v.x, y: v.id })
+  const nextPoint = (v) => ({ x: v.nextX, y: v.id })
+  const nextParent = (v) => (v.processed < v.parents.length ? v.parents[v.processed] : null)
+  const pointConnectingTo = (v, target, branch) => {
+    for (let i = 0; i < v.connections.length; i++) {
+      if (v.connections[i] !== undefined && v.connections[i].target === target && v.connections[i].branch === branch) return { x: i, y: v.id }
+    }
+    return null
+  }
+  const registerUnavailable = (v, x, target, branch) => { if (x === v.nextX) { v.nextX = x + 1; v.connections[x] = { target, branch } } }
+  const addToBranch = (v, branch, x) => { if (v.onBranch === null) { v.onBranch = branch; v.x = x } }
+  const branches = []
+  const availableColours = []
+  const getAvailableColour = (startAt) => { for (let i = 0; i < availableColours.length; i++) { if (startAt > availableColours[i]) return i } availableColours.push(0); return availableColours.length - 1 }
+  const determinePath = (startAt) => {
+    let i = startAt
+    let vertex = vertices[i]
+    let parentVertex = nextParent(vertex)
+    let lastPoint = vertex.onBranch === null ? nextPoint(vertex) : point(vertex)
+    let curVertex, curPoint
+    if (parentVertex !== null && parentVertex !== NULLV && vertices[parentVertex].parents.length > 0 && vertex.onBranch !== null && vertices[parentVertex].onBranch !== null && vertex.parents.length > 1) {
+      let foundPointToParent = false
+      const parentBranch = vertices[parentVertex].onBranch
+      for (i = startAt + 1; i < vertices.length; i++) {
+        curVertex = vertices[i]
+        curPoint = pointConnectingTo(curVertex, parentVertex, parentBranch)
+        if (curPoint !== null) foundPointToParent = true
+        else curPoint = nextPoint(curVertex)
+        parentBranch.lines.push({ p1: lastPoint, p2: curPoint, lockedFirst: !foundPointToParent && curVertex !== vertices[parentVertex] ? lastPoint.x < curPoint.x : true })
+        registerUnavailable(curVertex, curPoint.x, parentVertex, parentBranch)
+        lastPoint = curPoint
+        if (foundPointToParent) { vertex.processed++; break }
+      }
+    } else {
+      const branch = { colour: getAvailableColour(startAt), lines: [], end: 0 }
+      addToBranch(vertex, branch, lastPoint.x)
+      registerUnavailable(vertex, lastPoint.x, vertex, branch)
+      for (i = startAt + 1; i < vertices.length; i++) {
+        curVertex = vertices[i]
+        curPoint = parentVertex === i && vertices[parentVertex].onBranch !== null ? point(vertices[parentVertex]) : nextPoint(curVertex)
+        branch.lines.push({ p1: lastPoint, p2: curPoint, lockedFirst: lastPoint.x < curPoint.x })
+        registerUnavailable(curVertex, curPoint.x, parentVertex, branch)
+        lastPoint = curPoint
+        if (parentVertex === i) {
+          vertex.processed++
+          const parentVertexOnBranch = vertices[parentVertex].onBranch !== null
+          addToBranch(vertices[parentVertex], branch, curPoint.x)
+          vertex = vertices[parentVertex]
+          parentVertex = nextParent(vertex)
+          if (parentVertex === null || parentVertexOnBranch) break
+        }
+      }
+      if (i === vertices.length && parentVertex !== null && parentVertex === NULLV) vertex.processed++
+      branch.end = i
+      branches.push(branch)
+      availableColours[branch.colour] = i
+    }
+  }
+  let i = 0
+  while (i < vertices.length) {
+    if (nextParent(vertices[i]) !== null || vertices[i].onBranch === null) determinePath(i)
+    else i++
+  }
+  let maxX = 1
+  for (const v of vertices) if (v.nextX > maxX) maxX = v.nextX
+  const width = Math.max(0, 2 * grid.offsetX + (maxX - 1) * grid.x)
+  const height = vertices.length * grid.y + grid.offsetY - grid.y / 2
+  return { vertices, branches, width, height }
+}
+
+// ================== 分支线 → SVG path（自 gitGraphPaths 移植 + 圆角增强） ==================
+function graphPaths(graph, grid, opts, hasUncommitted) {
+  const { x: gx, y: gy, offsetX, offsetY } = grid
+  const dElbow = gy * 0.38
+  const R = opts.roundR > 0 ? Math.min(opts.roundR, dElbow) : 0
+  const F = (n) => n.toFixed(1)
+  const paths = []
+  for (const branch of graph.branches) {
+    // 1) grid -> pixel（同原版 1223-1226 + 未提交段下移 5px，记录折角类型与未提交标记）
+    const segs = []
+    for (const line of branch.lines) {
+      const un = hasUncommitted && line.p1.y === 0
+      const x1 = line.p1.x * gx + offsetX
+      let y1 = line.p1.y * gy + offsetY
+      if (un) y1 += 5
+      const x2 = line.p2.x * gx + offsetX
+      const y2 = line.p2.y * gy + offsetY
+      const kind = x1 === x2 ? 'v' : (line.lockedFirst ? 'locked' : 'free')
+      segs.push({ x1, y1, x2, y2, kind, un })
+    }
+    // 2) 共线合并（同原版 1255-1265）：连续竖直共线段合并，不跨 committed/uncommitted 边界
+    let i = 0
+    while (i < segs.length - 1) {
+      const a = segs[i]; const b = segs[i + 1]
+      if (a.kind === 'v' && b.kind === 'v' && a.un === b.un && a.x2 === b.x1 && a.y2 === b.y1) {
+        a.y2 = b.y2
+        segs.splice(i + 1, 1)
+      } else { i++ }
+    }
+    // 3) 组装 path（同原版 1267-1291；未提交段单独拆分为灰色虚线 path）
+    let d = ''
+    let prev = null
+    let curUn = null
+    let dashed = false
+    const segBuilder = {
+      v: (s) => `L${F(s.x2)},${F(s.y2)}`,
+      locked: (s) => (R > 0 && s.x2 - R >= s.x1 && R <= dElbow
+        ? (() => { const cy = s.y2 - dElbow; return `L${F(s.x2 - R)},${F(cy)}Q${F(s.x2)},${F(cy)},${F(s.x2)},${F(cy + R)}L${F(s.x2)},${F(s.y2)}` })()
+        : `L${F(s.x2)},${F(s.y2 - dElbow)}L${F(s.x2)},${F(s.y2)}`),
+      free: (s) => (R > 0 && s.y1 + dElbow - R >= s.y1 && s.x2 >= s.x1 + R
+        ? (() => { const cy = s.y1 + dElbow; return `L${F(s.x1)},${F(cy - R)}Q${F(s.x1)},${F(cy)},${F(s.x1 + R)},${F(cy)}L${F(s.x2)},${F(s.y2)}` })()
+        : `L${F(s.x1)},${F(s.y1 + dElbow)}L${F(s.x2)},${F(s.y2)}`),
+    }
+    const flush = () => { if (d) { paths.push({ d, colour: MOCK_GITCOLORS[branch.colour % MOCK_GITCOLORS.length], dashed }); d = '' } }
+    for (const s of segs) {
+      if (s.un !== curUn) { flush(); curUn = s.un; dashed = s.un }
+      if (d === '' || prev === null || s.x1 !== prev.x || s.y1 !== prev.y) d += `M${s.x1.toFixed(0)},${F(s.y1)}`
+      d += segBuilder[s.kind](s)
+      prev = { x: s.x2, y: s.y2 }
+    }
+    flush()
+  }
+  return paths
+}
+
+// ================== 渲染一个卡片 ==================
+const SVG_NS = 'http://www.w3.org/2000/svg'
+
+function renderCard(card, cfg) {
+  const rows = MOCK_ROWS
+  const grid = { x: cfg.x, y: cfg.y, offsetX: cfg.offsetX, offsetY: cfg.offsetY, expandY: 340 }
+  const graph = buildGitGraph(rows, grid)
+  const hasUncommitted = rows[0].hash === 'UNCOMMITTED'
+  const clipW = Math.min(graph.width, 240)
+  // CSS 变量：行高 / 间距 / 徽标圆角
+  card.style.setProperty('--row-h', cfg.y + 'px')
+  card.style.setProperty('--gap', cfg.gap + 'px')
+  card.style.setProperty('--pill-r', cfg.pillRadius + 'px')
+
+  card.replaceChildren()
+  const rowsEl = document.createElement('div')
+  rowsEl.className = 'rows'
+  card.appendChild(rowsEl)
+
+  const svg = document.createElementNS(SVG_NS, 'svg')
+  svg.setAttribute('class', 'graph-svg')
+  svg.setAttribute('width', String(graph.width))
+  svg.setAttribute('height', String(graph.height))
+  svg.style.width = clipW + 'px'
+  svg.style.height = graph.height + 'px'
+  rowsEl.appendChild(svg)
+
+  // 分支线：shadow + 彩色双 path（同原版 1736-1744；未提交段灰色虚线）
+  for (const p of graphPaths(graph, grid, cfg, hasUncommitted)) {
+    const shadow = document.createElementNS(SVG_NS, 'path')
+    shadow.setAttribute('d', p.d)
+    shadow.setAttribute('class', 'gx-gline-shadow')
+    shadow.setAttribute('stroke', 'rgba(0,0,0,' + cfg.shadowAlpha + ')')
+    shadow.setAttribute('stroke-width', String(cfg.shadowWidth))
+    if (cfg.roundCap) { shadow.setAttribute('stroke-linecap', 'round'); shadow.setAttribute('stroke-linejoin', 'round') }
+    svg.appendChild(shadow)
+    const main = document.createElementNS(SVG_NS, 'path')
+    main.setAttribute('d', p.d)
+    main.setAttribute('class', 'gx-gline' + (p.dashed ? ' gx-gline-dash' : ''))
+    main.setAttribute('stroke', p.dashed ? '#808080' : p.colour)
+    main.setAttribute('stroke-width', String(cfg.lineWidth))
+    if (cfg.roundCap) { main.setAttribute('stroke-linecap', 'round'); main.setAttribute('stroke-linejoin', 'round') }
+    svg.appendChild(main)
+  }
+
+  // 顶点圆点（同原版 1745-1792）
+  const headIndex = rows.findIndex((c) => c.refs.isHead)
+  const currentBranch = headIndex > -1 ? rows[headIndex].refs.headName ?? null : null
+  graph.vertices.forEach((v, idx) => {
+    const commit = rows[v.id]
+    const isUncommitted = commit.hash === 'UNCOMMITTED'
+    const isStash = commit.stash !== null
+    const cx = v.x * grid.x + grid.offsetX
+    const cy = v.id * grid.y + grid.offsetY
+    const colour = v.onBranch !== null ? MOCK_GITCOLORS[v.onBranch.colour % MOCK_GITCOLORS.length] : '#8e8e93'
+    const mk = (tag, attrs) => { const el = document.createElementNS(SVG_NS, tag); Object.keys(attrs).forEach((k) => el.setAttribute(k, String(attrs[k]))); svg.appendChild(el); return el }
+    if (isUncommitted) {
+      mk('circle', { cx, cy, r: 5, fill: 'none', stroke: '#808080', 'stroke-width': 2 })
+    } else if (isStash) {
+      mk('circle', { cx, cy, r: 4.5, fill: 'none', stroke: colour, 'stroke-width': 1.5 })
+      mk('circle', { cx, cy, r: 2, fill: colour })
+    } else {
+      mk('circle', { cx, cy, r: idx === headIndex ? 5 : 4, fill: idx === headIndex ? '#1c1c1e' : colour, stroke: colour, 'stroke-width': idx === headIndex ? 2 : 1.5 })
+    }
+  })
+
+  // 行（refs 徽标 + subject + meta，同原版 1794-1893）
+  for (let vi = 0; vi < graph.vertices.length; vi++) {
+    const v = graph.vertices[vi]
+    const commit = rows[v.id]
+    const row = document.createElement('div')
+    row.className = 'gx-row' + (v.id === 0 ? ' sel' : '')
+    row.style.paddingLeft = clipW + 'px'
+    // refs：本地分支 pill（当前分支高亮）+ 内嵌同名远程子标签
+    const remotesOfHead = new Map()
+    for (const r of commit.refs.remotes) {
+      const slash = r.indexOf('/')
+      if (slash <= 0) continue
+      const bn = r.slice(slash + 1)
+      if (commit.refs.heads.includes(bn)) {
+        if (!remotesOfHead.has(bn)) remotesOfHead.set(bn, [])
+        remotesOfHead.get(bn).push(r.slice(0, slash))
+      }
+    }
+    for (const r of commit.refs.heads) {
+      const b = document.createElement('span')
+      b.className = 'gx-gref gx-gref-branch' + (r === currentBranch ? ' current' : '')
+      b.textContent = '⎇ ' + r
+      const remotes = remotesOfHead.get(r)
+      if (remotes !== undefined) {
+        const sub = document.createElement('span')
+        sub.className = 'gx-gref-remote-sub'
+        sub.textContent = remotes.join(',')
+        b.appendChild(sub)
+      }
+      row.appendChild(b)
+    }
+    for (const r of commit.refs.remotes) {
+      const slash = r.indexOf('/')
+      if (slash > 0 && commit.refs.heads.includes(r.slice(slash + 1))) continue
+      const b = document.createElement('span')
+      b.className = 'gx-gref gx-gref-remote'
+      b.textContent = r
+      row.appendChild(b)
+    }
+    for (const r of commit.refs.tags) {
+      const b = document.createElement('span')
+      b.className = 'gx-gref gx-gref-tag'
+      b.textContent = r
+      row.appendChild(b)
+    }
+    if (commit.stash !== null) {
+      const b = document.createElement('span')
+      b.className = 'gx-gref gx-gref-stash'
+      b.textContent = commit.stash.selector.replace(/^refs\//, '')
+      row.appendChild(b)
+    }
+    const subject = document.createElement('span')
+    subject.className = 'gx-subject'
+    subject.textContent = commit.subject
+    row.appendChild(subject)
+    if (commit.ago) {
+      const meta = document.createElement('span')
+      meta.className = 'gx-meta'
+      meta.textContent = commit.ago
+      row.appendChild(meta)
+    }
+    rowsEl.appendChild(row)
+  }
+}
+
+// ================== 配置与联动 ==================
+// 基线 = 插件「现役」渲染参数（src/client/index.js 的 GIT_GRID 与 .dsc-gline*/.dsc-gref CSS）。
+// ⚠️ 修改插件源码里的网格/线宽/徽标样式后，请手动把 SHIPPED 同步成同一组值，保持基线对齐。
+const SHIPPED = { y: 28, x: 14, offsetX: 7, offsetY: 14.5, lineWidth: 1.4, shadowWidth: 2.2, shadowAlpha: 0.22, roundR: 0, roundCap: false, gap: 5, pillRadius: 6 }
+const BASE_CFG = SHIPPED            // 基线面板：固定渲染现役值，不随控件变化
+const BEAUTY_CFG = { ...SHIPPED }   // 试验台默认值 = 基线；控件改动仅影响右面板
+const STORE_KEY = 'swimlane-compare-cfg'
+
+const baseCard = $('[data-card="base"]')
+const beautyCard = $('[data-card="beauty"]')
+function readUI() {
+  return {
+    y: +$('#c-y').value, x: +$('#c-x').value,
+    lineWidth: +$('#c-lw').value, shadowWidth: +$('#c-sw').value, shadowAlpha: +$('#c-sa').value,
+    roundR: +$('#c-r').value, roundCap: $('#c-cap').checked,
+    gap: +$('#c-gap').value, pillRadius: +$('#c-pr').value,
+  }
+}
+function writeValue(id, labelId, val) { $('#' + id).value = String(val); $('#' + labelId).textContent = String(val) }
+function syncUI(cfg) {
+  writeValue('c-y', 'v-y', cfg.y); writeValue('c-x', 'v-x', cfg.x)
+  writeValue('c-lw', 'v-lw', cfg.lineWidth); writeValue('c-sw', 'v-sw', cfg.shadowWidth); writeValue('c-sa', 'v-sa', cfg.shadowAlpha)
+  writeValue('c-r', 'v-r', cfg.roundR)
+  $('#c-cap').checked = !!cfg.roundCap
+  writeValue('c-gap', 'v-gap', cfg.gap); writeValue('c-pr', 'v-pr', cfg.pillRadius)
+}
+function persist(cfg) { try { localStorage.setItem(STORE_KEY, JSON.stringify(cfg)) } catch (e) { /* ignore */ } }
+function restore() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY)
+    if (!raw) return null
+    const o = JSON.parse(raw)
+    return Object.assign({}, BEAUTY_CFG, o)
+  } catch (e) { return null }
+}
+function refresh() {
+  renderCard(baseCard, BASE_CFG)
+  const cfg = readUI(); cfg.offsetX = cfg.x / 2; cfg.offsetY = cfg.y / 2 + 0.5
+  renderCard(beautyCard, cfg)
+}
+$('#controls').addEventListener('input', (e) => {
+  const id = e.target && e.target.id
+  const labelMap = { 'c-y': 'v-y', 'c-x': 'v-x', 'c-lw': 'v-lw', 'c-sw': 'v-sw', 'c-sa': 'v-sa', 'c-r': 'v-r', 'c-gap': 'v-gap', 'c-pr': 'v-pr' }
+  if (labelMap[id]) $('#' + labelMap[id]).textContent = e.target.value
+  persist(readUI())
+  refresh()
+})
+$('#reset').addEventListener('click', () => {
+  try { localStorage.removeItem(STORE_KEY) } catch (e) { /* ignore */ }
+  syncUI(BEAUTY_CFG); refresh()
+})
+$('#copy').addEventListener('click', () => {
+  const cfg = readUI()
+  const json = JSON.stringify(cfg)
+  const out = $('#config-out')
+  out.value = json
+  out.select()
+  const btn = $('#copy')
+  const done = () => { btn.textContent = '已复制 ✓'; btn.style.borderColor = 'var(--accent)'; setTimeout(() => { btn.textContent = '复制参数给 AI'; btn.style.borderColor = '' }, 4000) }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(json).then(done, () => { btn.textContent = '请 Ctrl+C 复制下方 JSON'; setTimeout(() => { btn.textContent = '复制参数给 AI' }, 4000); out.focus(); out.select() })
+  } else {
+    btn.textContent = '请 Ctrl+C 复制下方 JSON'; setTimeout(() => { btn.textContent = '复制参数给 AI' }, 4000); out.focus(); out.select()
+  }
+})
+
+const saved = restore()
+syncUI(saved || BEAUTY_CFG)
+refresh()
+</script>
+</body>
+</html>
