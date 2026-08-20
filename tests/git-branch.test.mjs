@@ -14,12 +14,40 @@ import {
   extractBlockedPaths,
   gitGuardBlock,
   gitBranchAction,
+  gitPushAction,
   gitRefExists,
   gitOperationMarker,
   gitConflicts,
   apply,
 } from '../lib/index.mjs'
-import { makeRepo, makeConflictedRepo } from './fixtures/repo.mjs'
+import { makeRepo, makeConflictedRepo, runGit } from './fixtures/repo.mjs'
+
+/** 建一个裸仓库（t.after 自动清理）。 */
+async function makeBareRepo(t) {
+  const root = await mkdtemp(join(tmpdir(), 'dsh-gitstatus-bare-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  await runGit(root, ['init', '--bare'])
+  return root
+}
+
+/** 造一个「本地仓库 + 已连接裸远程」：返回 { repo, bare }。 */
+async function makeRepoWithRemote(t) {
+  const bare = await makeBareRepo(t)
+  const repo = await makeRepo(t)
+  await repo.commit('c1')
+  await repo.git(['remote', 'add', 'origin', bare])
+  return { repo, bare }
+}
+
+/** 在当前 HEAD 上建本地分支 feat + 同名远程分支 origin/feat（bare ref + 本地跟踪 ref）。 */
+async function makeLocalAndRemoteFeat(repo, bare) {
+  await repo.branch('feat')
+  const src = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.git(['update-ref', `refs/remotes/origin/feat`, src])
+  await runGit(bare, ['update-ref', 'refs/heads/feat', src])
+  // 远程跟踪 ref 与裸仓库里都要有
+  return src
+}
 
 // ---------- validateBranchName：check-ref-format --branch 镜像 ----------
 
@@ -475,6 +503,72 @@ test('gitBranchAction.delete: 不存在', async (t) => {
   assert.equal(result.error.code, 'target-branch-not-found')
 })
 
+// ---------- gitBranchAction：delete + syncRemote（默认行为「同步删除远程」） ----------
+
+test('gitBranchAction.delete: syncRemote 开启且有同名远程分支 → 本地/远程/跟踪 ref 全删', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
+  await makeLocalAndRemoteFeat(repo, bare)
+  assert.equal(await gitRefExists(repo.root, 'refs/remotes/origin/feat'), true)
+  const result = await gitBranchAction(repo.root, 'delete', { branch: 'feat', syncRemote: true })
+  assert.deepEqual(result, { ok: true, branch: 'feat', synced: ['origin'] })
+  assert.equal(await gitRefExists(repo.root, 'refs/heads/feat'), false)
+  assert.equal(await gitRefExists(repo.root, 'refs/remotes/origin/feat'), false)
+  assert.equal(await gitRefExists(bare, 'refs/heads/feat'), false)
+})
+
+test('gitBranchAction.delete: syncRemote 开启但远程无同名分支 → 只删本地，无 synced', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
+  await repo.branch('feat') // 仅本地分支，远程/跟踪 ref 均不存在
+  const result = await gitBranchAction(repo.root, 'delete', { branch: 'feat', syncRemote: true })
+  assert.deepEqual(result, { ok: true, branch: 'feat' })
+  assert.equal(await gitRefExists(repo.root, 'refs/heads/feat'), false)
+  assert.equal(await gitRefExists(bare, 'refs/heads/feat'), false)
+})
+
+test('gitBranchAction.delete: syncRemote 开启且远程分支已不存在 → 降级删本地跟踪 ref', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
+  await repo.branch('feat')
+  // 只造本地跟踪 ref（bare 上无 refs/heads/feat → push --delete 报 remote ref does not exist）
+  const src = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.git(['update-ref', 'refs/remotes/origin/feat', src])
+  const result = await gitBranchAction(repo.root, 'delete', { branch: 'feat', syncRemote: true })
+  assert.deepEqual(result, { ok: true, branch: 'feat', synced: ['origin'] })
+  assert.equal(await gitRefExists(repo.root, 'refs/heads/feat'), false)
+  assert.equal(await gitRefExists(repo.root, 'refs/remotes/origin/feat'), false)
+})
+
+test('gitBranchAction.delete: syncRemote 开启 + force 强删未合并分支 → 本地/远程都删', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
+  await makeLocalAndRemoteFeat(repo, bare)
+  // 让 feat 未合并：在 feat 上多提交一个 main 没有的分支提交
+  await repo.checkout('feat')
+  await repo.commit('feat-only')
+  await repo.checkout('main')
+  const head = (await repo.git(['rev-parse', 'HEAD'])).trim()
+  await repo.git(['update-ref', 'refs/remotes/origin/feat', head])
+  await runGit(bare, ['update-ref', 'refs/heads/feat', head])
+  assert.equal((await gitBranchAction(repo.root, 'delete', { branch: 'feat' })).ok, false) // 未合并拒绝
+  const result = await gitBranchAction(repo.root, 'delete', { branch: 'feat', force: true, syncRemote: true })
+  assert.deepEqual(result, { ok: true, branch: 'feat', synced: ['origin'] })
+  assert.equal(await gitRefExists(repo.root, 'refs/heads/feat'), false)
+  assert.equal(await gitRefExists(bare, 'refs/heads/feat'), false)
+})
+
+test('gitBranchAction.delete: 未开启 syncRemote → 远程分支保留（行为不变）', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
+  await makeLocalAndRemoteFeat(repo, bare)
+  const result = await gitBranchAction(repo.root, 'delete', { branch: 'feat' })
+  assert.deepEqual(result, { ok: true, branch: 'feat' })
+  assert.equal(await gitRefExists(repo.root, 'refs/heads/feat'), false)
+  assert.equal(await gitRefExists(repo.root, 'refs/remotes/origin/feat'), true)
+  assert.equal(await gitRefExists(bare, 'refs/heads/feat'), true)
+})
+
 // ---------- gitBranchAction：rename（2.4） ----------
 
 test('gitBranchAction.rename: 普通分支 + 当前分支', async (t) => {
@@ -906,4 +1000,20 @@ test('写路由: checkout + fastForward 全链路成功（payload.fastForward �
   assert.deepEqual(JSON.parse(res.payload), { ok: true, branch: 'work', fastForwarded: true })
   assert.equal(await repo.currentBranch(), 'work')
   assert.equal((await repo.git(['rev-parse', 'work'])).trim(), remoteHead)
+})
+
+test('写路由: delete + syncRemote 全链路成功（payload.syncRemote 透传）', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  await gitPushAction(repo.root, { branch: 'main', remotes: ['origin'] })
+  await makeLocalAndRemoteFeat(repo, bare)
+  const route = fakeCtx(repo.root).get('/plugins/dsh-gitstatus/git/branch')
+  const res = fakeRes()
+  await route.handler(
+    fakeReq({ method: 'POST', contentType: 'application/json', body: JSON.stringify({ action: 'delete', branch: 'feat', syncRemote: true }) }),
+    res,
+  )
+  assert.equal(res.status, 200)
+  assert.deepEqual(JSON.parse(res.payload), { ok: true, branch: 'feat', synced: ['origin'] })
+  assert.equal(await gitRefExists(repo.root, 'refs/heads/feat'), false)
+  assert.equal(await gitRefExists(bare, 'refs/heads/feat'), false)
 })

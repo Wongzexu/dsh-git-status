@@ -36,7 +36,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 - **Conflict/in-progress badges**: the header shows "N unresolved conflicts" and "merge/rebase in progress" in real time (`MERGE_HEAD` / `SQUASH_MSG` (squash merge) etc.)
 - **SSE live refresh**: `/git/events` subscription (2s server-side state-key comparison + change push + 15s heartbeat); the graph refreshes instantly when another terminal checks out or commits; a 10s poll remains as a disconnect fallback
 - **Scope switching**: all branches / current branch; auto refresh + manual refresh; non-git-repo hint
-- **Settings page**: default behaviors (auto-checkout after creating a branch / include untracked files when stashing / default merge mode, unified dropdowns) and display options (uncommitted changes, HEAD badge, commit author, commit time — each independently toggleable)
+- **Settings page**: default behaviors (auto-checkout after creating a branch / include untracked files when stashing / default merge mode / sync-delete remote branch when deleting local, unified dropdowns) and display options (uncommitted changes, HEAD badge, commit author, commit time — each independently toggleable)
 
 ## Installation
 
