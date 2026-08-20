@@ -636,9 +636,10 @@ module.exports = {
   position: fixed; z-index: 917; width: 30px; height: 30px;
   border-radius: 10px; border: 1px solid rgba(255,255,255,.08);
   background: var(--dsw-hovercard-bg, #2C2C2E); color: var(--dsw-alias-text-1, #eee);
-  font-size: 14px; cursor: pointer; display: none; align-items: center; justify-content: center;
+  font-size: 14px; cursor: grab; display: none; align-items: center; justify-content: center;
   box-shadow: var(--dsw-shadow-lv3, 0 4px 12px rgba(0,0,0,.3));
 }
+[data-dsc-toggle].dragging { cursor: grabbing; }
 [data-dsc-toggle]:hover { background: var(--dsw-alias-button-floating-hover, rgba(255,255,255,.22)); color: var(--dsw-alias-text-accent, #4c9aff); }
 [data-dsc-toggle].on { outline: 1px solid var(--dsw-alias-text-accent, #4c9aff); }
 /* 操作反馈提示（切换/删除分支等）：位置由 flash() 动态定位到面板框外正上方
@@ -1464,6 +1465,48 @@ module.exports = {
     }
     gitHead.addEventListener('pointerup', gitDragEnd)
     gitHead.addEventListener('pointercancel', gitDragEnd)
+    // 收起时按钮仍是面板的拖拽入口；位移未超过阈值时保留 click 行为。
+    let gitToggleDrag = null
+    let gitToggleDragged = false
+    const gitToggleDragEnd = () => {
+      if (gitToggleDrag?.dragging === true) {
+        try { localStorage.setItem('dsc-git-pos', JSON.stringify(gitPanelPos)) } catch { /* ignore */ }
+        gitToggleDragged = true
+      }
+      gitToggle.classList.remove('dragging')
+      gitToggleDrag = null
+    }
+    gitToggle.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return
+      gitToggleDrag = {
+        dx: ev.clientX - gitToggle.offsetLeft,
+        dy: ev.clientY - gitToggle.offsetTop,
+        startX: ev.clientX,
+        startY: ev.clientY,
+        dragging: false,
+      }
+      gitToggle.setPointerCapture?.(ev.pointerId)
+    })
+    gitToggle.addEventListener('pointermove', (ev) => {
+      if (gitToggleDrag === null) return
+      if (!gitToggleDrag.dragging) {
+        const moved = Math.hypot(ev.clientX - gitToggleDrag.startX, ev.clientY - gitToggleDrag.startY)
+        if (moved < 5) return
+        gitToggleDrag.dragging = true
+        gitToggle.classList.add('dragging')
+        ev.preventDefault()
+      }
+      const x = Math.min(Math.max(8, ev.clientX - gitToggleDrag.dx - 350), window.innerWidth - 60)
+      const y = Math.min(Math.max(8, ev.clientY - gitToggleDrag.dy + 30), window.innerHeight - 60)
+      gitPanelPos = { x, y }
+      gitPanel.style.left = `${x}px`
+      gitPanel.style.top = `${y}px`
+      gitPanel.style.right = 'auto'
+      syncGitToggle()
+      ev.preventDefault()
+    })
+    gitToggle.addEventListener('pointerup', gitToggleDragEnd)
+    gitToggle.addEventListener('pointercancel', gitToggleDragEnd)
     // 视口变化（不同分辨率/窗口缩放）时重新钳制按钮位置。
     const onResize = () => syncGitToggle()
     window.addEventListener('resize', onResize)
@@ -4293,6 +4336,10 @@ module.exports = {
     }
 
     gitToggle.addEventListener('click', () => {
+      if (gitToggleDragged) {
+        gitToggleDragged = false
+        return
+      }
       hideGitHint() // 首次提示：点过即不再显示
       gitOpen = !gitOpen
       gitPanel.classList.toggle('open', gitOpen)
