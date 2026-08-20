@@ -1,3 +1,6 @@
 # 第三方参考源码（仅本地保留，出处见 docs/upstream/*/README.md）
 docs/upstream/vscode-git-graph/*
 !docs/upstream/vscode-git-graph/README.md
+
+# webprobe / 本地验证工装（探针脚本、截图等临时产物）
+webprobe-out/

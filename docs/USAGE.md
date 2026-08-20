@@ -56,7 +56,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 #### 图区（commit DAG 泳道图）
 
 - 每行一个 commit：第一父链成线、列分配贪心最左、泳道复用、合并提交连线；
-- 网格制 SVG 渲染：shadow + 彩色双 path、折角过渡、右缘渐变淡出、HEAD 加粗圆点。
+- 网格制 SVG 渲染：shadow + 彩色双 path、折角过渡、HEAD 加粗圆点。
 
 #### refs 徽标颜色
 
@@ -244,7 +244,7 @@ Then:
 ### Graph area (commit DAG lane graph)
 
 - One row per commit: first-parent chains as lines, greedy leftmost column assignment, lane reuse, merge-commit connectors;
-- SVG grid rendering: shadow + dual-color paths, elbow transitions, right-edge gradient fade, bold HEAD dot.
+- SVG grid rendering: shadow + dual-color paths, elbow transitions, bold HEAD dot.
 
 ### Ref badge colors
 
