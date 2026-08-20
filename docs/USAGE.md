@@ -103,12 +103,16 @@ dsh plugin --profile web add /path/to/dsh-git-status
 
 - **切换到 x**：切换前执行守卫检查（见下）；
 - **合并 x 到当前分支…**；
+- **将当前分支变基到 x…**（仅非当前分支时可用；红色确认——重写当前分支历史）；
 - **重命名 x…**；
 - **删除 x… / 强制删除 x…**（未合并时二次确认）。
 
 #### 右键远程分支徽标
 
-- **创建本地分支 x 并检出**。
+- **创建本地分支 x 并检出**；
+- **拉取 x 到当前分支…**：`git pull <remote> <branch> --no-rebase`（强制合并语义），
+  模式三选：**默认**（可快进则快进否则合并提交）/ **NoFF**（始终生成合并提交）/ **Squash**
+  （压平为一个提交，留在 `SQUASH_MSG` 状态，由合并条收尾）。
 
 #### 右键 tag 徽标
 
@@ -122,6 +126,24 @@ dsh plugin --profile web add /path/to/dsh-git-status
   （tag 保留本地，成功远程已收）；
 - **在 {hash} 新建分支**：以该提交为起点创建分支；是否自动检出由设置控制（上游 Create Branch… 形态）；
   复用头部「＋ 新分支」对话框，起始点（commit hash / tag）服务端权威校验。
+
+#### 历史操作（右键 commit 行 / 分支徽标）
+
+以下操作走 `/git/history` 写路由（镜像上游 dataSource 的 rebase/reset/cherry-pick/revert/pull）：
+
+| 操作 | 入口 | 对话框 / 行为 | 冲突分类 |
+|---|---|---|---|
+| **Cherry-pick…** | commit 行右键 | 合并提交需选**主父提交**（1-based 下拉）；可勾 `-x` 记录来源、`-n` 仅应用到暂存区（不提交） | `cherry-pick-conflicts`（`CHERRY_PICK_HEAD`） |
+| **Revert…** | commit 行右键 | 生成反向提交（`--no-edit`）；合并提交默认主父 1，可下拉切换 | `revert-conflicts`（`REVERT_HEAD`） |
+| **Rebase current branch on this Commit…** | commit 行右键 | 红色确认（重写历史）后 `git rebase <hash>`；**仅非交互** | `rebase-conflicts`（`rebase-merge/apply`） |
+| **Reset current branch to this Commit…** | commit 行右键 | Soft / Mixed / Hard 三选（Hard 红色确认钮）；**祖先守卫**见下 | 无冲突概念 |
+| **将当前分支变基到 {branch}…** | 本地分支右键（非当前分支） | 红色确认后 `git rebase <branch>` | 同 Rebase |
+| **拉取 {branch} 到当前分支…** | 远程分支右键 | 默认/NoFF/Squash 三选（见上） | 归现有合并分类（`merge-conflicts`，合并条接管） |
+
+- **Reset 祖先守卫**：目标不在当前分支历史（`is-ancestor` 为否）→ 服务端拒绝 `reset-not-ancestor`，
+  客户端弹**红色确认框**（提示分支独有提交将被丢弃、仅可从 reflog 找回）→ 确认后带 `force` 重发；
+- **冲突后处理（本期）**：仅失败分类提示 + 头部「进行中」徽标；统一 abort/continue 条放下期里程碑；
+  临时可从终端 `git rebase --abort` / `git cherry-pick --abort` / `git revert --abort` 退出。
 
 #### 新建分支（头部「＋」）
 
@@ -291,16 +313,39 @@ Then:
 
 - **Switch to x** (guards are checked before switching, see below);
 - **Merge x into current…**;
+- **Rebase current branch onto x…** (available only for non-current branches; red confirmation — rewrites current branch history);
 - **Rename x…**;
 - **Delete x… / Force delete x…** (second confirmation when unmerged).
 
 ### Right-click a remote branch badge
 
-- **Create local branch x and check out**.
+- **Create local branch x and check out**;
+- **Pull x into current…**: `git pull <remote> <branch> --no-rebase` (merge semantics are forced), with three modes: **default** (fast-forward when possible, otherwise a merge commit) / **NoFF** (always a merge commit) / **Squash** (flattened into one commit, left in the `SQUASH_MSG` state and finished by the merge bar).
 
 ### Right-click a tag badge
 
 - **Create branch at x and check out**.
+
+### Right-click a commit row
+
+- **Add Tag…**: dialog = tag name + type (**annotated / lightweight**; annotated accepts a message) + the "Push to" **multi-select dropdown** in the bottom-left (mirrors the push dialog's remote multi-select: the first item is "don't push", then each remote can be checked; hidden when no remotes are configured); a same-named tag triggers a "Replace?" confirmation before force overwriting (`-f`); pushes to multiple remotes sequentially, reporting failures per remote (the tag stays local, successful remotes already received it);
+- **Create branch at {hash}**: creates a branch starting at this commit; whether it is checked out is controlled by settings (upstream Create Branch… form); reuses the header "＋ New branch" dialog, with the start point (commit hash / tag) validated authoritatively on the server.
+
+### History operations (commit-row / branch-badge right-click)
+
+These run through the `/git/history` write route (mirroring upstream dataSource's rebase/reset/cherry-pick/revert/pull):
+
+| Operation | Entry point | Dialog / behavior | Conflict category |
+|---|---|---|---|
+| **Cherry-pick…** | commit-row right-click | a merge commit asks you to pick the **mainline parent** (1-based dropdown); optional `-x` record origin, `-n` stage-only (no commit) | `cherry-pick-conflicts` (`CHERRY_PICK_HEAD`) |
+| **Revert…** | commit-row right-click | creates a reverse commit (`--no-edit`); merge commits default to mainline parent 1, switchable in the dropdown | `revert-conflicts` (`REVERT_HEAD`) |
+| **Rebase current branch on this Commit…** | commit-row right-click | red confirmation (rewrites history) then `git rebase <hash>`; **non-interactive only** | `rebase-conflicts` (`rebase-merge/apply`) |
+| **Reset current branch to this Commit…** | commit-row right-click | Soft / Mixed / Hard selection (Hard styles the confirm button red); **ancestor guard** below | no conflict concept |
+| **Rebase current branch onto {branch}…** | local-branch right-click (non-current) | red confirmation then `git rebase <branch>` | same as Rebase |
+| **Pull {branch} into current…** | remote-branch right-click | default/NoFF/Squash selection (see above) | falls into the merge classification (`merge-conflicts`, handled by the merge bar) |
+
+- **Reset ancestor guard**: a target outside the current branch's history (`is-ancestor` is false) is rejected by the server with `reset-not-ancestor`; the client shows a **red confirmation** (unique commits of the branch will be orphaned, recoverable only via reflog), then re-sends with `force`;
+- **After a conflict (this milestone)**: only a categorized failure message + the header "in progress" badge; the unified abort/continue bar lands in the next milestone; for now you can exit from a terminal with `git rebase --abort` / `git cherry-pick --abort` / `git revert --abort`.
 
 ### New branch (header "＋")
 

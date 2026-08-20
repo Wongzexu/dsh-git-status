@@ -49,6 +49,20 @@
     右键 tag 徽标：「在 x 创建分支并检出…」/「推送 tag 到 <远程>…」（每远程一项）/「删除 tag」
     （可选同步删除远程）；右键 commit 行「创建 tag…」（轻量/附注 + 多远程推送）/
     「在 x 新建分支并检出…」（以该提交为起点）
+  - **历史操作**（`/git/history` 路由，镜像上游 dataSource 的 rebase/reset/cherry-pick/revert/pull）：
+    - 右键 commit 行（目标以短 hash 显示）：**Cherry-pick…**（合并提交需选主父提交，可勾
+      `-x` 记录来源 / `-n` 仅应用到暂存区）、**Revert…**（合并提交默认主父 1）、
+      **Rebase current branch on this Commit…**、**Reset current branch to this Commit…**
+      （Soft / Mixed / Hard 三选，Hard 为红色确认钮）
+    - 右键本地分支「**Rebase current branch on {branch}…**」（非当前分支时）；
+      rebase 仅**非交互** + 红色危险确认（重写历史）
+    - 右键远程分支「**Pull {branch} into current…**」（并入远程分支菜单、紧邻
+      「创建本地分支并检出」；`--no-rebase` 强制合并语义，模式三选默认/NoFF/Squash，
+      冲突走现有合并分类由合并条接管）
+    - **Reset 祖先守卫**：目标不在当前分支历史（非祖先）→ 服务端拒绝 `reset-not-ancestor`，
+      客户端弹红色确认框后带 `force` 重发（同切换守卫旁路模式）；分支独有提交仅可从 reflog 找回
+    - 冲突分类：`rebase-conflicts` / `cherry-pick-conflicts` / `revert-conflicts`（本期只做失败
+      分类提示，头部徽标显示进行中；abort/continue 放下期与合并条统一）
   - 头部「＋ 新分支」对话框：客户端即时校验 + 服务端 `check-ref-format` 权威校验双保险
   - 切换守卫：未解决冲突 / 进行中操作（MERGE_HEAD 等标记）/ 目标分支在其他 worktree 检出 → 稳定错误码；
     存在**已跟踪**未提交改动时弹「仍然切换」确认框（确认后带 `force` 旁路；仅未跟踪文件不拦）
@@ -117,13 +131,17 @@ dsh plugin --profile web add /path/to/dsh-git-status
 2. 点击面板右上角外侧的 **分支图标** 按钮，展开「Git 状态」浮窗（浮窗可拖拽，位置自动记忆；按钮始终贴在浮窗右上角，关闭后留在原位悬浮，点击重新展开；首次使用有引导提示）；
 3. 浮窗头部可切换「所有分支 / 当前分支」、手动刷新（↻）；打开期间 SSE 即时刷新（断连时 10s 轮询兜底）；
 4. 点击 commit 行展开详情（提交信息 / 变更文件 / 逐文件 diff）；点击文件行查看该文件 patch；
-5. 右键分支徽标：本地「切换到 x / 推送到远程… / 合并 x / 重命名 x / 删除 x（可强删）」；远程「创建本地分支 x 并检出」
+5. 右键分支徽标：本地「切换到 x / 推送到远程… / 合并 x / 重命名 x / 删除 x（可强删）/
+   变基当前分支到 x（红色确认，重写历史）」；远程「创建本地分支 x 并检出 / 拉取 x 到当前分支（默认/NoFF/Squash）」
    （本地已有同名分支时弹框三选：检出已有分支并快进 / 其他名称从远程创建 / 取消）；
 6. 右键 tag 徽标「在 x 创建分支并检出」/「推送 tag 到 <远程>」/「删除 tag（可选同步远程）」；头部「＋ 新分支」：输入名称创建并检出新分支（非法名称即时拦截）；
-7. 右键 stash 徽标「应用 / 弹出 / 从 stash 创建分支并检出 / 删除」；右键未提交改动虚拟行「暂存全部改动 / 贮藏未提交改动 / 提交已暂存 / 提交已暂存（修订）/ 放弃全部未提交（红色确认框）」；
-8. 头部徽标提示未解决冲突 / 进行中操作；合并冲突时合并条提供「中止合并 / 继续合并」；
+7. 右键 commit 行：创建 tag / 以该提交建分支 / **Cherry-pick…**（合并提交选主父，可勾 -x/-n）/
+   **Revert…** / **变基当前分支到该提交** / **重置当前分支到该提交（Soft/Mixed/Hard）**；
+   重置目标不在当前分支历史时会先被拒绝，弹红色确认框后强制重置；
+8. 右键 stash 徽标「应用 / 弹出 / 从 stash 创建分支并检出 / 删除」；右键未提交改动虚拟行「暂存全部改动 / 贮藏未提交改动 / 提交已暂存 / 提交已暂存（修订）/ 放弃全部未提交（红色确认框）」；
+9. 头部徽标提示未解决冲突 / 进行中操作；合并冲突时合并条提供「中止合并 / 继续合并」；
    「合并 x 到当前分支…」先弹确认框：合并提交（默认）/ NoFF（禁用快进）/ Squash 合并（可填提交信息或勾选固定文案）；
-9. 仓库配置了远程时，头部「⇣」按钮一键拉取全部远程（`git fetch --all`，prune 默认关），完成后图即时刷新。
+10. 仓库配置了远程时，头部「⇣」按钮一键拉取全部远程（`git fetch --all`，prune 默认关），完成后图即时刷新。
 
 > 提示：当前会话工作区不是 git 仓库时，浮窗内会显示提示，切换到 git 仓库所在会话即可。
 
@@ -145,7 +163,7 @@ dsh-git-status/
 ├── package.json          # dsh.bundle.patch + dsh.client.inject + platform: web
 ├── cordis.patch.yml      # 挂载 Node half
 ├── lib/
-│   ├── index.mjs         # Node half：git log/show/branch/fetch/push/remote/stash/stage/discard/commit/events 路由（末尾导出测试用纯函数）
+│   ├── index.mjs         # Node half：git log/show/branch/fetch/push/remote/stash/stage/discard/commit/history/events 路由（末尾导出测试用纯函数）
 │   └── client.js         # client bundle（构建产物，__ModuleLoader__ 契约）
 ├── src/client/index.js   # client 源码（手写 CJS，单模块）
 ├── scripts/build-client.js  # 零依赖构建脚本（纯 Node）
@@ -160,6 +178,7 @@ dsh-git-status/
     ├── git-discard.test.mjs  # 放弃全部未提交：已暂存/未暂存/未跟踪/保留忽略文件/unborn/路由与 session 隔离
     ├── git-commit.test.mjs   # staged commit/amend/错误分类/路由与 session 隔离
     ├── git-remote.test.mjs   # tag 名校验/删除远程分支（含降级）/推送与删除 tag（含同步远程）/写路由（含 CSRF）
+    ├── git-history.test.mjs  # rebase/reset/cherry-pick/revert/pull：祖先守卫/merge 主父白名单/冲突分类/写路由（含 CSRF）
     └── git-events.test.mjs   # SSE 订阅：初始推送/变化检测/心跳/断连清理
 ```
 
@@ -171,14 +190,14 @@ dsh-git-status/
 - **安全**：路由根限定**会话权威工作区**（请求必须带 `session=`，只使用
   `ctx.sessions.get(id).header.cwd`；session 缺失/失效直接拒绝，不回退到其它项目），
   拒绝 `..` 分量与越界路径；只读命令白名单；
-  写路由（分支操作 + 拉取远程 + 推送 + 远程/标签操作 + stash + stage + 放弃全部未提交 + commit）POST + 强制 `application/json` content-type（CSRF 防护），
-  分支名/remote 名/tag 名/stash selector 权威校验 + argv 数组（无 shell）+ 切换前守卫；fetch/push 超时放宽（120s）
+  写路由（分支操作 + 拉取远程 + 推送 + 远程/标签操作 + stash + stage + 放弃全部未提交 + commit + **历史操作**）POST + 强制 `application/json` content-type（CSRF 防护），
+  分支名/remote 名/tag 名/stash selector/commit 目标/merge 主父 权威校验 + argv 数组（无 shell）+ 切换前守卫；fetch/push 超时放宽（120s）
 
 ## 开发
 
 ```sh
 node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js）
-npm test                       # node:test 套件（233 用例，真实 git fixture，零依赖）
+npm test                       # node:test 套件（265 用例，真实 git fixture，零依赖）
 ```
 
 改 Node half 直接改 `lib/index.mjs`（无构建步骤），改完跑 `npm test` 回归。
@@ -192,7 +211,9 @@ stash 第三父、show 详情、冲突/进行中状态、分支名校验、切�
 （--all/单远程/prune 语义/失败分类/CSRF，file:// 裸仓库真实拉取）、push 全链路
 （set-upstream tracking / non-fast-forward → force 覆盖 / 失败分类 / CSRF）、
 stash 全链路（push/apply/pop/drop/branch/两种冲突形态 / CSRF）、远程/标签操作全链路
-（删除远程分支含降级、推送/删除 tag 含同步远程、tag 名校验 / CSRF）。
+（删除远程分支含降级、推送/删除 tag 含同步远程、tag 名校验 / CSRF）、历史操作全链路
+（rebase 变基/祖先/冲突/uncommitted、reset 三模式 + 祖先守卫 + force 旁路、
+cherry-pick/revert 的 -x/-n/merge 主父 + 冲突标记、pull 的 --no-rebase/--no-ff/--squash/冲突，含 CSRF）。
 
 重新打包 client 后**刷新浏览器页面**即可看到效果（无需重启 web 服务）；
 改 Node half 后需**重启 web 服务**生效。

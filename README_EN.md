@@ -28,6 +28,12 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
     (`--no-ff`, always creates a merge commit) / **Squash merge** (flattened into one commit, no merge commit);
     Squash offers a commit-message input with a "use fixed text" checkbox (checked by default; unchecked requires a message);
     on conflict the merge bar takes over (squash has no `MERGE_HEAD` — abort goes through `reset --hard`, continue finishes via `commit`)
+  - **History operations** (`/git/history` route, mirroring upstream dataSource's rebase/reset/cherry-pick/revert/pull):
+    - Right-click a commit row (target shown as short hash): **Cherry-pick…** (a merge commit asks you to pick the mainline parent; optional `-x` record origin / `-n` stage-only), **Revert…** (merge commits default to parent 1), **Rebase current branch on this Commit…**, **Reset current branch to this Commit…** (Soft / Mixed / Hard, Hard styles the confirm button red)
+    - Right-click a local branch: "Rebase current branch on {branch}…" (not shown for the current branch); rebase is **non-interactive only** and asks for a red danger confirmation (rewrites history)
+    - Right-click a remote branch: "Pull {branch} into current…" (sits in the remote-branch menu next to "create local branch", `--no-rebase` forces merge semantics, three modes default/NoFF/Squash; conflicts fall into the existing merge classification handled by the merge bar)
+    - **Reset ancestor guard**: a target outside the current branch's history (not an ancestor) is rejected by the server with `reset-not-ancestor`, then the client shows a red confirmation and re-sends with `force` (same bypass pattern as the switch guard); commits unique to the branch are only recoverable via reflog
+    - Conflict categories: `rebase-conflicts` / `cherry-pick-conflicts` / `revert-conflicts` (this milestone only shows categorized failure messages with the in-progress badge; abort/continue merges into the unified conflict bar next milestone)
   - Right-click a remote branch badge: "create local branch x and check out" — if a same-named local branch already exists, a three-choice dialog appears: check out the existing branch and fast-forward to the remote's latest (`git merge --ff-only`; refused when diverged) / create a local branch with a different name (with upstream tracking) / cancel (mirroring the upstream checkoutBranchAction); (a collapsed count badge asks you to pick a remote first); right-click a tag badge: "create branch at x and check out"
   - Header "＋ New branch" dialog: instant client-side validation + authoritative server-side `check-ref-format` validation
   - Switch guard: unresolved conflicts / in-progress operations (`MERGE_HEAD` etc.) / target branch checked out in another worktree → stable error codes; with **tracked** uncommitted changes a "switch anyway" confirmation dialog appears (confirming proceeds with the `force` bypass; untracked-only changes do not block)
@@ -83,10 +89,11 @@ Replace `/path/to/dsh-git-status` with the actual plugin directory path (e.g. th
 2. Click the **branch icon** button outside the panel's top-right corner — the "Git status" drawer expands (draggable, position remembered; the button stays glued to the panel's top-right corner, and floats at that spot to reopen once the panel is closed; a one-time hint guides first use);
 3. The drawer header toggles "All branches / Current branch" and manual refresh (↻); while open, SSE live refresh applies (10s poll fallback on disconnect);
 4. Click a commit row to expand details (commit message / changed files / per-file diffs); click a file row to view that file's patch;
-5. Right-click branch badges: local — "switch to x / merge x / rename x / delete x (force delete)"; remote — "create local branch x and check out" (a same-named local branch triggers a three-choice dialog: check out the existing branch & fast-forward / create with a different name / cancel);
+5. Right-click branch badges: local — "switch to x / push to remote… / merge x / rename x / delete x (force delete) / rebase current branch onto x (red confirm, rewrites history)"; remote — "create local branch x and check out / pull x into current (default/NoFF/Squash)" (a same-named local branch triggers a three-choice dialog: check out the existing branch & fast-forward / create with a different name / cancel);
 6. Right-click a tag badge: "create branch at x and check out"; header "＋ New branch": type a name to create and check out (invalid names are rejected instantly);
-7. Header badges show unresolved conflicts / in-progress operations; on merge conflict the merge bar offers "abort merge / continue merge"; "Merge x into current…" opens a confirmation dialog first — merge commit (default) / NoFF (no fast-forward) / squash merge (custom message or fixed-text checkbox);
-8. When the repo has remotes configured, the header "⇣" button fetches all remotes at once (`git fetch --all`, prune off by default), then the graph refreshes immediately.
+7. Right-click a commit row: create a tag / create a branch at it / **Cherry-pick…** (merge commit parent picker, optional -x/-n) / **Revert…** / **Rebase current branch onto this commit** / **Reset current branch to this commit (Soft/Mixed/Hard)**; a reset target outside the current branch's history is rejected first, then confirmed in red and forced;
+8. Header badges show unresolved conflicts / in-progress operations; on merge conflict the merge bar offers "abort merge / continue merge"; "Merge x into current…" opens a confirmation dialog first — merge commit (default) / NoFF (no fast-forward) / squash merge (custom message or fixed-text checkbox);
+9. When the repo has remotes configured, the header "⇣" button fetches all remotes at once (`git fetch --all`, prune off by default), then the graph refreshes immediately.
 
 > Tip: when the current session's workspace is not a git repo, the drawer shows a hint; switch to a session whose workspace is a git repo.
 
@@ -108,7 +115,7 @@ dsh-git-status/
 ├── package.json          # dsh.bundle.patch + dsh.client.inject + platform: web
 ├── cordis.patch.yml      # mounts the Node half
 ├── lib/
-│   ├── index.mjs         # Node half: git log/show/branch/fetch/push/remote/stash/stage/discard/commit/events routes (pure functions exported at the end for tests)
+│   ├── index.mjs         # Node half: git log/show/branch/fetch/push/remote/stash/stage/discard/commit/history/events routes (pure functions exported at the end for tests)
 │   └── client.js         # client bundle (build artifact, __ModuleLoader__ contract)
 ├── src/client/index.js   # client source (hand-written CJS, single module)
 ├── scripts/build-client.js  # zero-dependency build script (pure Node)
@@ -118,24 +125,25 @@ dsh-git-status/
     ├── git-branch.test.mjs   # branch name validation/guards/failure classification/CRUD/merge/write routes (incl. CSRF)
     ├── git-fetch.test.mjs    # remote listing/name validation/fetch failure classification/real fetch (file:// bare repo, incl. prune)/write routes (incl. CSRF)
     ├── git-stage.test.mjs    # git add -A semantics, route validation, and session isolation
-    ├── git-commit.test.mjs   # staged commit/amend, failure classification, routes, and session isolation
+    ├── git-remote.test.mjs   # tag name validation/delete remote branch (incl. degraded)/push & delete tag (incl. sync-remote)/write routes (incl. CSRF)
+    ├── git-history.test.mjs  # rebase/reset/cherry-pick/revert/pull: ancestor guard/merge mainline whitelist/conflict classification/write routes (incl. CSRF)
     └── git-events.test.mjs   # SSE subscription: initial push/change detection/heartbeat/disconnect cleanup
 ```
 
 - **Data channel**: the Node half registers `/plugins/dsh-gitstatus/*` routes (webServer); the client subscribes to SSE `/git/events` for live refresh with a 10s poll fallback
 - **git execution**: spawns the system `git` (`-C workspace --no-pager -c color.ui=false`, `GIT_OPTIONAL_LOCKS=0`, `LC_ALL=C` for stable English output, `GIT_EDITOR=true` to disable editors, 15s timeout hard kill; fetch relaxed to 120s)
 - **Layout anchor**: official DOM attributes (`data-chat-flow`), no dependency on React internals
-- **Security**: routes are rooted at the session's authoritative workspace (request must carry `session=` and only `ctx.sessions.get(id).header.cwd` is trusted; missing/invalid sessions are rejected instead of falling back to another project), rejecting `..` components and out-of-bounds paths; read-only command whitelist; write routes (branch operations + fetch + stage + commit) are POST with enforced `application/json` content-type (CSRF protection), authoritative branch-name validation + argv arrays (no shell) + pre-switch guards; fetch timeout relaxed (120s for slow networks and large repos)
+- **Security**: routes are rooted at the session's authoritative workspace (request must carry `session=` and only `ctx.sessions.get(id).header.cwd` is trusted; missing/invalid sessions are rejected instead of falling back to another project), rejecting `..` components and out-of-bounds paths; read-only command whitelist; write routes (branch operations + fetch + push + remote/tag + stash + stage + discard + commit + **history operations**) are POST with enforced `application/json` content-type (CSRF protection), authoritative branch-name/remote/tag/stash-selector/commit-target/mainline-parent validation + argv arrays (no shell) + pre-switch guards; fetch/push timeouts relaxed (120s for slow networks and large repos)
 
 ## Development
 
 ```sh
 node scripts/build-client.js   # rebuild the client bundle (lib/client.js) after editing src/client/index.js
-npm test                       # node:test suite (233 cases, real git fixtures, zero dependencies)
+npm test                       # node:test suite (265 cases, real git fixtures, zero dependencies)
 ```
 
 Edit the Node half directly in `lib/index.mjs` (no build step); run `npm test` after changes.
-Test coverage: decoration string classification, uncommitted XY status classification, UNCOMMITTED/stash virtual row assembly, stash third parent, show details, conflict/in-progress status, branch name validation, switch guards (conflict/in-progress/other worktree/**uncommitted confirmation**: staged/unstaged/untracked counts, untracked-only pass, force bypass with changes), full CRUD/merge paths (incl. merge-conflict abort/continue), failure stderr classification, write-route CSRF (content-type enforcement) and full chains, discard-all action (staged/unstaged/untracked/ignored-preserved/unborn head, route validation + session scoping), SSE subscription (initial push/change detection/heartbeat/disconnect cleanup), fetch full chains (--all/single remote/prune semantics/failure classification/CSRF, real fetch from file:// bare repos).
+Test coverage: decoration string classification, uncommitted XY status classification, UNCOMMITTED/stash virtual row assembly, stash third parent, show details, conflict/in-progress status, branch name validation, switch guards (conflict/in-progress/other worktree/**uncommitted confirmation**: staged/unstaged/untracked counts, untracked-only pass, force bypass with changes), full CRUD/merge paths (incl. merge-conflict abort/continue, noff, squash success/custom message/conflict abort & continue), failure stderr classification, write-route CSRF (content-type enforcement) and full chains, discard-all action (staged/unstaged/untracked/ignored-preserved/unborn head, route validation + session scoping), SSE subscription (initial push/change detection/heartbeat/disconnect cleanup), fetch full chains (--all/single remote/prune semantics/failure classification/CSRF, real fetch from file:// bare repos), push full chains (set-upstream tracking / non-fast-forward → force / failure classification / CSRF), stash full chains (push/apply/pop/drop/branch/two conflict forms / CSRF), remote/tag full chains (delete remote branch incl. degraded, push/delete tag incl. sync-remote, tag name validation / CSRF), history ops full chains (rebase replay/ancestor/conflict/uncommitted, reset three modes + ancestor guard + force bypass, cherry-pick/revert -x/-n/merge mainline + conflict markers, pull --no-rebase/--no-ff/--squash/conflict, incl. CSRF).
 
 After rebuilding the client, **refresh the browser page** to see changes (no web service restart needed); after editing the Node half, **restart the web service**.
 
