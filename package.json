@@ -39,7 +39,8 @@
   ],
   "scripts": {
     "build": "node scripts/build-client.js",
-    "test": "node --test \"tests/*.test.mjs\""
+    "test": "node --test \"tests/*.test.mjs\"",
+    "git-c": "bash scripts/git-cleanup.sh"
   },
   "license": "MIT"
 }
