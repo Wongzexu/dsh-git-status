@@ -4,3 +4,6 @@ docs/upstream/vscode-git-graph/*
 
 # webprobe / 本地验证工装（探针脚本、截图等临时产物）
 webprobe-out/
+
+# vision 工具产物（渲染截图、附件缓存等）
+.dsh-vision-router/

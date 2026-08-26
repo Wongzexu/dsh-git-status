@@ -8,7 +8,7 @@
 
 A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations.
 
-🔖 **v0.5.3** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v1.0.0** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -31,7 +31,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
   - **History operations** (`/git/history` route, mirroring upstream dataSource's rebase/reset/cherry-pick/revert/pull):
     - Right-click a commit row (target shown as short hash): **Cherry-pick…** (a merge commit asks you to pick the mainline parent; optional `-x` record origin / `-n` stage-only), **Revert…** (merge commits default to parent 1), **Rebase current branch on this Commit…**, **Reset current branch to this Commit…** (Soft / Mixed / Hard, Hard styles the confirm button red)
     - Right-click a local branch: "Rebase current branch on {branch}…" (not shown for the current branch); rebase is **non-interactive only** and asks for a red danger confirmation (rewrites history)
-    - Right-click a remote branch: "Pull {branch} into current…" (sits in the remote-branch menu next to "create local branch", `--no-rebase` forces merge semantics, three modes default/NoFF/Squash; conflicts fall into the existing merge classification handled by the merge bar)
+    - Right-click a remote branch: "Pull & merge {branch} into current branch…" (sits in the remote-branch menu next to "create local branch", `--no-rebase` forces merge semantics, three modes default/NoFF/Squash; conflicts fall into the existing merge classification handled by the merge bar)
     - **Reset ancestor guard**: a target outside the current branch's history (not an ancestor) is rejected by the server with `reset-not-ancestor`, then the client shows a red confirmation and re-sends with `force` (same bypass pattern as the switch guard); commits unique to the branch are only recoverable via reflog
     - Conflict categories: `rebase-conflicts` / `cherry-pick-conflicts` / `revert-conflicts` (this milestone only shows categorized failure messages with the in-progress badge; abort/continue merges into the unified conflict bar next milestone)
   - Right-click a remote branch badge: "create local branch x and check out" — if a same-named local branch already exists, a three-choice dialog appears: check out the existing branch and fast-forward to the remote's latest (`git merge --ff-only`; refused when diverged) / create a local branch with a different name (with upstream tracking) / cancel (mirroring the upstream checkoutBranchAction); (a collapsed count badge asks you to pick a remote first); right-click a tag badge: "create branch at x and check out"

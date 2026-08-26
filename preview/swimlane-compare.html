@@ -16,10 +16,15 @@
   header p { margin: 0; color: var(--muted); font-size: 12px; max-width: 640px; line-height: 1.5; }
   .controls { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 14px; background: rgba(255,255,255,.02); }
   .ctrl { display: flex; flex-direction: column; gap: 3px; }
+  .ctrl.label-row { flex-direction: row; align-items: center; gap: 8px; }
   .ctrl label { color: var(--muted); font-size: 11px; }
   .ctrl input[type=range] { width: 120px; }
   .ctrl input[type=checkbox] { margin: 0; vertical-align: -2px; }
   .ctrl button { cursor: pointer; }
+  .ctrl.dim { opacity: .4; pointer-events: none; }
+  .style-group { display: inline-flex; gap: 4px; }
+  .style-btn { padding: 3px 10px; border-radius: 999px; }
+  .style-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   button { background: rgba(255,255,255,.07); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
   button:hover { background: rgba(255,255,255,.12); }
   #config-out {
@@ -83,13 +88,21 @@
 </header>
 
 <div class="controls" id="controls">
+  <div class="ctrl label-row">
+    <label>连线风格</label>
+    <span class="style-group" id="style-group">
+      <button data-style="angular" class="style-btn on">折角</button>
+      <button data-style="curved" class="style-btn">曲线</button>
+      <button data-style="arc" class="style-btn">弧线</button>
+    </span>
+  </div>
   <div class="ctrl"><label>行高 y <b id="v-y">28</b>（基线 28）</label><input id="c-y" type="range" min="22" max="36" step="1" value="28"></div>
   <div class="ctrl"><label>列宽 x <b id="v-x">14</b>（基线 14）</label><input id="c-x" type="range" min="10" max="28" step="1" value="14"></div>
   <div class="ctrl"><label>主线宽 <b id="v-lw">1.4</b>（基线 1.4）</label><input id="c-lw" type="range" min="1" max="4" step="0.1" value="1.4"></div>
   <div class="ctrl"><label>阴影宽 <b id="v-sw">2.2</b>（基线 2.2）</label><input id="c-sw" type="range" min="0" max="7" step="0.1" value="2.2"></div>
   <div class="ctrl"><label>阴影深度 <b id="v-sa">0.22</b>（基线 0.22）</label><input id="c-sa" type="range" min="0" max="0.6" step="0.02" value="0.22"></div>
-  <div class="ctrl"><label>折角圆角 <b id="v-r">0</b>px（基线 0 = 直角）</label><input id="c-r" type="range" min="0" max="6" step="0.5" value="0"></div>
-  <div class="ctrl"><label><input id="c-cap" type="checkbox"> 圆头线帽/圆结（stroke-linecap/join: round）</label></div>
+  <div class="ctrl"><label>折角圆角 <b id="v-r">0</b>px（仅折角风格；0 = 直角）</label><input id="c-r" type="range" min="0" max="6" step="0.5" value="0"></div>
+  <div class="ctrl"><label><input id="c-cap" type="checkbox"> 仅折角·圆结/圆帽（仅折角风格）</label></div>
   <div class="ctrl"><label>行内元素间距 <b id="v-gap">5</b>（基线 5）</label><input id="c-gap" type="range" min="3" max="12" step="1" value="5"></div>
   <div class="ctrl"><label>refs 徽标圆角 <b id="v-pr">6</b>（基线 6）</label><input id="c-pr" type="range" min="2" max="10" step="1" value="6"></div>
 </div>
@@ -107,7 +120,8 @@
     <li><b>基线面板</b>：固定渲染插件<b>现役参数</b>（<code>SHIPPED</code>，对应源码 <code>GIT_GRID</code> 与 <code>.dsc-gline*</code>/<code>.dsc-gref</code> CSS）；它是回归对照，不随右侧控件变化。</li>
     <li><b>试验台面板</b>：滑块实时改变量并重排；参数<b>自动持久化</b>到 <code>localStorage</code>（刷新不丢）；「恢复默认（= 基线）」清除存档并回到现役值。</li>
     <li><b>复制参数给 AI</b>：把当前试验参数序列化为 JSON 复制到剪贴板（下方输入框同步显示，可手动 Ctrl+C），便于把定稿参数写回插件源码。</li>
-    <li><b>接口约定</b>：试验台 offset 由 <code>offsetX = x/2</code>、<code>offsetY = y/2 + 0.5</code> 派生；<code>roundR = 0</code> 即直角折角；<code>roundCap</code> 控制线帽/线结是否圆头。</li>
+    <li><b>连线风格（三选一）</b>：<code>折角 angular</code> = 现役直角折线（<code>L…L</code>，折角深度 <code>d=0.38×行高</code>，锐利几何）；<code>曲线 curved</code> = 平滑圆弧（<code>C</code> 三次贝塞尔过渡，<code>d=0.8×行高</code>，拐弯舒展）；<code>弧线 arc</code> = 单峰圆弧（<code>Q</code> 二次贝塞尔，控制点按移动方向区分：向右=<code>右上弧度</code>、向左=<code>右下弧度</code>，区别于曲线 S 形）。原「圆角」版本与曲线渲染一致，已并入曲线仅保留其一。</li>
+    <li><b>接口约定</b>：试验台 offset 由 <code>offsetX = x/2</code>、<code>offsetY = y/2 + 0.5</code> 派生；<code>roundR = 0</code> 即直角折角（仅折角风格）；<code>roundCap</code> 仅折角风格生效；<code>style</code> 取 <code>angular | curved | arc</code>。</li>
   </ul>
 </section>
 
@@ -215,11 +229,15 @@ function buildGitGraph(commits, grid) {
   return { vertices, branches, width, height }
 }
 
-// ================== 分支线 → SVG path（自 gitGraphPaths 移植 + 圆角增强） ==================
+// ================== 分支线 → SVG path（自 gitGraphPaths 移植 + 双风格过渡） ==================
 function graphPaths(graph, grid, opts, hasUncommitted) {
   const { x: gx, y: gy, offsetX, offsetY } = grid
-  const dElbow = gy * 0.38
-  const R = opts.roundR > 0 ? Math.min(opts.roundR, dElbow) : 0
+  // 折角深度：现役折角 0.38×行高（锐利）；曲线（圆弧，上游非 Angular）= 0.8×行高，拐弯有足够空间舒展；
+  // 弧线（单峰圆弧）用二次贝塞尔 Q，控制点按移动方向区分（向右=右上、向左=右下），不走 dElbow。
+  const style = opts.style || 'angular'
+  const dElbow = gy * (style === 'angular' ? 0.38 : 0.8)
+  // roundR 小半径 Q 圆角仅折角风格生效（现役细调）；曲线走完整贝塞尔
+  const R = style === 'angular' && opts.roundR > 0 ? Math.min(opts.roundR, dElbow) : 0
   const F = (n) => n.toFixed(1)
   const paths = []
   for (const branch of graph.branches) {
@@ -244,25 +262,27 @@ function graphPaths(graph, grid, opts, hasUncommitted) {
         segs.splice(i + 1, 1)
       } else { i++ }
     }
-    // 3) 组装 path（同原版 1267-1291；未提交段单独拆分为灰色虚线 path）
+    // 3) 组装 path（style 决定水平过渡写法：折角 L…L 狗腿 / 曲线 C 贝塞尔；未提交段单独拆灰色虚线）
     let d = ''
     let prev = null
     let curUn = null
     let dashed = false
-    const segBuilder = {
-      v: (s) => `L${F(s.x2)},${F(s.y2)}`,
-      locked: (s) => (R > 0 && s.x2 - R >= s.x1 && R <= dElbow
-        ? (() => { const cy = s.y2 - dElbow; return `L${F(s.x2 - R)},${F(cy)}Q${F(s.x2)},${F(cy)},${F(s.x2)},${F(cy + R)}L${F(s.x2)},${F(s.y2)}` })()
-        : `L${F(s.x2)},${F(s.y2 - dElbow)}L${F(s.x2)},${F(s.y2)}`),
-      free: (s) => (R > 0 && s.y1 + dElbow - R >= s.y1 && s.x2 >= s.x1 + R
-        ? (() => { const cy = s.y1 + dElbow; return `L${F(s.x1)},${F(cy - R)}Q${F(s.x1)},${F(cy)},${F(s.x1 + R)},${F(cy)}L${F(s.x2)},${F(s.y2)}` })()
-        : `L${F(s.x1)},${F(s.y1 + dElbow)}L${F(s.x2)},${F(s.y2)}`),
-    }
+    // 贝塞尔平滑过渡（上游非 Angular 写法 L139）：起点先竖直入弯 (x1,y1+d)，终点竖直出弯 (x2,y2-d)
+    const curve = (s) => `C${F(s.x1)},${F(s.y1 + dElbow)} ${F(s.x2)},${F(s.y2 - dElbow)} ${F(s.x2)},${F(s.y2)}`
+    const angularLocked = (s) => (R > 0 && s.x2 - R >= s.x1 && R <= dElbow
+      ? (() => { const cy = s.y2 - dElbow; return `L${F(s.x2 - R)},${F(cy)}Q${F(s.x2)},${F(cy)},${F(s.x2)},${F(cy + R)}L${F(s.x2)},${F(s.y2)}` })()
+      : `L${F(s.x2)},${F(s.y2 - dElbow)}L${F(s.x2)},${F(s.y2)}`)
+    const angularFree = (s) => (R > 0 && s.y1 + dElbow - R >= s.y1 && s.x2 >= s.x1 + R
+      ? (() => { const cy = s.y1 + dElbow; return `L${F(s.x1)},${F(cy - R)}Q${F(s.x1)},${F(cy)},${F(s.x1 + R)},${F(cy)}L${F(s.x2)},${F(s.y2)}` })()
+      : `L${F(s.x1)},${F(s.y1 + dElbow)}L${F(s.x2)},${F(s.y2)}`)
     const flush = () => { if (d) { paths.push({ d, colour: MOCK_GITCOLORS[branch.colour % MOCK_GITCOLORS.length], dashed }); d = '' } }
     for (const s of segs) {
       if (s.un !== curUn) { flush(); curUn = s.un; dashed = s.un }
       if (d === '' || prev === null || s.x1 !== prev.x || s.y1 !== prev.y) d += `M${s.x1.toFixed(0)},${F(s.y1)}`
-      d += segBuilder[s.kind](s)
+      if (s.kind === 'v') d += `L${F(s.x2)},${F(s.y2)}`
+      else if (style === 'angular') d += s.kind === 'locked' ? angularLocked(s) : angularFree(s)
+      else if (style === 'arc') d += s.x2 > s.x1 ? `Q${F(s.x2)},${F(s.y1)} ${F(s.x2)},${F(s.y2)}` : `Q${F(s.x1)},${F(s.y2)} ${F(s.x2)},${F(s.y2)}`
+      else d += curve(s)
       prev = { x: s.x2, y: s.y2 }
     }
     flush()
@@ -298,20 +318,26 @@ function renderCard(card, cfg) {
   rowsEl.appendChild(svg)
 
   // 分支线：shadow + 彩色双 path（同原版 1736-1744；未提交段灰色虚线）
+  // 线结/线帽按风格：折角 roundCap 可选；曲线 平滑贝塞尔（圆弧），方结方帽
+  const style = cfg.style || 'angular'
+  const join = style === 'angular' && cfg.roundCap ? 'round' : 'miter'
+  const cap = style === 'angular' && cfg.roundCap ? 'round' : 'butt'
   for (const p of graphPaths(graph, grid, cfg, hasUncommitted)) {
     const shadow = document.createElementNS(SVG_NS, 'path')
     shadow.setAttribute('d', p.d)
     shadow.setAttribute('class', 'gx-gline-shadow')
     shadow.setAttribute('stroke', 'rgba(0,0,0,' + cfg.shadowAlpha + ')')
     shadow.setAttribute('stroke-width', String(cfg.shadowWidth))
-    if (cfg.roundCap) { shadow.setAttribute('stroke-linecap', 'round'); shadow.setAttribute('stroke-linejoin', 'round') }
+    shadow.setAttribute('stroke-linejoin', join)
+    shadow.setAttribute('stroke-linecap', cap)
     svg.appendChild(shadow)
     const main = document.createElementNS(SVG_NS, 'path')
     main.setAttribute('d', p.d)
     main.setAttribute('class', 'gx-gline' + (p.dashed ? ' gx-gline-dash' : ''))
     main.setAttribute('stroke', p.dashed ? '#808080' : p.colour)
     main.setAttribute('stroke-width', String(cfg.lineWidth))
-    if (cfg.roundCap) { main.setAttribute('stroke-linecap', 'round'); main.setAttribute('stroke-linejoin', 'round') }
+    main.setAttribute('stroke-linejoin', join)
+    main.setAttribute('stroke-linecap', cap)
     svg.appendChild(main)
   }
 
@@ -404,7 +430,7 @@ function renderCard(card, cfg) {
 // ================== 配置与联动 ==================
 // 基线 = 插件「现役」渲染参数（src/client/index.js 的 GIT_GRID 与 .dsc-gline*/.dsc-gref CSS）。
 // ⚠️ 修改插件源码里的网格/线宽/徽标样式后，请手动把 SHIPPED 同步成同一组值，保持基线对齐。
-const SHIPPED = { y: 28, x: 14, offsetX: 7, offsetY: 14.5, lineWidth: 1.4, shadowWidth: 2.2, shadowAlpha: 0.22, roundR: 0, roundCap: false, gap: 5, pillRadius: 6 }
+const SHIPPED = { y: 28, x: 14, offsetX: 7, offsetY: 14.5, lineWidth: 1.4, shadowWidth: 2.2, shadowAlpha: 0.22, style: 'angular', roundR: 0, roundCap: false, gap: 5, pillRadius: 6 }
 const BASE_CFG = SHIPPED            // 基线面板：固定渲染现役值，不随控件变化
 const BEAUTY_CFG = { ...SHIPPED }   // 试验台默认值 = 基线；控件改动仅影响右面板
 const STORE_KEY = 'swimlane-compare-cfg'
@@ -412,20 +438,35 @@ const STORE_KEY = 'swimlane-compare-cfg'
 const baseCard = $('[data-card="base"]')
 const beautyCard = $('[data-card="beauty"]')
 function readUI() {
+  const active = $('.style-group .style-btn.on')
   return {
     y: +$('#c-y').value, x: +$('#c-x').value,
     lineWidth: +$('#c-lw').value, shadowWidth: +$('#c-sw').value, shadowAlpha: +$('#c-sa').value,
+    style: active ? active.dataset.style : 'angular',
     roundR: +$('#c-r').value, roundCap: $('#c-cap').checked,
     gap: +$('#c-gap').value, pillRadius: +$('#c-pr').value,
   }
 }
 function writeValue(id, labelId, val) { $('#' + id).value = String(val); $('#' + labelId).textContent = String(val) }
+function setStyleButtons(style) { $$('#style-group .style-btn').forEach((b) => b.classList.toggle('on', b.dataset.style === style)) }
 function syncUI(cfg) {
+  setStyleButtons(cfg.style)
   writeValue('c-y', 'v-y', cfg.y); writeValue('c-x', 'v-x', cfg.x)
   writeValue('c-lw', 'v-lw', cfg.lineWidth); writeValue('c-sw', 'v-sw', cfg.shadowWidth); writeValue('c-sa', 'v-sa', cfg.shadowAlpha)
   writeValue('c-r', 'v-r', cfg.roundR)
   $('#c-cap').checked = !!cfg.roundCap
   writeValue('c-gap', 'v-gap', cfg.gap); writeValue('c-pr', 'v-pr', cfg.pillRadius)
+}
+function syncStyleUI(cfg) {
+  // 折角专用细调（roundR/roundCap）只对折角风格生效；曲线风格下置灰防误导
+  const isA = cfg.style === 'angular'
+  ;[['c-r', isA], ['c-cap', isA]].forEach((pair) => {
+    const id = pair[0]; const on = pair[1]
+    const el = $('#' + id)
+    if (!el) return
+    el.disabled = !on
+    el.closest('.ctrl').classList.toggle('dim', !on)
+  })
 }
 function persist(cfg) { try { localStorage.setItem(STORE_KEY, JSON.stringify(cfg)) } catch (e) { /* ignore */ } }
 function restore() {
@@ -439,15 +480,20 @@ function restore() {
 function refresh() {
   renderCard(baseCard, BASE_CFG)
   const cfg = readUI(); cfg.offsetX = cfg.x / 2; cfg.offsetY = cfg.y / 2 + 0.5
+  syncStyleUI(cfg)
   renderCard(beautyCard, cfg)
 }
+const applyUI = () => { persist(readUI()); refresh() }
 $('#controls').addEventListener('input', (e) => {
   const id = e.target && e.target.id
   const labelMap = { 'c-y': 'v-y', 'c-x': 'v-x', 'c-lw': 'v-lw', 'c-sw': 'v-sw', 'c-sa': 'v-sa', 'c-r': 'v-r', 'c-gap': 'v-gap', 'c-pr': 'v-pr' }
   if (labelMap[id]) $('#' + labelMap[id]).textContent = e.target.value
-  persist(readUI())
-  refresh()
+  applyUI()
 })
+$$('#style-group .style-btn').forEach((b) => b.addEventListener('click', () => {
+  $$('#style-group .style-btn').forEach((x) => x.classList.toggle('on', x === b))
+  applyUI()
+}))
 $('#reset').addEventListener('click', () => {
   try { localStorage.removeItem(STORE_KEY) } catch (e) { /* ignore */ }
   syncUI(BEAUTY_CFG); refresh()

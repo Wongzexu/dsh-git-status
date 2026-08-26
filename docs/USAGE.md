@@ -1,6 +1,6 @@
 # @wongzexu/dsh-git-status 使用指南 · Usage Guide
 
-> 中英双语（Bilingual）：上方为中文版，下方为 [English version](#wongzexudsh-git-status-usage-guide)。与 [README](../README.md) 配套的详细文字版操作指南，覆盖从打开浮窗到分支操作、冲突处理、远程拉取的全流程。适用版本：v0.5.0+。
+> 中英双语（Bilingual）：上方为中文版，下方为 [English version](#wongzexudsh-git-status-usage-guide)。与 [README](../README.md) 配套的详细文字版操作指南，覆盖从打开浮窗到分支操作、冲突处理、远程拉取的全流程。适用版本：v1.0.0+。
 
 ## 中文版
 
@@ -56,7 +56,8 @@ dsh plugin --profile web add /path/to/dsh-git-status
 #### 图区（commit DAG 泳道图）
 
 - 每行一个 commit：第一父链成线、列分配贪心最左、泳道复用、合并提交连线；
-- 网格制 SVG 渲染：shadow + 彩色双 path、折角过渡、HEAD 加粗圆点。
+- 网格制 SVG 渲染：shadow + 彩色双 path、折角过渡、HEAD 加粗圆点；
+- 连线风格可切换（设置 → 风格设置 → 连线风格）：**折角**（现役直角折线）或 **曲线**（平滑贝塞尔圆弧，拐弯更舒展）或 **弧线**（单峰圆弧，一次拱形弯过去）。
 
 #### refs 徽标颜色
 
@@ -110,7 +111,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 #### 右键远程分支徽标
 
 - **创建本地分支 x 并检出**；
-- **拉取 x 到当前分支…**：`git pull <remote> <branch> --no-rebase`（强制合并语义），
+- **拉取并合并 x 到当前分支…**：`git pull <remote> <branch> --no-rebase`（先拉取，再强制合并语义），
   模式三选：**默认**（可快进则快进否则合并提交）/ **NoFF**（始终生成合并提交）/ **Squash**
   （压平为一个提交，留在 `SQUASH_MSG` 状态，由合并条收尾）。
 
@@ -138,7 +139,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 | **Rebase current branch on this Commit…** | commit 行右键 | 红色确认（重写历史）后 `git rebase <hash>`；**仅非交互** | `rebase-conflicts`（`rebase-merge/apply`） |
 | **Reset current branch to this Commit…** | commit 行右键 | Soft / Mixed / Hard 三选（Hard 红色确认钮）；**祖先守卫**见下 | 无冲突概念 |
 | **将当前分支变基到 {branch}…** | 本地分支右键（非当前分支） | 红色确认后 `git rebase <branch>` | 同 Rebase |
-| **拉取 {branch} 到当前分支…** | 远程分支右键 | 默认/NoFF/Squash 三选（见上） | 归现有合并分类（`merge-conflicts`，合并条接管） |
+| **拉取并合并 {branch} 到当前分支…** | 远程分支右键 | 默认/NoFF/Squash 三选（见上） | 归现有合并分类（`merge-conflicts`，合并条接管） |
 
 - **Reset 祖先守卫**：目标不在当前分支历史（`is-ancestor` 为否）→ 服务端拒绝 `reset-not-ancestor`，
   客户端弹**红色确认框**（提示分支独有提交将被丢弃、仅可从 reflog 找回）→ 确认后带 `force` 重发；
@@ -212,7 +213,7 @@ dsh plugin --profile web remove @wongzexu/dsh-git-status
 
 # @wongzexu/dsh-git-status Usage Guide
 
-> Bilingual companion: English below, [中文版](#中文版) above. A detailed text-based usage guide for the [README](../README_EN.md), covering everything from opening the drawer to branch operations, conflict handling, and fetching from remotes. Applies to v0.5.0+.
+> Bilingual companion: English below, [中文版](#中文版) above. A detailed text-based usage guide for the [README](../README_EN.md), covering everything from opening the drawer to branch operations, conflict handling, and fetching from remotes. Applies to v1.0.0+.
 
 ## 1. Install & enable
 
@@ -266,7 +267,8 @@ Then:
 ### Graph area (commit DAG lane graph)
 
 - One row per commit: first-parent chains as lines, greedy leftmost column assignment, lane reuse, merge-commit connectors;
-- SVG grid rendering: shadow + dual-color paths, elbow transitions, bold HEAD dot.
+- SVG grid rendering: shadow + dual-color paths, elbow transitions, bold HEAD dot;
+- The line style is switchable (Settings → Style Settings → Graph line style): **Angular** (current sharp elbows), **Curved** (smooth Bézier arc with a more relaxed turn), or **Arc** (single-peak arc with one arch).
 
 ### Ref badge colors
 
@@ -320,7 +322,7 @@ Then:
 ### Right-click a remote branch badge
 
 - **Create local branch x and check out**;
-- **Pull x into current…**: `git pull <remote> <branch> --no-rebase` (merge semantics are forced), with three modes: **default** (fast-forward when possible, otherwise a merge commit) / **NoFF** (always a merge commit) / **Squash** (flattened into one commit, left in the `SQUASH_MSG` state and finished by the merge bar).
+- **Pull & merge x into current branch…**: `git pull <remote> <branch> --no-rebase` (fetch first, then merge semantics are forced), with three modes: **default** (fast-forward when possible, otherwise a merge commit) / **NoFF** (always a merge commit) / **Squash** (flattened into one commit, left in the `SQUASH_MSG` state and finished by the merge bar).
 
 ### Right-click a tag badge
 
@@ -342,7 +344,7 @@ These run through the `/git/history` write route (mirroring upstream dataSource'
 | **Rebase current branch on this Commit…** | commit-row right-click | red confirmation (rewrites history) then `git rebase <hash>`; **non-interactive only** | `rebase-conflicts` (`rebase-merge/apply`) |
 | **Reset current branch to this Commit…** | commit-row right-click | Soft / Mixed / Hard selection (Hard styles the confirm button red); **ancestor guard** below | no conflict concept |
 | **Rebase current branch onto {branch}…** | local-branch right-click (non-current) | red confirmation then `git rebase <branch>` | same as Rebase |
-| **Pull {branch} into current…** | remote-branch right-click | default/NoFF/Squash selection (see above) | falls into the merge classification (`merge-conflicts`, handled by the merge bar) |
+| **Pull & merge {branch} into current branch…** | remote-branch right-click | default/NoFF/Squash selection (see above) | falls into the merge classification (`merge-conflicts`, handled by the merge bar) |
 
 - **Reset ancestor guard**: a target outside the current branch's history (`is-ancestor` is false) is rejected by the server with `reset-not-ancestor`; the client shows a **red confirmation** (unique commits of the branch will be orphaned, recoverable only via reflog), then re-sends with `force`;
 - **After a conflict (this milestone)**: only a categorized failure message + the header "in progress" badge; the unified abort/continue bar lands in the next milestone; for now you can exit from a terminal with `git rebase --abort` / `git cherry-pick --abort` / `git revert --abort`.
