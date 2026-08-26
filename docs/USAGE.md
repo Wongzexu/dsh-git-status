@@ -118,6 +118,10 @@ dsh plugin --profile web add /path/to/dsh-git-status
 #### 右键 tag 徽标
 
  - **在 x 创建分支…**：是否自动检出由设置中的「创建分支后自动检出」控制。
+ - **推送 tag…**：二级选择，每远程一项（无远程时该项禁用）；点击项后弹确认框推送。
+ - **删除 tag…**：二级选择 —— **仅删除本地 tag**（远程保留）/ **删除本地并同步删除全部远程的 tag**
+   （多远程镜像一次删净）/ **删除本地并同步删除远程 {远程} 的 tag**（逐远程定向）；
+   远程无该 tag 视为已删，部分远程删除失败不阻断本地删除，成功后提示失败明细。
 
 #### 右键 commit 行
 
@@ -326,7 +330,9 @@ Then:
 
 ### Right-click a tag badge
 
-- **Create branch at x and check out**.
+- **Create branch from x…**: whether it is checked out is controlled by the "auto-checkout after creating a branch" setting.
+- **Push tag…**: submenu with one item per remote (disabled when no remotes are configured); each item opens a confirmation before pushing.
+- **Delete tag…**: submenu — **local only** (remotes kept) / **local + all remotes in one go** (for mirror setups) / **local + a specific remote** (targeted); a remote without the tag counts as already deleted, partial remote failures don't block the local delete and are reported afterward.
 
 ### Right-click a commit row
 
