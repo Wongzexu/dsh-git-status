@@ -125,12 +125,15 @@ const I18N = {
     gitDeleteRemoteBranchConfirm: '确定删除远程分支 {remote}/{branch}？此操作不可恢复。',
     gitDeleteRemoteBranchOk: '已删除远程分支 {remote}/{branch}',
     gitDeleteRemoteBranchDegraded: '远程分支已不存在，已清理本地跟踪引用',
-    gitPushTag: '推送 tag {tag}',
-    gitPushTagTo: '推送 tag {tag} 到 {remote}…',
+    gitPushTag: '推送 tag {tag}…',
+    gitPushTagTo: '推送 tag {tag} 到 {remote}',
     gitPushTagOk: '已推送 tag {tag} → {remote}',
-    gitDeleteTag: '删除 tag {tag}',
-    gitDeleteTagLocalOnly: '仅删除本地 tag {tag}…',
-    gitDeleteTagWithRemote: '删除本地并同步删除远程 {remote} 的 {tag}…',
+    gitDeleteTag: '删除 tag {tag}…',
+    gitDeleteTagLocalOnly: '仅删除本地 tag {tag}',
+    gitDeleteTagWithRemote: '删除本地并同步删除远程 {remote} 的 {tag}',
+    gitDeleteTagAllRemotes: '删除本地并同步删除全部远程的 {tag}',
+    gitDeleteTagAllRemotesConfirm: '删除本地并同步删除远程 {remotes} 的 {tag}？此操作不可恢复。',
+    gitDeleteTagFailed: '已删除 tag {tag}；远程删除失败：{detail}',
     gitDeleteTagConfirm: '确定删除 tag {tag}？此操作不可恢复。',
     gitDeleteTagOk: '已删除 tag {tag}',
     gitAddTag: '创建 tag…',
@@ -468,12 +471,15 @@ const I18N = {
     gitDeleteRemoteBranchConfirm: 'Delete remote branch {remote}/{branch}? This cannot be undone.',
     gitDeleteRemoteBranchOk: 'Deleted remote branch {remote}/{branch}',
     gitDeleteRemoteBranchDegraded: 'Remote branch no longer exists — cleaned up the local tracking reference',
-    gitPushTag: 'Push tag {tag}',
-    gitPushTagTo: 'Push tag {tag} to {remote}…',
+    gitPushTag: 'Push tag {tag}…',
+    gitPushTagTo: 'Push tag {tag} to {remote}',
     gitPushTagOk: 'Pushed tag {tag} → {remote}',
-    gitDeleteTag: 'Delete tag {tag}',
-    gitDeleteTagLocalOnly: 'Delete local tag {tag} only…',
-    gitDeleteTagWithRemote: 'Delete local tag {tag} and on remote {remote}…',
+    gitDeleteTag: 'Delete tag {tag}…',
+    gitDeleteTagLocalOnly: 'Delete local tag {tag} only',
+    gitDeleteTagWithRemote: 'Delete local tag {tag} and on remote {remote}',
+    gitDeleteTagAllRemotes: 'Delete local tag {tag} and on all remotes',
+    gitDeleteTagAllRemotesConfirm: 'Delete local tag {tag} and on remotes {remotes}? This cannot be undone.',
+    gitDeleteTagFailed: 'Deleted tag {tag}; failed to delete on remote(s): {detail}',
     gitDeleteTagConfirm: 'Delete tag {tag}? This cannot be undone.',
     gitDeleteTagOk: 'Deleted tag {tag}',
     gitAddTag: 'Add Tag…',
@@ -2571,6 +2577,16 @@ module.exports = {
       ])
     }
 
+    // tag 删除结果 flash：远程部分失败时展示失败明细（本地已删，镜像 delete-branch 同步语义）
+    const gitDeleteTagFlash = (res, tagName) => {
+      const failed = Array.isArray(res.failed) && res.failed.length > 0 ? res.failed : null
+      if (failed !== null) {
+        flash(t('gitDeleteTagFailed', { tag: tagName, detail: failed.join('；') }), 'error')
+        return
+      }
+      flash(t('gitDeleteTagOk', { tag: tagName }))
+    }
+
     // 徽标右键（document 级委托，行重建不影响）：本地 pill → 切换/合并/重命名/删除；
     // 远程子标签/独立 pill → 创建本地分支并检出；tag → 以 tag 为起始点建分支。
     // 命中 git 面板内徽标才拦截默认菜单。
@@ -2594,7 +2610,7 @@ module.exports = {
             onClick: () => gitCtxOpen(ev.clientX, ev.clientY, gitRemotes.map((r) => ({
               label: t('gitPushTagTo', { tag: tagName, remote: r }),
               onClick: () => gitConfirmOpen({
-                title: t('gitPushTag', { tag: tagName }),
+                title: t('gitPushTagTo', { tag: tagName, remote: r }),
                 text: t('gitPushTagTo', { tag: tagName, remote: r }),
                 okText: t('gitPushBtn'),
                 onOk: async () => {
@@ -2609,21 +2625,41 @@ module.exports = {
               }),
             }))),
           },
-          // 删除 tag：二级选择（仅本地 / 各远程同步）→ 确认框
+          // 删除 tag：二级选择（仅本地 / 全部远程 / 各远程定向）→ 确认框。
+          // 多远程镜像场景一次删净：全部远程项删本地 + 所有远程；逐远程项保留做定向删除。
           {
             label: t('gitDeleteTag', { tag: tagName }),
             onClick: () => gitCtxOpen(ev.clientX, ev.clientY, [
               {
                 label: t('gitDeleteTagLocalOnly', { tag: tagName }),
                 onClick: () => gitConfirmOpen({
-                  title: t('gitDeleteTag', { tag: tagName }),
+                  title: t('gitDeleteTagLocalOnly', { tag: tagName }),
                   text: t('gitDeleteTagConfirm', { tag: tagName }),
                   okText: t('gitDeleteBtn'),
                   danger: true,
                   onOk: async () => {
                     try {
-                      await gitPost('/git/remote', { action: 'delete-tag', tag: tagName, remote: '' })
+                      await gitPost('/git/remote', { action: 'delete-tag', tag: tagName })
                       flash(t('gitDeleteTagOk', { tag: tagName }))
+                      gitFetch(true, true)
+                    } catch (err) {
+                      flash(gitErrText(err))
+                    }
+                  },
+                }),
+              },
+              {
+                label: t('gitDeleteTagAllRemotes', { tag: tagName }),
+                disabled: gitRemotes.length === 0,
+                onClick: () => gitConfirmOpen({
+                  title: t('gitDeleteTagAllRemotes', { tag: tagName }),
+                  text: t('gitDeleteTagAllRemotesConfirm', { tag: tagName, remotes: gitRemotes.join('、') }),
+                  okText: t('gitDeleteBtn'),
+                  danger: true,
+                  onOk: async () => {
+                    try {
+                      const res = await gitPost('/git/remote', { action: 'delete-tag', tag: tagName, remotes: gitRemotes })
+                      gitDeleteTagFlash(res, tagName)
                       gitFetch(true, true)
                     } catch (err) {
                       flash(gitErrText(err))
@@ -2634,14 +2670,14 @@ module.exports = {
               ...gitRemotes.map((r) => ({
                 label: t('gitDeleteTagWithRemote', { remote: r, tag: tagName }),
                 onClick: () => gitConfirmOpen({
-                  title: t('gitDeleteTag', { tag: tagName }),
+                  title: t('gitDeleteTagWithRemote', { remote: r, tag: tagName }),
                   text: t('gitDeleteTagWithRemote', { remote: r, tag: tagName }),
                   okText: t('gitDeleteBtn'),
                   danger: true,
                   onOk: async () => {
                     try {
-                      await gitPost('/git/remote', { action: 'delete-tag', tag: tagName, remote: r })
-                      flash(t('gitDeleteTagOk', { tag: tagName }))
+                      const res = await gitPost('/git/remote', { action: 'delete-tag', tag: tagName, remote: r })
+                      gitDeleteTagFlash(res, tagName)
                       gitFetch(true, true)
                     } catch (err) {
                       flash(gitErrText(err))

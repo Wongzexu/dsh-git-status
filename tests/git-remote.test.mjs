@@ -233,9 +233,56 @@ test('gitRemoteAction.delete-tag: 同步删除远程', async (t) => {
   await repo.git(['tag', 'v1.0'])
   await gitRemoteAction(repo.root, 'push-tag', { tag: 'v1.0', remote: 'origin' })
   const result = await gitRemoteAction(repo.root, 'delete-tag', { tag: 'v1.0', remote: 'origin' })
-  assert.deepEqual(result, { ok: true })
+  assert.deepEqual(result, { ok: true, synced: ['origin'] })
   assert.equal((await repo.git(['rev-parse', '--verify', '--quiet', 'refs/tags/v1.0'], true)).ok, false)
   assert.equal((await runGitSafe(bare, ['rev-parse', '--verify', '--quiet', 'refs/tags/v1.0'])).ok, false)
+})
+
+test('gitRemoteAction.delete-tag: 双远程全部删除（remotes 数组）', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  const bare2 = await makeBareRepo(t)
+  await repo.git(['remote', 'add', 'gitee', bare2])
+  await repo.git(['tag', 'v1.0'])
+  await gitRemoteAction(repo.root, 'push-tag', { tag: 'v1.0', remote: 'origin' })
+  await gitRemoteAction(repo.root, 'push-tag', { tag: 'v1.0', remote: 'gitee' })
+  const result = await gitRemoteAction(repo.root, 'delete-tag', { tag: 'v1.0', remotes: ['origin', 'gitee'] })
+  assert.deepEqual(result, { ok: true, synced: ['origin', 'gitee'] })
+  assert.equal((await repo.git(['rev-parse', '--verify', '--quiet', 'refs/tags/v1.0'], true)).ok, false)
+  assert.equal((await runGitSafe(bare, ['rev-parse', '--verify', '--quiet', 'refs/tags/v1.0'])).ok, false)
+  assert.equal((await runGitSafe(bare2, ['rev-parse', '--verify', '--quiet', 'refs/tags/v1.0'])).ok, false)
+})
+
+test('gitRemoteAction.delete-tag: 某远程无此 tag → 视为已删不报错', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  const bare2 = await makeBareRepo(t)
+  await repo.git(['remote', 'add', 'gitee', bare2])
+  await repo.git(['tag', 'v1.0'])
+  await gitRemoteAction(repo.root, 'push-tag', { tag: 'v1.0', remote: 'origin' })
+  const result = await gitRemoteAction(repo.root, 'delete-tag', { tag: 'v1.0', remotes: ['origin', 'gitee'] })
+  assert.deepEqual(result, { ok: true, synced: ['origin', 'gitee'] })
+  assert.equal((await repo.git(['rev-parse', '--verify', '--quiet', 'refs/tags/v1.0'], true)).ok, false)
+})
+
+test('gitRemoteAction.delete-tag: 远程删除失败 → 本地仍删，failed 明细', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  const dead = await makeBareRepo(t)
+  await rm(dead, { recursive: true, force: true }) // 远程路径失效 → 该远程 push --delete 必败
+  await repo.git(['remote', 'add', 'dead', dead])
+  await repo.git(['tag', 'v1.0'])
+  const result = await gitRemoteAction(repo.root, 'delete-tag', { tag: 'v1.0', remotes: ['origin', 'dead'] })
+  assert.equal(result.ok, true)
+  assert.equal(Array.isArray(result.failed) && result.failed.length === 1, true)
+  assert.match(result.failed[0], /^dead:/)
+  assert.equal((await repo.git(['rev-parse', '--verify', '--quiet', 'refs/tags/v1.0'], true)).ok, false)
+})
+
+test('gitRemoteAction.delete-tag: 远程不存在 → 本地仍删，failed 明细', async (t) => {
+  const { repo, bare } = await makeRepoWithRemote(t)
+  await repo.git(['tag', 'v1.0'])
+  const result = await gitRemoteAction(repo.root, 'delete-tag', { tag: 'v1.0', remotes: ['origin', 'nope'] })
+  assert.equal(result.ok, true)
+  assert.deepEqual(result.failed, ['nope: remote does not exist'])
+  assert.equal((await repo.git(['rev-parse', '--verify', '--quiet', 'refs/tags/v1.0'], true)).ok, false)
 })
 
 test('gitRemoteAction.delete-tag: tag 不存在', async (t) => {
