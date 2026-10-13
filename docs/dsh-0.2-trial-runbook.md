@@ -253,7 +253,14 @@ DSH_HOME=~/dsh02/home ~/dsh02/prefix/bin/dsh plugin --profile web \
 
 ### 尚未验证（本次没做）
 
-- **面板在有会话时是否正常打开并渲染泳道图**。实测时页面停在空会话，插件的按钮/面板容器已创建但 `display:none` 且未挂进会话 UI（插件在无活动会话时不显示按钮，属正常设计）。要确认这一步，需在试跑实例里**新建一个会话**再看；本次为控制影响未做。
+- ~~**面板在有会话时是否正常打开并渲染泳道图**。~~ **2026-10-13 补验完成**：同一隔离实例（3099）里点开侧栏
+  真实会话「你好问候」→ 点 `[data-dsc-toggle]`（标题 `Git Status`；注意 `[data-dsc-git]` 是面板本体而非开关，
+  默认 `display:none`，`.open` 才 `flex`）→ 面板渲染 **81 个提交行 + 2 个分支标签**，请求
+  `/git/log?...&session=session-82a55521-…` 与 SSE `/git/events?session=…` 均携带会话 id。
+  ⚠️ 前提是先修 `currentSessionId()`（见 [dsh-0.2-adaptation-checklist.md](./dsh-0.2-adaptation-checklist.md) 第三节）：
+  修复前同一路径下面板只显示「当前会话不可用」，因为 0.2 的 `sessions.list` 快照不再有 `current`。
+  回归探针：`probes/git-session-fix-verify.mjs`（`ok:false` 时退出码 1）。
+  注意：无头访问必须用 `dsh web` 打印的**带 token 的 URL**，裸 `127.0.0.1:3099/` 返回 401。
 - 升级后 `config/` 目录移除（presets 改由 package 提供）对启动的实际影响——本次 0.2 正常启动，说明无阻断。
 
 ### 结论：升级可行性判定
@@ -261,7 +268,8 @@ DSH_HOME=~/dsh02/home ~/dsh02/prefix/bin/dsh plugin --profile web \
 | 面向 | 判定 |
 | --- | --- |
 | DSH 本体升级 | ✅ 可升，0.2 有护栏兜底，不会因插件不兼容而崩 |
-| git-status / companion / navbar | ✅ 实测正常，**无需改动**（inject 清理可选） |
+| git-status | ⚠️ **必须改一处代码**（`currentSessionId()`，2026-10-13 订正）：不改则面板「当前会话不可用」、写操作全被拒；已修并实测（见适配清单第三节） |
+| companion / navbar | ✅ 实测正常（⚠️ companion 有同源隐患：旧 `snapshot.current` 读法 + 服务端兜底到 `process.cwd`，可能静默操作错误仓库，建议一并修） |
 | vision-router | ⚠️ 必须升到 `>=2.3.0`（推荐 3.0.3）才可用；不升则该插件在 0.2 下功能缺失 |
 | 设置 | ✅ 4/5 段自动迁移；`vision-router` 段重走引导 |
 | 会话 | ✅ 旧会话可读并迁到 v4；⚠️ 但此后不可回降级 |

@@ -1,7 +1,9 @@
 # 适配 DSH 0.2 的改动清单（@wongzexu/dsh-git-status）
 
 > 依据：2026-10-13 隔离试跑实测（0.2.0-rc.2 + 端口 3099）。完整实测记录见 [dsh-0.2-trial-runbook.md](./dsh-0.2-trial-runbook.md)。
-> 核心结论：**你的插件代码在 0.2 下实测可用，不需要为"能跑"改任何代码**；需要改的是**清单声明**（且其中一条有实质影响）。
+> 核心结论（**2026-10-13 订正**）：插件**清单声明**要改（第 一 节，有实质影响）；且**代码也必须改一处**——
+> 0.2 下取当前会话 id 的契约变了，不改则面板提示「当前会话不可用」、所有写操作被拒（第 三 节，已修并实测）。
+> 首轮"代码零改动即可在 0.2 跑起来"的结论已被推翻：当时只验证到"路由能应答"，未验证"有会话时面板能否取到数据"。
 
 ## 一、必要改动：`peerDependencies` 声明（有实质影响）
 
@@ -58,32 +60,46 @@ for (const [name, range] of Object.entries(dependencies)) {
 
 **建议**：直接删掉整个 `inject` 数组，或换成 0.2 实际注册的模块 id——参考已适配 0.2 的 `dsh-vision-router@3.0.3`，它的 inject 是 `ui-settings, ui-primitives, connection, api-remotes`（**不含** client-runtime）。你与官方 UI 无耦合，**删掉最干净**。
 
-## 三、待你实测确认的一处（我无法在 HTTP 层证伪）
+## 三、已结案并修复：0.2 下 `currentSessionId()` 恒返回空串
 
-客户端用这条链路取当前会话 id（`src/client/index.js` 约 1207 行）：
+**症状**（用户报告："git 说会话不可用"）：面板提示「当前会话不可用，请重新选择会话后重试」
+（`gitErrSessionRequired`），且暂存/提交/分支/推送等所有写操作直接抛 `session-required`——
+不是文案问题，是整条链路停摆。
 
-```js
-const sessions = ctx?.get?.('sessions')
-const snapshot = sessions?.list?.getSnapshot?.()
-// 依次尝试 snapshot.current / current.id / current.sessionId / snapshot.currentId
-```
+**根因**：0.1 / better-sidebar 时代的 `sessions.list.getSnapshot().current` 在 0.2 已不存在。
 
-- 已核实：0.2 的 `dsh-session` 仍提供 `sessions` 服务，且 `get(id)`（第 1861 行）、`list()`（第 1868 行）都在；
-- **未核实**：`sessions.list.getSnapshot()` 这个**客户端**快照的确切形状。我尝试用 HTTP 直接打路由验证，但发现**该方法在 0.1 上同样返回 404**（需要会话处于加载态），故我的测试手法本身无效——不是 0.2 的差异。诚实标注：这一条我没验证成功。
-- 好消息：你的代码已做**多形状兜底**（`current` 为字符串 / `current.id` / `current.sessionId` / `currentId` 四种都试），且失败时返回空串并让服务端拒绝，不会误操作到别的工作区。
+- 0.2 客户端 `sessions` 服务（`@deepseek-ai/dsh-api-session-controller/client`）的 list 快照
+  **只有** `{ ids, byId, phase, projectionsBySession }`，唯一写入点即
+  `lib/types/client/sessions/service.js` 的 `this.list.set({ ids, byId, phase, projectionsBySession })`
+  （初始化同键名）；`SessionListState` 类型定义一致。⇒ `snapshot.current` 与 `snapshot.currentId`
+  恒为 `undefined`，四种旧形状全部落空。
+- 「主视图选中会话」在 0.2 搬到 **`uiSession`**（`@deepseek-ai/dsh-client-ui-session`，boot 图
+  id `ui-session`）：`uiSession.adapter.current`（`SlotScopeAdapter.current`）的 binding `key`
+  就是会话 id（其 `publishMain()` 内 `const currentId = this.current.value.key`）。
+- 服务端那一环没问题：host 侧 `sessions.get(id)?.header?.cwd`（`dsh-session`）0.2 仍在。
 
-**建议的一次性验证**（在 0.2 实例里开一个真会话，点开 Git 面板看是否有数据）：
+**修法**（已实施：`src/client/index.js` 的 `currentSessionId()`，`npm run build` 重建 `lib/client.js`）：
 
-若面板空且无数据，在 `apply(ctx)` 内临时加一行打印看真实形状：
+1. 0.2 权威来源：`ctx.get('uiSession').adapter.current.getSnapshot().key`
+2. 0.2 兜底：`sessions.list.getSnapshot()` 里 `byId[id].retainedBy.mainView > 0` 的第一行
+   （镜像 `publishMain` 的判定，只依赖 `sessions` 服务，不依赖 UI 包）
+3. 保留 0.1 / better-sidebar 旧形状（`current` / `current.id` / `current.sessionId` / `currentId`）
 
-```js
-try {
-  const s = ctx?.get?.('sessions')
-  console.log('[git-status] sessions service:', s && Object.keys(s), 'list:', s?.list && Object.keys(s.list), 'snapshot:', JSON.stringify(s?.list?.getSnapshot?.()))
-} catch (e) { console.log('[git-status] sessions probe failed', e) }
-```
+失败仍返回空串、服务端仍拒绝（不回退到别的工作区），这条安全语义不变。
 
-拿到真实键名后，把 `currentSessionId()` 的兜底链补上对应分支即可。
+**实测验证**（`~/dsh02` 隔离实例，0.2.0-rc.2 + 端口 3099，探针 `probes/git-session-fix-verify.mjs`）：
+
+| 断言 | 结果 |
+| --- | --- |
+| 面板打开 | `.open` / `display:flex`，380px |
+| 提交行渲染 | 81 行 + 2 个分支标签（真实提交历史） |
+| 请求携带会话 | `/git/log?...&session=session-82a55521-…`（3 次） |
+| SSE | `/git/events?session=session-82a55521-…` |
+| 「会话不可用」提示 | 无（note 元素空且 `display:none`） |
+
+**同源隐患（另一仓库，未修）**：`dsh-companion` 用的是同款旧读法且**没有兜底**
+（`sessions?.list?.getSnapshot?.()?.current ?? ''`）；它取不到时服务端会退化成
+`workspaceRegistry / process.cwd` 兜底，可能**静默操作错误的仓库**，建议一并修。
 
 ## 四、可选收益：用 0.2 的插件管理面板替代手改 profile
 
@@ -106,10 +122,11 @@ try {
 | --- | --- | --- |
 | `peerDependencies` 加 `@deepseek-ai/dsh` 范围 | **必要**（否则护栏对你失效） | 1 行 |
 | 删除悬空的 `dsh.client.inject` | 建议 | 1 行 |
-| 验证/补 `currentSessionId()` 兜底链 | 待实测决定 | 可能 0 行 |
+| 修 `currentSessionId()`（0.2 取会话 id 的契约变了） | **必要**（否则 0.2 下面板全停摆） | 已修（第 三 节） |
 | 声明并享受插件管理面板 | 可选 | 0 行（承第 1 条） |
 
-**代码零改动即可在 0.2 跑起来**——这是实测结论，不是推断。
+**订正"代码零改动"**：0.2 下插件**能挂载、路由能应答**，但**前端取不到当前会话 id** ⇒ 面板显示
+「当前会话不可用」且所有写操作被拒。第三节的修复是 0.2 可用的前置条件（2026-10-13 隔离实例实测验证）。
 
 ## 附：本次用到的可复用探针
 
@@ -118,3 +135,8 @@ try {
 - `probes/dsh02-btn-audit.mjs` —— 插件节点可见性审计
 - `probes/dsh02-panel-probe.mjs` / `probes/dsh02-e2e-probe.mjs` —— 建会话 + 点开面板的端到端尝试（受无头环境限制，未跑通会话建立）
 - `probes/dsh02-shot.mjs` —— 截图 + DOM 摘要
+- `probes/git-session-fix-verify.mjs` —— **端到端回归断言**：打开侧栏真实会话 → 点 `[data-dsc-toggle]`
+  开面板 → 断言请求带 `session=`、提交行 > 0、无「会话不可用」提示（`ok:false` 时退出码 1）。
+  ⚠️ 需要带 launch token 的 URL（裸 `127.0.0.1:<port>/` 返回 401）：`dsh web` 启动时打印的那条。
+- `probes/git-session-console-probe.mjs` / `git-session-locate.mjs` / `git-session-dom-discovery.mjs` —— 诊断用：
+  抓页面异常、定位侧栏会话行、转储 `data-*` 结构。

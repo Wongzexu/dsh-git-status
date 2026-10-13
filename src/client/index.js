@@ -1199,13 +1199,38 @@ module.exports = {
       if (msgTimer !== null) clearTimeout(msgTimer)
       msgTimer = setTimeout(() => { msg.style.display = 'none' }, 1400)
     }
-    // 当前会话 id（client 端 sessions 服务，better-sidebar 模式）：
-    // 惰性解析——每次请求时取最新选中会话。服务不可用时返回空串，
+    // 当前会话 id：惰性解析——每次请求时取最新选中会话。服务不可用时返回空串，
     // 服务端会拒绝请求，绝不回退到其它工作区。
+    //
+    // 契约分代（实测 DSH 0.2.0-rc.2 源码）：
+    // - 0.2：客户端「主视图选中会话」由 dsh-client-ui-session 的 uiSession 服务持有，
+    //   `uiSession.adapter.current`（SlotScopeAdapter.current）的 binding.key 即会话 id
+    //   （见其 publishMain：currentId = this.current.value.key）。同时
+    //   `sessions.list.getSnapshot()` 自 0.2 起只有 { ids, byId, phase,
+    //   projectionsBySession }，**不再有 current / currentId**（service.js 里
+    //   `this.list.set({ ids, byId, phase, projectionsBySession })` 为唯一写入点）。
+    // - 0.1 / better-sidebar：`sessions.list` 快照带 current / currentId，末尾保留兼容。
     const currentSessionId = () => {
       try {
+        // 1) 0.2 权威来源：主视图当前保留的会话；无选中会话时为 undefined。
+        const uiSession = ctx?.get?.('uiSession')
+        const binding = uiSession?.adapter?.current?.getSnapshot?.()
+        if (typeof binding?.key === 'string' && binding.key !== '') return binding.key
+        // 2) 0.2 兜底：镜像 uiSession.publishMain 的判定（mainView 保留计数 > 0），
+        //    只依赖 sessions 服务，不依赖 UI 包。
         const sessions = ctx?.get?.('sessions')
         const snapshot = sessions?.list?.getSnapshot?.()
+        const byId = snapshot?.byId
+        if (byId !== null && typeof byId === 'object') {
+          const ids = Array.isArray(snapshot?.ids) ? snapshot.ids : []
+          for (const id of ids) {
+            if ((byId[id]?.retainedBy?.mainView ?? 0) > 0) return id
+          }
+          for (const [id, row] of Object.entries(byId)) {
+            if ((row?.retainedBy?.mainView ?? 0) > 0) return id
+          }
+        }
+        // 3) 0.1 / better-sidebar 时代的形状。
         const current = snapshot?.current
         if (typeof current === 'string') return current
         if (current !== null && typeof current === 'object') {
