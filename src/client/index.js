@@ -721,13 +721,45 @@ module.exports = {
   apply(ctx) {
     const body = document.body
     if (body === null) return
-    const L = () => (I18N[(document.documentElement.lang || 'zh').slice(0, 2)] === undefined ? I18N.zh : I18N[(document.documentElement.lang || 'zh').slice(0, 2)])
+    // 语言：以 DSH 的 locale 服务为权威（'zh' | 'en'）。
+    // <html lang> 只是它的镜像——服务端模板写死 lang="en"，真实语言要等 locale 服务
+    // 首次同步后才改写该属性。若在 apply() 期直接读 <html lang>，抓到的就是模板里的
+    // "en"：面板头部/弹窗/菜单这些文案是创建期一次性赋值，于是永久英文；而动态文案走
+    // t() 惰性求值，反而用上了后来居上的中文，形成「半英半中」。
+    const activeLang = () => {
+      try {
+        const active = ctx?.get?.('locale')?.getSnapshot?.()?.active
+        if (typeof active === 'string' && active !== '') return active.slice(0, 2)
+      } catch {
+        // locale 服务不可用：退回 <html lang> 镜像
+      }
+      const mirrored = document.documentElement.lang || ''
+      return mirrored === '' ? 'zh' : mirrored.slice(0, 2)
+    }
+    const L = () => I18N[activeLang()] ?? I18N.zh
     const t = (key, vars) => {
       let s = L()[key] ?? key
       // split/join 替换全部出现：String.replace(字符串) 只换第一个，
       // 同一占位符出现多次（如 gitSwitchLocalExistsText 的 {remote}×2）会残留字面量。
       if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v))
       return s
+    }
+
+    // 整个 UI 的构建闭包：语言切换时整体重建（dispose → mount），一次覆盖所有
+    // 创建期赋值的文案，不必逐个维护静态文案的刷新逻辑。
+    // （内部沿用原有 4 空格缩进，避免整份文件重排、让 diff 只反映真正的改动。）
+    const mountUi = () => {
+    // 宿主级监听组：重建时必须逐条摘除，否则监听会叠加，且闭包引用已移除的旧节点。
+    const docListeners = []
+    const docOn = (type, fn, opts) => {
+      document.addEventListener(type, fn, opts)
+      docListeners.push([type, fn, opts])
+    }
+    const docOffAll = () => {
+      while (docListeners.length > 0) {
+        const [type, fn, opts] = docListeners.pop()
+        document.removeEventListener(type, fn, opts)
+      }
     }
 
     // ---------- 样式 ----------
@@ -2457,10 +2489,10 @@ module.exports = {
       gitCtxMenu.style.left = `${Math.min(x, window.innerWidth - rect.width - 8)}px`
       gitCtxMenu.style.top = `${Math.min(y, window.innerHeight - rect.height - 8)}px`
     }
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (!gitCtxMenu.contains(ev.target)) gitCtxClose()
     })
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       if (ev.key === 'Escape') gitCtxClose()
     })
 
@@ -2530,10 +2562,10 @@ module.exports = {
     gitConfirmOk.addEventListener('click', () => { const fn = gitConfirmOnOk; gitConfirmClose(); if (fn !== null) fn() })
     gitConfirmMiddle.addEventListener('click', () => { const fn = gitConfirmOnMiddle; gitConfirmClose(); if (fn !== null) fn() })
     gitConfirmCancel.addEventListener('click', gitConfirmClose)
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       if (ev.key === 'Escape' && gitConfirmBox.style.display !== 'none') gitConfirmClose()
     })
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (gitConfirmBox.style.display === 'none') return
       if (gitConfirmJustOpened) { gitConfirmJustOpened = false; return }
       if (!gitConfirmBox.contains(ev.target)) gitConfirmClose()
@@ -2636,7 +2668,7 @@ module.exports = {
     // 徽标右键（document 级委托，行重建不影响）：本地 pill → 切换/合并/重命名/删除；
     // 远程子标签/独立 pill → 创建本地分支并检出；tag → 以 tag 为起始点建分支。
     // 命中 git 面板内徽标才拦截默认菜单。
-    document.addEventListener('contextmenu', (ev) => {
+    docOn('contextmenu', (ev) => {
       if (!(ev.target instanceof HTMLElement)) return
       if (!gitCtxMenu.contains(ev.target)) gitCtxClose()
       const tag = ev.target.closest('[data-dsc-git-rows] .dsc-gref-tag')
@@ -3886,13 +3918,13 @@ module.exports = {
       else gitSettingsOpen()
     })
     gitSettingsCloseBtn.addEventListener('click', gitSettingsClose)
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       if (ev.key === 'Escape' && gitSettingsBox.style.display !== 'none'
         && gitCtxMenu.style.display === 'none' && gitConfirmBox.style.display === 'none') {
         gitSettingsClose()
       }
     })
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (gitSettingsBox.style.display === 'none') return
       // 用 composedPath（事件分发时确定的传播路径）而非 contains(ev.target)：
       // 弹窗内操作（如点编辑）会同步重建 DOM，ev.target 已被移除时 contains 返回
@@ -4075,11 +4107,11 @@ module.exports = {
     }
     gitPushSubmit.addEventListener('click', gitPushRun)
     gitPushCancel.addEventListener('click', gitPushClose)
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       // remote 列表开着时 Esc 只关列表（ctx 菜单自己的监听处理），不连 push 框一起关
       if (ev.key === 'Escape' && gitPushBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitPushClose()
     })
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (gitPushBox.style.display === 'none') return
       // 排除右键菜单内的点击：remote 选择列表从 push 框弹出，点选项不能关 push 框
       if (!gitPushBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitPushClose()
@@ -4235,10 +4267,10 @@ module.exports = {
     }
     gitMergeOk.addEventListener('click', gitMergeRun)
     gitMergeCancel.addEventListener('click', gitMergeClose)
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       if (ev.key === 'Escape' && gitMergeBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitMergeClose()
     })
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (gitMergeBox.style.display === 'none') return
       if (!gitMergeBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitMergeClose()
     })
@@ -4378,10 +4410,10 @@ module.exports = {
     }
     gitResetOk.addEventListener('click', () => gitResetRun(false))
     gitResetCancel.addEventListener('click', gitResetClose)
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       if (ev.key === 'Escape' && gitResetBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitResetClose()
     })
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (gitResetBox.style.display === 'none') return
       if (!gitResetBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitResetClose()
     })
@@ -4494,10 +4526,10 @@ module.exports = {
     }
     gitCherryPickOk.addEventListener('click', gitCherryPickRun)
     gitCherryPickCancel.addEventListener('click', gitCherryPickClose)
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       if (ev.key === 'Escape' && gitCherryPickBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitCherryPickClose()
     })
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (gitCherryPickBox.style.display === 'none') return
       if (!gitCherryPickBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitCherryPickClose()
     })
@@ -4584,10 +4616,10 @@ module.exports = {
     }
     gitRevertOk.addEventListener('click', gitRevertRun)
     gitRevertCancel.addEventListener('click', gitRevertClose)
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       if (ev.key === 'Escape' && gitRevertBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitRevertClose()
     })
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (gitRevertBox.style.display === 'none') return
       if (!gitRevertBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitRevertClose()
     })
@@ -4684,10 +4716,10 @@ module.exports = {
     }
     gitPullOk.addEventListener('click', gitPullRun)
     gitPullCancel.addEventListener('click', gitPullClose)
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       if (ev.key === 'Escape' && gitPullBox.style.display !== 'none' && gitCtxMenu.style.display === 'none') gitPullClose()
     })
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (gitPullBox.style.display === 'none') return
       if (!gitPullBox.contains(ev.target) && !gitCtxMenu.contains(ev.target)) gitPullClose()
     })
@@ -4982,10 +5014,10 @@ module.exports = {
       if (ev.key === 'Enter') gitStashBoxRun()
       if (ev.key === 'Escape') gitStashBoxClose()
     })
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       if (ev.key === 'Escape' && gitStashBox.style.display !== 'none') gitStashBoxClose()
     })
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (gitStashBox.style.display === 'none') return
       if (!gitStashBox.contains(ev.target)) gitStashBoxClose()
     })
@@ -5091,10 +5123,10 @@ module.exports = {
     })
     gitCommitSubmit.addEventListener('click', gitCommitBoxRun)
     gitCommitCancel.addEventListener('click', gitCommitBoxClose)
-    document.addEventListener('keydown', (ev) => {
+    docOn('keydown', (ev) => {
       if (ev.key === 'Escape' && gitCommitBox.style.display !== 'none') gitCommitBoxClose()
     })
-    document.addEventListener('click', (ev) => {
+    docOn('click', (ev) => {
       if (gitCommitBox.style.display !== 'none' && !gitCommitBox.contains(ev.target)) gitCommitBoxClose()
     })
 
@@ -5220,7 +5252,7 @@ module.exports = {
     syncToggles()
     if (isChatView()) showGitHint()
 
-    // 插件生命周期：unload 时清理。
+    // 插件生命周期 / 语言重建：同一份清理逻辑（unload 与 remount 共用）。
     return () => {
       clearInterval(gitTimer)
       clearInterval(viewTimer)
@@ -5228,6 +5260,9 @@ module.exports = {
       if (gitHintTimer !== null) clearTimeout(gitHintTimer)
       window.removeEventListener('resize', onResize)
       observer.disconnect()
+      docOffAll()
+      // SSE 必须在重建/卸载时关掉：否则每次重建都会多留一条 /git/events 长连接。
+      gitEventsClose()
       gitToggle.remove()
       gitPanel.remove()
       gitCtxMenu.remove()
@@ -5243,6 +5278,54 @@ module.exports = {
       msg.remove()
       gitHint.remove()
       document.getElementById(STYLE_ID)?.remove()
+    }
+    }
+
+    // 先按当前可得信息挂载：locale 服务尚未就绪时，语言退回 <html lang> 镜像。
+    let disposeUi = null
+    let renderedLang = null
+    const renderUi = () => {
+      const previous = disposeUi
+      disposeUi = null
+      if (previous !== null) previous()
+      renderedLang = activeLang()
+      disposeUi = mountUi()
+    }
+    renderUi()
+
+    // locale 服务可能晚于本插件就绪（0.2 实测：apply() 期 ctx.get('locale') 仍是
+    // undefined，此时 <html lang> 也还是服务端模板的 "en"）。用 cordis 注入等它出现：
+    // 1) 就绪后先对齐一次 —— 语言若已不同于首屏渲染语言，整体重建
+    // 2) 之后订阅快照变化，DSH「设置 → 通用 → 语言」切换时跟随重建
+    let unsubscribeLocale = null
+    try {
+      ctx.inject(['locale'], (scope) => {
+        const locale = scope?.locale
+        if (locale === undefined || typeof locale.subscribe !== 'function') return () => {}
+        unsubscribeLocale = locale.subscribe(() => {
+          if (activeLang() !== renderedLang) renderUi()
+        })
+        if (activeLang() !== renderedLang) renderUi()
+        return () => {
+          if (unsubscribeLocale !== null) {
+            try { unsubscribeLocale() } catch { /* 服务可能已随插件卸载 */ }
+            unsubscribeLocale = null
+          }
+        }
+      })
+    } catch {
+      unsubscribeLocale = null
+    }
+    return () => {
+      if (unsubscribeLocale !== null) {
+        try { unsubscribeLocale() } catch { /* 服务可能已随插件卸载 */ }
+        unsubscribeLocale = null
+      }
+      if (disposeUi !== null) {
+        const previous = disposeUi
+        disposeUi = null
+        previous()
+      }
     }
   },
 }
