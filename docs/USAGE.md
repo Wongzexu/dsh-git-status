@@ -1,6 +1,6 @@
 # @wongzexu/dsh-git-status 使用指南 · Usage Guide
 
-> 中英双语（Bilingual）：上方为中文版，下方为 [English version](#wongzexudsh-git-status-usage-guide)。与 [README](../README.md) 配套的详细文字版操作指南，覆盖从打开浮窗到分支操作、冲突处理、远程拉取的全流程。适用版本：v1.0.0+。
+> 中英双语（Bilingual）：上方为中文版，下方为 [English version](#wongzexudsh-git-status-usage-guide)。与 [README](../README.md) 配套的详细文字版操作指南，覆盖从打开浮窗到分支操作、冲突处理、远程拉取的全流程。适用版本：v2.0.0+。
 
 ## 中文版
 
@@ -217,7 +217,7 @@ dsh plugin --profile web remove @wongzexu/dsh-git-status
 
 # @wongzexu/dsh-git-status Usage Guide
 
-> Bilingual companion: English below, [中文版](#中文版) above. A detailed text-based usage guide for the [README](../README_EN.md), covering everything from opening the drawer to branch operations, conflict handling, and fetching from remotes. Applies to v1.0.0+.
+> Bilingual companion: English below, [中文版](#中文版) above. A detailed text-based usage guide for the [README](../README_EN.md), covering everything from opening the drawer to branch operations, conflict handling, and fetching from remotes. Applies to v2.0.0+.
 
 ## 1. Install & enable
 

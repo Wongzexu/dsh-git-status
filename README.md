@@ -8,7 +8,7 @@
 
 独立 Git 状态（Git Graph）插件：DSH Web 右缘 **Git 状态浮窗** —— commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。
 
-🔖 **v1.0.0** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v2.0.0** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -92,7 +92,7 @@
 
 ### 环境要求
 
-- DSH（DeepSeek Harness）web 端已安装并运行（`dsh web`）
+- DSH（DeepSeek Harness）web 端已安装并运行（`dsh web`），且版本满足 `@deepseek-ai/dsh >=0.2.0-rc.2 <0.3.0-0`（peerDependencies 硬约束；v2 起仅适配 DSH 0.2，不再支持 0.1 / cordis）
 - 已安装 `git` 命令行工具（插件通过系统 `git` 执行所有操作）
 - 插件零第三方依赖：无 React、无构建产物依赖、Node half 零 npm 包
 
@@ -162,7 +162,7 @@ dsh plugin --profile web remove @wongzexu/dsh-git-status
 
 ```
 dsh-git-status/
-├── package.json          # dsh.bundle.patch + dsh.client.inject + platform: web
+├── package.json          # dsh.bundle.patch + platform: web
 ├── cordis.patch.yml      # 挂载 Node half
 ├── lib/
 │   ├── index.mjs         # Node half：git log/show/branch/fetch/push/remote/stash/stage/discard/commit/history/events 路由（末尾导出测试用纯函数）

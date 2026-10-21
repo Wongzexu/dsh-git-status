@@ -8,7 +8,7 @@
 
 A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations.
 
-🔖 **v1.0.0** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v2.0.0** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -48,7 +48,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 
 ### Requirements
 
-- DSH (DeepSeek Harness) web installed and running (`dsh web`)
+- DSH (DeepSeek Harness) web installed and running (`dsh web`), with version `@deepseek-ai/dsh >=0.2.0-rc.2 <0.3.0-0` (hard peerDependencies constraint; v2 targets DSH 0.2 only and no longer supports 0.1 / cordis)
 - `git` CLI installed (the plugin runs all operations through the system `git`)
 - Zero third-party dependencies: no React, no build artifacts, zero npm packages in the Node half
 
@@ -112,7 +112,7 @@ dsh plugin --profile web remove @wongzexu/dsh-git-status
 
 ```
 dsh-git-status/
-├── package.json          # dsh.bundle.patch + dsh.client.inject + platform: web
+├── package.json          # dsh.bundle.patch + platform: web
 ├── cordis.patch.yml      # mounts the Node half
 ├── lib/
 │   ├── index.mjs         # Node half: git log/show/branch/fetch/push/remote/stash/stage/discard/commit/history/events routes (pure functions exported at the end for tests)

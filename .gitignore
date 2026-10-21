@@ -7,3 +7,10 @@ webprobe-out/
 
 # vision 工具产物（渲染截图、附件缓存等）
 .dsh-vision-router/
+
+# DSH 0.2 升级调研临时产物（npm tarball 解包、registry 快照，不进仓库）
+.dsh-upgrade-probe/
+.dsh-probe/
+
+# 本地调试探针（webprobe 用工装，非交付物；验证流程见 docs/dsh-0.2-trial-runbook.md）
+probes/
