@@ -57,7 +57,8 @@ dsh plugin --profile web add /path/to/dsh-git-status
 
 - 每行一个 commit：第一父链成线、列分配贪心最左、泳道复用、合并提交连线；
 - 网格制 SVG 渲染：shadow + 彩色双 path、折角过渡、HEAD 加粗圆点；
-- 连线风格可切换（设置 → 风格设置 → 连线风格）：**折角**（现役直角折线）或 **曲线**（平滑贝塞尔圆弧，拐弯更舒展）或 **弧线**（单峰圆弧，一次拱形弯过去）。
+- 连线风格可切换（设置 → 风格设置 → 连线风格）：**折角**（现役直角折线）或 **曲线**（平滑贝塞尔圆弧，拐弯更舒展）或 **弧线**（单峰圆弧，一次拱形弯过去）；
+- 呈现位置可切换（设置 → 风格设置 → 默认位置）：**浮窗** 或 **侧边栏**（右侧栏 tab；桌面端默认），切换后立即生效并持久化。
 
 #### refs 徽标颜色
 
@@ -185,7 +186,8 @@ dsh plugin --profile web add /path/to/dsh-git-status
 - **贮藏时包含未跟踪文件**：作为「贮藏未提交改动」对话框的默认选项；
 - **默认合并方式**：预选普通合并、NoFF 或 Squash；
 - **删除本地分支时同步删除远程**（默认关）：开启后，右键删除本地分支（普通删除与强制删除）时，若远程存在同名分支则一并删除（`git push <remote> --delete <branch>`）；无同名远程分支时不受影响；远程删除失败会提示明细，本地删除不受影响；
-- **显示未提交改动**：位于「显示」区，控制图顶部工作区改动虚拟行。
+- **显示未提交改动**：位于「显示」区，控制图顶部工作区改动虚拟行；
+- **默认位置**（风格设置）：**浮窗** / **侧边栏**。侧边栏会把 Git 面板停靠到 DSH 右侧栏的 tab（与 Files / Terminal 同级）；桌面端默认侧边栏，Web 端默认浮窗；切换立即生效并持久化。侧边栏模式下，从右侧栏 guide 的「Git 状态」卡片打开。
 
 ### 7. 从远程拉取
 
@@ -272,7 +274,8 @@ Then:
 
 - One row per commit: first-parent chains as lines, greedy leftmost column assignment, lane reuse, merge-commit connectors;
 - SVG grid rendering: shadow + dual-color paths, elbow transitions, bold HEAD dot;
-- The line style is switchable (Settings → Style Settings → Graph line style): **Angular** (current sharp elbows), **Curved** (smooth Bézier arc with a more relaxed turn), or **Arc** (single-peak arc with one arch).
+- The line style is switchable (Settings → Style Settings → Graph line style): **Angular** (current sharp elbows), **Curved** (smooth Bézier arc with a more relaxed turn), or **Arc** (single-peak arc with one arch);
+- The default presentation is switchable (Settings → Style Settings → Default position): **Floating panel** or **Sidebar** (a DSH right-sidebar tab; the Desktop default). It applies immediately and persists.
 
 ### Ref badge colors
 

@@ -6,7 +6,7 @@
 
 **English** · [**简体中文**](README.md)
 
-A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations.
+A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI, or a **DSH right-sidebar tab** — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations. Switch the presentation under **Settings → Style Settings → Default position (Floating panel / Sidebar)**; Desktop defaults to Sidebar.
 
 🔖 **v2.0.0** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
@@ -14,6 +14,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 
 ## Features
 
+- **Two presentations**: **Floating panel** (right edge, draggable, position remembered) or **right-sidebar tab** (alongside Files / Terminal; the Desktop default); switch under Settings → Style Settings → **Default position**, applied immediately and persisted. In Sidebar mode, open it from the right sidebar guide's "Git Status" card.
 - **Drawer UX**: the drawer is **draggable** with its position **remembered**; a floating toggle button sits at the panel's top-right corner (overlaps the corner, follows drags, and stays floating at that spot to reopen after closing); a one-time first-use hint bubble (localStorage)
 - **Commit DAG lane graph**: first-parent chains as lines, greedy leftmost column assignment, lane reuse, merge-commit connectors; SVG grid rendering (shadow + dual-color paths, elbow transitions, bold HEAD dot)
 - **Inline refs badges**: H (red, detached HEAD) / branches (gold) / remotes (blue) / tags (green); the currently checked-out branch pill is highlighted in bright gold (denser background + gold inset border + bold, hover tooltip "current"); a local branch and its same-named remote are merged into one pill: `⎇ main [gitee]`; with ≥2 same-named remotes the sub-badges collapse into a count badge `⎇ main [2]` (hovering anywhere on the pill shows the full remote ref list, right-click picks a remote first); remote HEAD symbolic refs (`gitee/HEAD`) are filtered by default
@@ -42,7 +43,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 - **Conflict/in-progress badges**: the header shows "N unresolved conflicts" and "merge/rebase in progress" in real time (`MERGE_HEAD` / `SQUASH_MSG` (squash merge) etc.)
 - **SSE live refresh**: `/git/events` subscription (2s server-side state-key comparison + change push + 15s heartbeat); the graph refreshes instantly when another terminal checks out or commits; a 10s poll remains as a disconnect fallback
 - **Scope switching**: all branches / current branch; auto refresh + manual refresh; non-git-repo hint
-- **Settings page**: default behaviors (auto-checkout after creating a branch / include untracked files when stashing / default merge mode / sync-delete remote branch when deleting local, unified dropdowns) and display options (uncommitted changes, HEAD badge, commit author, commit time — each independently toggleable)
+- **Settings page**: default behaviors (auto-checkout after creating a branch / include untracked files when stashing / default merge mode / sync-delete remote branch when deleting local, unified dropdowns), display options (uncommitted changes, HEAD badge, commit author, commit time — each independently toggleable), and **Style Settings → Default position** (Floating panel / Sidebar)
 
 ## Installation
 
