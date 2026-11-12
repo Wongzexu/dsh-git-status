@@ -8,7 +8,7 @@
 
 A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI, or a **DSH right-sidebar tab** — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations. Switch the presentation under **Settings → Style Settings → Default position (Floating panel / Sidebar)**; Desktop defaults to Sidebar.
 
-🔖 **v2.0.0** · 🧩 pure front-end self-rendered DOM (greeter mode, zero React, zero build chain) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v2.0.0** · 🧩 pure front-end self-rendered DOM (zero React UI, zero build chain; the sidebar tab borrows the host React only as a mount shell) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -51,7 +51,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 
 - DSH (DeepSeek Harness) web installed and running (`dsh web`), with version `@deepseek-ai/dsh >=0.2.0-rc.2 <0.3.0-0` (hard peerDependencies constraint; v2 targets DSH 0.2 only and no longer supports 0.1 / cordis)
 - `git` CLI installed (the plugin runs all operations through the system `git`)
-- Zero third-party dependencies: no React, no build artifacts, zero npm packages in the Node half
+- Zero third-party dependencies: zero React in the UI (the sidebar tab only borrows a mount shell from the host's `require('react')`; React is never bundled and no second instance is created), no build artifacts, zero npm packages in the Node half
 
 ### Install the plugin
 

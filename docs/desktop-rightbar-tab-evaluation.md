@@ -14,6 +14,10 @@
 - **docked 布局**：复用现有 DOM，去掉 fixed/拖拽/开关/位置记忆，`height:100%` 填满右侧栏；隐藏重复标题与关闭按钮。
 - **会话绑定**：Body 的 `sessionId` 直接绑定到 `currentSessionId()`，SSE/轮询/写操作跟随 tab 会话。
 - **切换生命周期**：浮窗 → 侧边栏自动打开 tab；侧边栏 → 浮窗自动展开浮窗；注销类型/关闭 tab/恢复样式表。
+- **后台 tab 暂停**：`tab.visible === false`（后台会话）时暂停 10s 轮询与 SSE，切回前台补一次刷新；tab 关闭/插件卸载时 `tab.signal` abort 提前走同一份清理。
+- **语言跟随**：侧边栏模式下切换 DSH 语言会重挂载面板（DOM 文案在挂载期固化，必须整体重建才能刷新）。
+- **升级提示**：桌面端首次进入侧边栏模式提示一次「可在 设置 → 风格设置 → 默认位置 改回浮窗」。
+- **React 不可用**：回退浮窗并把偏好落盘为 `float`，避免设置行与实际呈现不一致。
 - **非 git 仓库**：设置页仍显示风格设置，可切换默认位置（用户信息/远程配置仍隐藏）。
 
 已用 webprobe 在隔离 DSH 0.2 实例（真实 git 仓库会话）验证：
@@ -34,7 +38,7 @@
 待办：
 
 - [ ] Windows/macOS 官方桌面端真机验收（顶栏 40/48px、macOS 红绿灯、右侧栏 fullscreen、剪贴板/SSE）。
-- [ ] 从浮动切到侧边栏时若右侧栏没有空间/服务不可用，增加自动回退提示（当前 React 不可用会回退浮窗；服务未就绪时无 UI）。
+- [ ] 从浮动切到侧边栏时若右侧栏没有空间/服务不可用，增加自动回退提示（React 不可用已回退浮窗并落盘 `float`；服务未就绪时仍无 UI）。
 - [ ] 手动把 localStorage 改成 float 而遗留的 Git tab 清理（正常设置切换已关闭 tab）。
 - [ ] 可选的 header 快捷入口/快捷键（当前入口为右侧栏 guide 卡片；关闭 tab 后需展开右侧栏再点 guide）。
 
@@ -66,13 +70,10 @@ A 方案把 Git 面板变成右侧栏的一个 tab，和 Files / Terminal 同级
 5. **直接打开**：`ctx.sidebarRight.openTab('git-status')` 可从插件按钮/快捷键打开或聚焦该 tab。
 6. **宿主路由无需改动**：现有 `/plugins/dsh-gitstatus/*` 路由仍按 `session=` 解析工作区；tab 只要把 `sessionId` 传给数据层即可。
 
-Spike 代码（仅评估，不应直接合并）：
+Spike 代码（评估期一次性验证，**未进入正式实现**）：
 
-- `src/client/index.js`：
-  - `require('react')`（失败则跳过 tab，不影响浮窗）；
-  - `ctx.inject(['sidebarRightTabs', 'sidebarRight', 'slots'], ...)` 注册类型、guide、Body；
-  - 浮窗头部临时加 `Tab` 按钮调用 `openTab`；
-  - Body 目前是占位文本 `Git Tab OK · session=... · tab=...`。
+- 当时临时加过 `require('react')` 的占位 Body（`Git Tab OK · session=...`）与浮窗头部的 `Tab` 测试按钮；
+- 正式实现（§3）保留同一套 API 用法（`require('react')` 挂载壳 + `sidebarRightTabs` 类型 + `sidebar.right.pane.tab` Body + guide 入口），但那两个临时入口已移除。
 
 ## 3. 正式实现设计
 
@@ -184,22 +185,39 @@ function GitTabBody({ sessionId, useTabInfo }) {
 
 ## 5. 验收清单（正式实现时）
 
-- [ ] 1280×820：guide 卡片出现；点击打开 tab；tab 铺满右侧栏；无浮窗遮挡。
-- [ ] 640×700：右侧栏 fullscreen 时 tab 仍铺满；无横向溢出。
-- [ ] tab 关闭后重新打开，数据/SSE 正常；切换会话后 tab 的 session 正确。
-- [ ] 后台会话 tab `tab.visible=false` 时暂停轮询/SSE。
-- [ ] 分支切换/提交/暂存/放弃/合并/rebase 等写操作作用在 tab 的 session。
-- [ ] 右键菜单、确认框、设置弹窗不被右侧栏裁剪。
-- [ ] 浮窗模式（若保留）行为不变；两种模式切换无残留 DOM/监听。
-- [ ] `npm test` 269 用例通过；webprobe E2E 通过。
+- [x] 1280×820：guide 卡片出现；点击打开 tab；tab 铺满右侧栏；无浮窗遮挡。（实测 docked 面板 647×719、93 行）
+- [x] 640×700：右侧栏 fullscreen 时 tab 仍铺满；无横向溢出。（见 §0 宽度实测表）
+- [x] tab 关闭后重新打开，数据正常。（SSE 随 tab 卸载关闭）
+- [x] 后台会话 tab `tab.visible=false` 时暂停轮询/SSE。（代码已接入 `setVisible`；待真机后台会话复验）
+- [ ] 分支切换/提交/暂存/放弃/合并/rebase 等写操作作用在 tab 的 session。（写路由已全部走 `currentSessionId()`，待逐项实测）
+- [x] 右键菜单、确认框、设置弹窗不被右侧栏裁剪。（见 §0 弹层定位实测）
+- [x] 浮窗模式行为不变；两种模式切换无残留 DOM/监听。（实测浮窗 `position:fixed`、无 `data-dsc-git-docked`、无残留 tab root）
+- [x] `npm test` 269 用例通过；webprobe 验证：侧边栏渲染、迁移提示一次性+6s、设置行「默认位置 侧边栏 ▾」。
 - [ ] Windows/macOS 官方桌面端实机验收。
 
 ## 6. 建议
 
 **A 可行，建议作为桌面端的正式形态**：以 guide 卡片为入口，右侧栏 tab 承载 Git 面板；浮窗保留为 Web/兼容模式。先做 `mountUi` docked 重构与 session 绑定，再做宽度自适应；预计 2–3.5 天。
 
-当前分支上的 spike 只验证 API 与挂载，不应直接发布；正式实现前需要确认：
+评估期提出的三个待确认问题均已决策并落地：
 
-1. 是否接受 `require('react')` 的薄包装（零 React UI 不变）；
-2. tab 与浮窗双模式，还是 tab-only；
-3. 桌面端默认 tab、Web 默认 float，是否可接受。
+1. 接受 `require('react')` 薄包装——React 只作挂载壳，UI 仍是零 React 原生 DOM（README 的「零 React」措辞已同步修正为「零 React UI + 宿主 React 挂载壳」）；
+2. 双模式、浮窗保留——Web 默认浮窗，桌面端默认侧边栏；
+3. 桌面端默认侧边栏、Web 默认浮窗，已实现并持久化（`dsc-git-settings.defaultMode`），桌面端首次进入有一次性迁移提示。
+
+与立项 issue（Gitee `IK8Y7I`）的差异与决策记录见第 7 节。
+
+## 7. 与 IK8Y7I 的差异与决策
+
+立项提案（Gitee `IK8Y7I`「Git 状态双模式切换：悬浮抽屉 ⇄ 标题栏标签页（整页视图）」）设计的机制是 `conversation.view` 整页视图；本分支实际落地为 DSH **右侧栏 tab**（`sidebarRightTabs` + `sidebar.right.pane.tab`）。这不是无意跑偏，而是评估后改选的 A 方案：
+
+| 维度 | issue 原方案 | 本分支实现 | 理由 |
+|---|---|---|---|
+| 容器 | `conversation.view`（会话标题栏 tab，独占中栏） | `sidebarRightTabs`（与 Files / Terminal 同级） | 不挤占对话宽度；桌面端形态更贴近原生侧栏；`conversation.view` 的 tablist 显示条件与 session 作用域风险已写在 issue §八 |
+| 入口 | 标题栏 tab + 抽屉头部切换按钮 | 右侧栏 guide 卡片 + 设置「默认位置」 | 复用 DSH 右侧栏既有入口，避免标题栏再插 tab |
+| 偏好持久化 | 阶段一 localStorage → 阶段二 settings namespace | 阶段一 localStorage（已完成） | 阶段二（`settingsScope` / `settings.general.item`，跨设备同步）拆为后续 issue 跟踪 |
+
+需要在 issue 上留痕的两点：
+
+1. 侧栏形态：issue「开放问题 #2」原写“暂不纳入本提案”，本分支已采纳，应在 issue 上正式转为决策；
+2. 阶段二 settings 同步：不作为本分支验收项，拆独立 issue 跟踪。

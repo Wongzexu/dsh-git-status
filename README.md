@@ -8,7 +8,7 @@
 
 独立 Git 状态（Git Graph）插件：DSH Web 右缘 **Git 状态浮窗**，或停靠到 **DSH 右侧栏 tab** —— commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。呈现位置可在 **设置 → 风格设置 → 默认位置（浮窗/侧边栏）** 切换，桌面端默认侧边栏。
 
-🔖 **v2.0.0** · 🧩 纯前端自渲染 DOM（greeter 模式，零 React、零构建链）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v2.0.0** · 🧩 纯前端自渲染 DOM（零 React UI、零构建链；侧边栏 tab 仅借宿主 React 作挂载壳）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -95,7 +95,7 @@
 
 - DSH（DeepSeek Harness）web 端已安装并运行（`dsh web`），且版本满足 `@deepseek-ai/dsh >=0.2.0-rc.2 <0.3.0-0`（peerDependencies 硬约束；v2 起仅适配 DSH 0.2，不再支持 0.1 / cordis）
 - 已安装 `git` 命令行工具（插件通过系统 `git` 执行所有操作）
-- 插件零第三方依赖：无 React、无构建产物依赖、Node half 零 npm 包
+- 插件零第三方依赖：UI 零 React（侧边栏 tab 仅通过宿主 `__ModuleLoader__` 的 `require('react')` 借一个挂载壳，不打包 React、不引第二个实例）、无构建产物依赖、Node half 零 npm 包
 
 ### 安装插件
 
