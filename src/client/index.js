@@ -1002,20 +1002,8 @@ module.exports = {
 [data-dsc-git-ctx] button.dsc-ctx-multi input[type='checkbox'] {
   margin: 0; accent-color: var(--dsw-alias-text-accent, #4c9aff);
 }
-/* 侧边栏模式下拉/右键菜单：跟随 DSH 主题表面（body 提供 --dsw-alias-* token），
-   与宿主菜单同为浅色磨砂卡片；浮窗模式仍是深色卡片。 */
-[data-dsc-git-ctx][data-dsc-git-themed] {
-  color: var(--dsw-alias-label-primary, #eee);
-  background: var(--dsw-alias-bg-multi-select, #2C2C2E);
-  background: color-mix(in srgb, var(--dsw-alias-bg-multi-select, #2C2C2E) 92%, transparent);
-  border-color: var(--dsw-alias-border-l2, rgba(255,255,255,.08));
-  border-radius: 10px;
-  backdrop-filter: blur(24px) saturate(1.4);
-}
-[data-dsc-git-ctx][data-dsc-git-themed] button:hover {
-  background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,.07));
-}
-[data-dsc-git-ctx][data-dsc-git-themed] button:disabled:hover { background: none; }
+/* 侧边栏模式下拉/右键菜单：外观由文末统一的 [data-dsc-git-themed] 规则提供；
+   浮窗模式仍是深色卡片。 */
 /* 面板内按钮（头部/合并条/创建对话框）：跟随面板字号，覆盖 UA 表单控件默认 13.3333px */
 [data-dsc-git] [data-dsc-btn], [data-dsc-git-create] [data-dsc-btn], [data-dsc-git-confirm] [data-dsc-btn], [data-dsc-git-tag] [data-dsc-btn], [data-dsc-git-reset] [data-dsc-btn], [data-dsc-git-cherrypick] [data-dsc-btn], [data-dsc-git-revert] [data-dsc-btn], [data-dsc-git-pull] [data-dsc-btn] { font-size: inherit; }
 /* 切换确认框（未提交改动提醒）：标题 + 正文 + 右对齐按钮行。
@@ -1385,45 +1373,12 @@ module.exports = {
 [data-dsc-git][data-dsc-git-docked] [data-dsc-git-create-err].hint {
   color: var(--dsw-alias-label-tertiary, #81858c);
 }
-/* 设置弹层（侧边栏模式）：外壳与下拉框统一为浅色磨砂表面，内部控件走主题 token；
-   浮窗模式仍是深色卡片（不带 data-dsc-git-themed）。 */
-[data-dsc-git-settings][data-dsc-git-themed] {
-  color: var(--dsw-alias-label-primary, #1f1f1f);
-  background: var(--dsw-alias-bg-multi-select, #2C2C2E);
-  background: color-mix(in srgb, var(--dsw-alias-bg-multi-select, #2C2C2E) 92%, transparent);
-  border-color: var(--dsw-alias-border-l2, rgba(255,255,255,.08));
-  border-radius: 10px;
-  backdrop-filter: blur(24px) saturate(1.4);
-}
+/* 设置弹层（侧边栏模式）：外壳与通用控件由文末统一的 [data-dsc-git-themed]
+   规则提供；这里只覆盖设置面板自身的分区线/徽标/错误与提示色。 */
 [data-dsc-git-settings][data-dsc-git-themed] .dsc-git-settings-section-title {
   border-top-color: var(--dsw-alias-border-l1, rgba(0,0,0,.06));
   color: var(--dsw-alias-label-secondary, #61666b);
   opacity: .8;
-}
-[data-dsc-git-settings][data-dsc-git-themed] [data-dsc-btn] {
-  color: var(--dsw-alias-label-secondary, #61666b);
-  background: var(--dsw-alias-interactive-bg-hover, rgba(0,0,0,.05));
-}
-[data-dsc-git-settings][data-dsc-git-themed] [data-dsc-btn]:hover {
-  color: var(--dsw-alias-label-primary, #1f1f1f);
-  background: var(--dsw-alias-interactive-bg-active, rgba(0,0,0,.08));
-}
-[data-dsc-git-settings][data-dsc-git-themed] [data-dsc-btn].danger:hover,
-[data-dsc-git-settings][data-dsc-git-themed] [data-dsc-btn].armed { color: #fff; }
-[data-dsc-git-settings][data-dsc-git-themed] .dsc-git-toggle {
-  border-color: var(--dsw-alias-border-l2, rgba(0,0,0,.12));
-  background: var(--dsw-alias-interactive-bg-hover, rgba(0,0,0,.05));
-  color: var(--dsw-alias-label-secondary, #61666b);
-}
-[data-dsc-git-settings][data-dsc-git-themed] .dsc-git-toggle.on {
-  border-color: var(--dsw-alias-link, #2563eb);
-  color: var(--dsw-alias-link, #2563eb);
-  background: color-mix(in srgb, var(--dsw-alias-link, #2563eb) 12%, transparent);
-}
-[data-dsc-git-settings][data-dsc-git-themed] input[type='text'] {
-  border-color: var(--dsw-alias-border-l2, rgba(0,0,0,.12));
-  background: var(--dsw-alias-bg-base, #fff);
-  color: var(--dsw-alias-label-primary, #1f1f1f);
 }
 [data-dsc-git-settings][data-dsc-git-themed] .dsc-git-user-layer.local {
   color: color-mix(in srgb, #4c9aff 70%, var(--dsw-alias-label-primary, #1f1f1f));
@@ -1445,6 +1400,65 @@ module.exports = {
 [data-dsc-git-settings][data-dsc-git-themed] .dsc-git-default-hint {
   border-color: var(--dsw-alias-border-l2, rgba(0,0,0,.12));
   opacity: .65;
+}
+/* 侧边栏模式统一浮层外观：下拉/右键菜单、设置、新建分支、切换确认、push/stash/
+   commit/tag/merge/reset/cherry-pick/revert/pull 全部走同一套浅色磨砂表面与主题控件。
+   data-dsc-git-themed 只打在侧边栏模式的浮层上，浮窗模式保持原有深色卡片。
+   注意：本组规则必须位于各浮层基础样式之后（同特异性靠后胜出）。 */
+[data-dsc-git-themed] {
+  color: var(--dsw-alias-label-primary, #1f1f1f);
+  background: var(--dsw-alias-bg-multi-select, #2C2C2E);
+  background: color-mix(in srgb, var(--dsw-alias-bg-multi-select, #2C2C2E) 92%, transparent);
+  border-color: var(--dsw-alias-border-l2, rgba(255,255,255,.08));
+  border-radius: 10px;
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+[data-dsc-git-themed] [data-dsc-btn] {
+  color: var(--dsw-alias-label-secondary, #61666b);
+  background: var(--dsw-alias-interactive-bg-hover, rgba(0,0,0,.05));
+}
+[data-dsc-git-themed] [data-dsc-btn]:hover {
+  color: var(--dsw-alias-label-primary, #1f1f1f);
+  background: var(--dsw-alias-interactive-bg-active, rgba(0,0,0,.08));
+}
+[data-dsc-git-themed] [data-dsc-btn].danger:hover,
+[data-dsc-git-themed] [data-dsc-btn].armed { color: #fff; }
+/* 危险确认按钮（删除分支/reset hard）：保持红色实底，不被上面的通用按钮规则覆盖 */
+[data-dsc-git-themed] .dsc-git-confirm-ok-danger,
+[data-dsc-git-themed] .dsc-git-reset-ok-danger {
+  background: rgba(232,73,73,.92); color: #fff;
+}
+[data-dsc-git-themed] .dsc-git-confirm-ok-danger:hover,
+[data-dsc-git-themed] .dsc-git-reset-ok-danger:hover {
+  background: rgba(255,92,92,1); color: #fff;
+}
+[data-dsc-git-themed] .dsc-git-toggle {
+  border-color: var(--dsw-alias-border-l2, rgba(0,0,0,.12));
+  background: var(--dsw-alias-interactive-bg-hover, rgba(0,0,0,.05));
+  color: var(--dsw-alias-label-secondary, #61666b);
+}
+[data-dsc-git-themed] .dsc-git-toggle.on {
+  border-color: var(--dsw-alias-link, #2563eb);
+  color: var(--dsw-alias-link, #2563eb);
+  background: color-mix(in srgb, var(--dsw-alias-link, #2563eb) 12%, transparent);
+}
+[data-dsc-git-themed] input[type='text'],
+[data-dsc-git-themed] textarea,
+[data-dsc-git-themed] select {
+  border-color: var(--dsw-alias-border-l2, rgba(0,0,0,.12));
+  background: var(--dsw-alias-bg-base, #fff);
+  color: var(--dsw-alias-label-primary, #1f1f1f);
+}
+/* 下拉/右键菜单项是未挂 data-dsc-btn 的普通按钮，单独给 hover 主题色 */
+[data-dsc-git-ctx][data-dsc-git-themed] button:hover {
+  background: var(--dsw-alias-interactive-bg-hover, rgba(255,255,255,.07));
+}
+[data-dsc-git-ctx][data-dsc-git-themed] button:disabled:hover { background: none; }
+/* 错误/提示文案：深色卡片用的亮红/半透明白在浅底上不可读，改为主题色 */
+[data-dsc-git-themed] [data-dsc-git-create-err],
+[data-dsc-git-themed] .dsc-git-commit-error { color: #d72c2c; }
+[data-dsc-git-themed] [data-dsc-git-create-err].hint {
+  color: var(--dsw-alias-label-tertiary, #81858c);
 }
 
 `
@@ -2726,8 +2740,6 @@ module.exports = {
     // 右键菜单浮层（本地分支：切换；远程：创建本地分支并检出）。
     const gitCtxMenu = document.createElement('div')
     gitCtxMenu.setAttribute('data-dsc-git-ctx', '')
-    // 侧边栏模式：菜单跟随 DSH 主题（浅色磨砂表面）；浮窗模式保持深色卡片。
-    if (docked) gitCtxMenu.setAttribute('data-dsc-git-themed', '')
     body.appendChild(gitCtxMenu)
     const gitCtxClose = () => { gitCtxMenu.style.display = 'none'; gitCtxMenu.replaceChildren() }
     // opts.multi：多选模式（如 push remote 选择）——复选框样式，点击项切换选中
@@ -3427,8 +3439,6 @@ module.exports = {
 
     const gitSettingsBox = document.createElement('div')
     gitSettingsBox.setAttribute('data-dsc-git-settings', '')
-    // 侧边栏模式：弹层外壳与内部控件跟随 DSH 浅/深主题（同下拉框）；浮窗保持深色卡片。
-    if (docked) gitSettingsBox.setAttribute('data-dsc-git-themed', '')
     body.appendChild(gitSettingsBox)
     const gitSettingsTitle = document.createElement('div')
     gitSettingsTitle.className = 'dsc-git-settings-title'
@@ -5372,6 +5382,16 @@ module.exports = {
     const gitCommitBox = document.createElement('div')
     gitCommitBox.setAttribute('data-dsc-git-commit', '')
     body.appendChild(gitCommitBox)
+    // 侧边栏模式：所有操作浮层（菜单/设置/新建分支/确认/push/stash/commit/tag/merge/
+    // reset/cherry-pick/revert/pull）统一打上主题标记，由样式表统一浅色化；
+    // 浮窗模式不带标记，保持原有深色卡片。
+    if (docked) {
+      for (const box of [gitCtxMenu, gitConfirmBox, gitCreateBox, gitPushBox, gitMergeBox,
+        gitResetBox, gitCherryPickBox, gitRevertBox, gitPullBox, gitTagBox, gitStashBox,
+        gitCommitBox, gitSettingsBox]) {
+        box.setAttribute('data-dsc-git-themed', '')
+      }
+    }
     const gitCommitTitle = document.createElement('div')
     gitCommitTitle.className = 'dsc-git-commit-title'
     const gitCommitMessage = document.createElement('textarea')
