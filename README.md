@@ -8,7 +8,7 @@
 
 独立 Git 状态（Git Graph）插件：DSH Web 右缘 **Git 状态浮窗**，或停靠到 **DSH 右侧栏 tab** —— commit DAG 泳道图 + 未提交改动/stash + 行内详情 diff + 分支操作。呈现位置可在 **设置 → 风格设置 → 默认位置（浮窗/侧边栏）** 切换，桌面端默认侧边栏。
 
-🔖 **v2.1.0** · 🧩 纯前端自渲染 DOM（零 React UI、零构建链；侧边栏 tab 仅借宿主 React 作挂载壳）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v2.1.1** · 🧩 纯前端自渲染 DOM（零 React UI、零构建链；侧边栏 tab 仅借宿主 React 作挂载壳）· 🛠 Node half 只读/写路由 · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -242,6 +242,7 @@ cherry-pick/revert 的 -x/-n/merge 主父 + 冲突标记、pull 的 --no-rebase/
 
 ## 更新记录
 
+- **v2.1.1**：修复提交详情 / 未提交改动详情里，中文等非 ASCII 文件名被 git `core.quotepath` 输出成 `"docs/\344\270\255..."` 八进制转义、页面只剩数字的问题（服务端关闭 quotepath，并按 UTF-8 字节还原特殊字符路径；切换/合并被挡文件提示同步修复）
 - **v2.1.0**：新增桌面端**右侧栏 tab**（与 Files / Terminal 同级）与「设置 → 风格设置 → 默认位置」（桌面端默认侧边栏、Web 默认浮窗，localStorage 持久化）；侧边栏模式支持主题跟随、语言切换重挂载、后台会话暂停轮询/SSE、首次进入迁移提示；宿主无 React 时自动回退浮窗并落盘；「零 React」表述修正为「零 React UI + 宿主 React 挂载壳」
 - **v2.0.0**：适配 DSH 0.2（`@deepseek-ai/dsh` peerDependencies 硬约束、`currentSessionId()` 契约修正）
 

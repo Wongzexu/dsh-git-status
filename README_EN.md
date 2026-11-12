@@ -8,7 +8,7 @@
 
 A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** docked to the right edge of the DSH web UI, or a **DSH right-sidebar tab** — commit DAG lane graph + uncommitted changes/stash + inline detail diffs + branch operations. Switch the presentation under **Settings → Style Settings → Default position (Floating panel / Sidebar)**; Desktop defaults to Sidebar.
 
-🔖 **v2.1.0** · 🧩 pure front-end self-rendered DOM (zero React UI, zero build chain; the sidebar tab borrows the host React only as a mount shell) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
+🔖 **v2.1.1** · 🧩 pure front-end self-rendered DOM (zero React UI, zero build chain; the sidebar tab borrows the host React only as a mount shell) · 🛠 read-only/write Node half · 📜 MIT · 📦 npm `@wongzexu/dsh-git-status`
 
 </div>
 
@@ -169,6 +169,7 @@ After rebuilding the client, **refresh the browser page** to see changes (no web
 
 ## Changelog
 
+- **v2.1.1**: fixed non-ASCII (e.g. Chinese) changed-file names showing only octal escape digits in the commit / uncommitted detail view — git's `core.quotepath` is now disabled in the Node half and quoted special-character paths are decoded as UTF-8 bytes; blocked-file hints on switch/merge are fixed too
 - **v2.1.0**: added the Desktop **right-sidebar tab** (alongside Files / Terminal) and **Settings → Style Settings → Default position** (Desktop defaults to Sidebar, Web to Floating panel; persisted in localStorage); Sidebar mode follows the theme, re-mounts on language switch, pauses polling/SSE for background sessions, shows a one-time migration hint on first entry; falls back to the floating panel (and persists that choice) when the host provides no React; the "zero React" wording is corrected to "zero React UI + host React mount shell"
 - **v2.0.0**: DSH 0.2 adaptation (hard `@deepseek-ai/dsh` peerDependencies range, `currentSessionId()` contract fix)
 
