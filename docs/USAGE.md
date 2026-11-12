@@ -1,6 +1,6 @@
 # @wongzexu/dsh-git-status 使用指南 · Usage Guide
 
-> 中英双语（Bilingual）：上方为中文版，下方为 [English version](#wongzexudsh-git-status-usage-guide)。与 [README](../README.md) 配套的详细文字版操作指南，覆盖从打开浮窗到分支操作、冲突处理、远程拉取的全流程。适用版本：v2.0.0+。
+> 中英双语（Bilingual）：上方为中文版，下方为 [English version](#wongzexudsh-git-status-usage-guide)。与 [README](../README.md) 配套的详细文字版操作指南，覆盖从打开面板（浮窗 / 侧边栏）到分支操作、冲突处理、远程拉取的全流程。适用版本：v2.0.0+（侧边栏模式为 v2.1.0+）。
 
 ## 中文版
 
@@ -31,7 +31,11 @@ dsh plugin --profile web add /path/to/dsh-git-status
 1. 重启 DSH web 服务，使插件加载生效；
 2. 打开 DSH web 页面 → 设置页「插件」面板，确认 `@wongzexu/dsh-git-status` 已启用（可随时停用/启用）。
 
-### 2. 打开 / 关闭浮窗
+### 2. 打开 / 关闭面板（浮窗 / 侧边栏）
+
+面板有两种呈现位置，由 **设置 → 风格设置 → 默认位置** 决定（桌面端默认侧边栏、Web 端默认浮窗），切换立即生效并持久化。
+
+**浮窗模式**
 
 1. 进入任意聊天视图（对话界面）；
 2. 点击面板右上角外侧的 **分支图标** 按钮，右侧展开「Git 状态」浮窗；
@@ -40,7 +44,17 @@ dsh plugin --profile web add /path/to/dsh-git-status
 5. 浮窗可**拖拽**移动，位置**自动记忆**（下次打开保持上次位置）；
 6. **首次使用**会显示引导提示气泡（仅显示一次，由 localStorage 记录）。
 
-> 提示：当前会话工作区不是 git 仓库时，浮窗内会显示提示；切换到 git 仓库目录所在会话即可。
+**侧边栏模式**
+
+1. 展开右侧栏（tab strip 里有 Files / Terminal 等）；
+2. 在 guide 列表里点「Git 状态」卡片 —— 面板作为 tab 打开，与 Files / Terminal 同级、铺满右侧栏；
+3. **关闭**：点 tab strip 上的 ×（面板头部的关闭按钮在侧边栏模式隐藏）；
+4. **重新打开**：再次展开右侧栏 → guide → 「Git 状态」；
+5. **首次进入**：桌面端（默认侧边栏）会提示一次「可在设置改回浮窗」，同一浏览器只提示一次；
+6. **主题**：面板与所有浮层（右键菜单/确认框/设置）跟随 DSH 浅色 / 深色主题；
+7. **语言**：切换 DSH 语言后面板文案即时跟随（重挂载）；**后台会话**的 tab 自动暂停轮询与 SSE，切回前台补一次刷新。
+
+> 提示：当前会话工作区不是 git 仓库时，面板内会显示提示；切换到 git 仓库目录所在会话即可。
 
 ### 3. 界面速览
 
@@ -51,7 +65,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
 - **从远程拉取**：⇣（仅仓库配置了远程时显示）—— 一键 `git fetch --all`（无对话框，prune 默认关）；
 - **＋ 新分支**：输入名称创建并检出新分支；
 - **状态徽标**：实时显示「N 个未解决冲突」「合并/rebase 进行中」（基于 `MERGE_HEAD` / `SQUASH_MSG`（squash 合并）等标记）；
-- **关闭按钮**：面板右上角（即开关按钮，关闭后原位悬浮）。
+- **关闭按钮**：面板右上角（即开关按钮，关闭后原位悬浮；侧边栏模式下隐藏，由 tab strip 关闭）。
 
 #### 图区（commit DAG 泳道图）
 
@@ -199,13 +213,16 @@ dsh plugin --profile web add /path/to/dsh-git-status
 
 - 打开期间 **SSE 即时刷新**：订阅 `/git/events`（2s 服务端状态键对比 + 变化推送 + 15s 心跳）；
 - 其他终端 checkout / 提交时，图即时刷新；
-- **断连时 10s 轮询兜底**，也可手动 ↻。
+- **断连时 10s 轮询兜底**，也可手动 ↻；
+- **后台会话**（侧边栏 tab 不可见）与页面切到后台时暂停轮询/SSE，回到前台补一次刷新。
 
 ### 9. 常见问题
 
 | 现象 | 处理 |
 |---|---|
-| 浮窗不出现 | 确认处于聊天视图；插件已在「插件」面板启用；刚安装的话先重启 web |
+| 浮窗不出现 | 确认处于聊天视图；插件已在「插件」面板启用；刚安装的话先重启 web；默认位置可能被设为「侧边栏」，到 设置 → 风格设置 → 默认位置 改回浮窗 |
+| 侧边栏里找不到「Git 状态」 | 侧边栏 tab 依赖 DSH ≥ 0.2 的右侧栏 slot；先展开右侧栏（guide 卡片在列表里），再点「Git 状态」 |
+| 想从侧边栏改回浮窗 | 设置 → 风格设置 → 默认位置 → 浮窗（侧边栏模式的 ⚙ 在面板头部） |
 | 提示「当前工作区不是 git 仓库」 | 当前会话的工作目录不是 git 仓库，切换到仓库目录所在会话 |
 | 看不到远程分支 | 仓库配置远程后点 ⇣ 拉取；远程分支徽标为蓝色 |
 
@@ -219,7 +236,7 @@ dsh plugin --profile web remove @wongzexu/dsh-git-status
 
 # @wongzexu/dsh-git-status Usage Guide
 
-> Bilingual companion: English below, [中文版](#中文版) above. A detailed text-based usage guide for the [README](../README_EN.md), covering everything from opening the drawer to branch operations, conflict handling, and fetching from remotes. Applies to v2.0.0+.
+> Bilingual companion: English below, [中文版](#中文版) above. A detailed text-based usage guide for the [README](../README_EN.md), covering everything from opening the panel (floating / sidebar) to branch operations, conflict handling, and fetching from remotes. Applies to v2.0.0+ (sidebar mode: v2.1.0+).
 
 ## 1. Install & enable
 
@@ -248,7 +265,11 @@ Then:
 1. Restart the DSH web service for the plugin to load;
 2. Open the DSH web page → Settings → "Plugins" panel, confirm `@wongzexu/dsh-git-status` is enabled (can be disabled/enabled anytime).
 
-## 2. Opening / closing the drawer
+## 2. Opening / closing the panel (floating / sidebar)
+
+The panel has two presentations, chosen under **Settings → Style Settings → Default position** (Desktop defaults to Sidebar, Web to Floating panel); switching applies immediately and persists.
+
+**Floating panel**
 
 1. Enter any chat view;
 2. Click the **branch icon** button outside the panel's top-right corner — the "Git status" drawer expands from the right;
@@ -257,7 +278,17 @@ Then:
 5. The drawer is **draggable** and its position is **remembered** (restored on the next open);
 6. **First use** shows a one-time hint bubble (recorded in localStorage).
 
-> Tip: when the current session's workspace is not a git repo, the drawer shows a hint; switch to a session whose workspace is a git repo.
+**Sidebar mode**
+
+1. Expand the right sidebar (its tab strip holds Files / Terminal, etc.);
+2. Click the "Git Status" card in the guide list — the panel opens as a tab alongside Files / Terminal, filling the sidebar;
+3. **Close**: use the × on the tab strip (the header close button is hidden in Sidebar mode);
+4. **Reopen**: expand the right sidebar → guide → "Git Status";
+5. **First entry**: on Desktop (Sidebar default) a one-time hint explains how to switch back to the floating panel (shown once per browser);
+6. **Theme**: the panel and all popovers (context menus / confirm dialogs / settings) follow the DSH light / dark theme;
+7. **Language**: switching the DSH language re-mounts the panel copy; tabs in **background sessions** pause polling and SSE, then refresh once when brought back to the foreground.
+
+> Tip: when the current session's workspace is not a git repo, the panel shows a hint; switch to a session whose workspace is a git repo.
 
 ## 3. UI overview
 
@@ -268,7 +299,7 @@ Then:
 - **Fetch from remotes**: ⇣ (shown only when the repo has remotes) — one-click `git fetch --all` (no dialog, prune off by default);
 - **＋ New branch**: type a name to create and check out a new branch;
 - **Status badges**: real-time "N unresolved conflicts" and "merge/rebase in progress" (based on `MERGE_HEAD` / `SQUASH_MSG` (squash merge) etc.);
-- **Close button**: top-right corner of the panel (the toggle button; it stays floating at that spot once the panel is closed).
+- **Close button**: top-right corner of the panel (the toggle button; it stays floating at that spot once the panel is closed; hidden in Sidebar mode — the tab strip closes it).
 
 ### Graph area (commit DAG lane graph)
 
@@ -394,13 +425,16 @@ With **tracked** uncommitted changes, a "switch anyway" confirmation dialog appe
 
 - While open, **SSE live refresh** applies: subscribes to `/git/events` (2s server-side state-key comparison + change push + 15s heartbeat);
 - The graph refreshes instantly when another terminal checks out or commits;
-- **10s poll fallback on disconnect**; manual refresh (↻) also available.
+- **10s poll fallback on disconnect**; manual refresh (↻) also available;
+- **Background sessions** (a sidebar tab that is not visible) and a hidden page pause polling/SSE, then refresh once when brought back.
 
 ## 9. FAQ
 
 | Symptom | Fix |
 |---|---|
-| The drawer does not appear | Make sure you are in a chat view; the plugin is enabled in the "Plugins" panel; restart web right after a fresh install |
+| The drawer does not appear | Make sure you are in a chat view; the plugin is enabled in the "Plugins" panel; restart web right after a fresh install; the default position may be Sidebar — switch it back under Settings → Style Settings → Default position |
+| No "Git Status" card in the sidebar | Sidebar tabs need the right-sidebar slot from DSH ≥ 0.2; expand the right sidebar first (the guide card is in the list), then click "Git Status" |
+| Switching from Sidebar back to Floating | Settings → Style Settings → Default position → Floating panel (the ⚙ sits in the panel header in Sidebar mode) |
 | "The current workspace is not a git repository" | The current session's working directory is not a git repo; switch to a session in a repo directory |
 | Remote branches are missing | After configuring remotes, click ⇣ to fetch; remote badges are blue |
 

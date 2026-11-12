@@ -14,7 +14,7 @@
 
 ## 功能
 
-- **双呈现位置**：**浮窗**（贴右缘、可拖拽、位置自动记忆）或 **右侧栏 tab**（与 Files / Terminal 同级；桌面端默认）；设置 → 风格设置 → **默认位置** 切换，立即生效、持久化；侧边栏模式下从右侧栏 guide 的「Git 状态」卡片打开；
+- **双呈现位置**：**浮窗**（贴右缘、可拖拽、位置自动记忆）或 **右侧栏 tab**（与 Files / Terminal 同级；桌面端默认）；设置 → 风格设置 → **默认位置** 切换，立即生效、持久化；侧边栏模式下从右侧栏 guide 的「Git 状态」卡片打开，tab 关闭由 tab strip 管理，切语言即时跟随，后台会话自动暂停轮询/SSE；
 - **浮窗交互**：面板可**拖拽**、位置**自动记忆**；右上角悬浮开关按钮（与面板角重合、拖拽跟随、关闭后原位悬浮重开）；
   首次使用引导提示气泡（仅一次，localStorage 记录）
 - **commit DAG 泳道图**：第一父链成线、列分配贪心最左、泳道复用、合并提交连线；
@@ -96,6 +96,7 @@
 - DSH（DeepSeek Harness）web 端已安装并运行（`dsh web`），且版本满足 `@deepseek-ai/dsh >=0.2.0-rc.2 <0.3.0-0`（peerDependencies 硬约束；v2 起仅适配 DSH 0.2，不再支持 0.1 / cordis）
 - 已安装 `git` 命令行工具（插件通过系统 `git` 执行所有操作）
 - 插件零第三方依赖：UI 零 React（侧边栏 tab 仅通过宿主 `__ModuleLoader__` 的 `require('react')` 借一个挂载壳，不打包 React、不引第二个实例）、无构建产物依赖、Node half 零 npm 包
+- 侧边栏 tab 依赖 DSH 0.2 的右侧栏 slot（`sidebarRightTabs`），无需额外安装；宿主不提供 React 时自动回退浮窗并记住该选择
 
 ### 安装插件
 
@@ -131,8 +132,10 @@ dsh plugin --profile web add /path/to/dsh-git-status
 > 📖 完整操作指南（中英双语）：[docs/USAGE.md](docs/USAGE.md) —— 界面速览、Git 图阅读、分支操作、冲突处理、远程拉取全流程详解。
 
 1. 进入任意聊天视图（对话界面）；
-2. 点击面板右上角外侧的 **分支图标** 按钮，展开「Git 状态」浮窗（浮窗可拖拽，位置自动记忆；按钮始终贴在浮窗右上角，关闭后留在原位悬浮，点击重新展开；首次使用有引导提示）；
-3. 浮窗头部可切换「所有分支 / 当前分支」、手动刷新（↻）；打开期间 SSE 即时刷新（断连时 10s 轮询兜底）；
+2. 按 **设置 → 风格设置 → 默认位置** 选定呈现位置（桌面端默认侧边栏、Web 默认浮窗）：
+   - **浮窗**：点击面板右上角外侧的 **分支图标** 按钮展开；可拖拽、位置自动记忆，按钮始终贴在浮窗右上角，关闭后留在原位悬浮，点击重新展开；首次使用有引导提示；
+   - **侧边栏**：展开右侧栏 → 在 guide 里点「Git 状态」卡片，面板作为 tab 与 Files / Terminal 同级打开；关闭点 tab strip 的 ×（面板头部关闭按钮在侧边栏模式隐藏），再次打开仍从 guide 进入；桌面端首次进入会提示一次如何改回浮窗；
+3. 面板头部可切换「所有分支 / 当前分支」、手动刷新（↻）；打开期间 SSE 即时刷新（断连时 10s 轮询兜底；后台会话的 tab 自动暂停）；
 4. 点击 commit 行展开详情（提交信息 / 变更文件 / 逐文件 diff）；点击文件行查看该文件 patch；
 5. 右键分支徽标：本地「切换到 x / 推送到远程… / 合并 x / 重命名 x / 删除 x（可强删）/
    变基当前分支到 x（红色确认，重写历史）」；远程「创建本地分支 x 并检出 / 拉取并合并 x 到当前分支（默认/NoFF/Squash）」
@@ -146,7 +149,7 @@ dsh plugin --profile web add /path/to/dsh-git-status
    「合并 x 到当前分支…」先弹确认框：合并提交（默认）/ NoFF（禁用快进）/ Squash 合并（可填提交信息或勾选固定文案）；
 10. 仓库配置了远程时，头部「⇣」按钮一键拉取全部远程（`git fetch --all`，prune 默认关），完成后图即时刷新。
 
-> 提示：当前会话工作区不是 git 仓库时，浮窗内会显示提示，切换到 git 仓库所在会话即可。
+> 提示：当前会话工作区不是 git 仓库时，面板内会显示提示，切换到 git 仓库所在会话即可。
 
 ### 卸载
 
@@ -156,7 +159,9 @@ dsh plugin --profile web remove @wongzexu/dsh-git-status
 
 ### 常见问题
 
-- **浮窗不出现**：确认处于聊天视图；插件已在「插件」面板启用；刚安装的话先重启 web。
+- **浮窗不出现**：确认处于聊天视图；插件已在「插件」面板启用；刚安装的话先重启 web；若默认位置被设为「侧边栏」，请到 设置 → 风格设置 → 默认位置 改回浮窗。
+- **侧边栏里找不到「Git 状态」**：侧边栏 tab 依赖 DSH ≥ 0.2 的右侧栏 slot；先展开右侧栏（guide 卡片在列表里），再点「Git 状态」；桌面端默认侧边栏，Web 端默认浮窗。
+- **想从侧边栏改回浮窗**：设置 → 风格设置 → 默认位置 → 浮窗（侧边栏模式的 ⚙ 设置入口在面板头部）。
 - **提示「当前工作区不是 git 仓库」**：当前会话的工作目录不是 git 仓库，切换到仓库目录所在会话。
 
 ## 架构
@@ -189,7 +194,9 @@ dsh-git-status/
   客户端 SSE 订阅 `/git/events` 即时刷新 + 10s 轮询兜底
 - **git 执行**：spawn 系统 `git`（`-C 工作区 --no-pager -c color.ui=false`、`GIT_OPTIONAL_LOCKS=0`、
   `LC_ALL=C` 强制英文输出、`GIT_EDITOR=true` 禁编辑器、15s 超时强杀；fetch/push 放宽到 120s）
-- **布局锚点**：官方 DOM 属性（`data-chat-flow`），不依赖 React 内部结构
+- **布局锚点**：浮窗沿用官方 DOM 属性（`data-chat-flow`），不依赖 React 内部结构
+- **双呈现位置（同一份 DOM）**：`mountUi` 的 `docked` 分支把同一套面板挂到右侧栏 pane；侧边栏 tab 通过官方 `sidebarRightTabs` + `sidebar.right.pane.tab` slot 注册，只借宿主 React 作挂载壳
+- **侧边栏会话绑定与生命周期**：tab 使用 slot 注入的 `sessionId`（后台会话不误用全局选中会话）；`tab.visible=false` 暂停 10s 轮询与 SSE，`tab.signal` abort 触发幂等清理；侧边栏模式的浮层与面板统一走 DSH 主题 token
 - **安全**：路由根限定**会话权威工作区**（请求必须带 `session=`，只使用
   `ctx.sessions.get(id).header.cwd`；session 缺失/失效直接拒绝，不回退到其它项目），
   拒绝 `..` 分量与越界路径；只读命令白名单；
@@ -202,6 +209,8 @@ dsh-git-status/
 node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js）
 npm test                       # node:test 套件（269 用例，真实 git fixture，零依赖）
 ```
+
+> 提交前把重新生成的 `lib/client.js` 一并加入暂存区——安装、发布（Actions 里的 `npm run build`）与本地预览都读取该产物。
 
 改 Node half 直接改 `lib/index.mjs`（无构建步骤），改完跑 `npm test` 回归。
 测试链覆盖：装饰串分类、未提交改动 XY 位分类、UNCOMMITTED/stash 虚拟行组装、
@@ -233,6 +242,8 @@ cherry-pick/revert 的 -x/-n/merge 主父 + 冲突标记、pull 的 --no-rebase/
 
 ## 路线
 
+- 侧边栏 tab（v2.1）：双呈现位置 + 「默认位置」设置已落地，待 Windows/macOS 真机验收
+- 呈现偏好进 DSH 设置文档（跨会话/跨设备同步，Gitee `IKUVI6`）
 - git 状态变化推送降级优化：fs.watch 检测（当前为 2s 轮询对比状态键）
 - 发布形态：npm 已上线（`@wongzexu/dsh-git-status`），GitHub Release 发布后经 Actions 自动发布到 npm
 

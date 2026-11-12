@@ -14,7 +14,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 
 ## Features
 
-- **Two presentations**: **Floating panel** (right edge, draggable, position remembered) or **right-sidebar tab** (alongside Files / Terminal; the Desktop default); switch under Settings → Style Settings → **Default position**, applied immediately and persisted. In Sidebar mode, open it from the right sidebar guide's "Git Status" card.
+- **Two presentations**: **Floating panel** (right edge, draggable, position remembered) or **right-sidebar tab** (alongside Files / Terminal; the Desktop default); switch under Settings → Style Settings → **Default position**, applied immediately and persisted. In Sidebar mode, open it from the right sidebar guide's "Git Status" card; the tab strip owns closing, language changes re-render the panel, and background sessions pause polling/SSE;
 - **Drawer UX**: the drawer is **draggable** with its position **remembered**; a floating toggle button sits at the panel's top-right corner (overlaps the corner, follows drags, and stays floating at that spot to reopen after closing); a one-time first-use hint bubble (localStorage)
 - **Commit DAG lane graph**: first-parent chains as lines, greedy leftmost column assignment, lane reuse, merge-commit connectors; SVG grid rendering (shadow + dual-color paths, elbow transitions, bold HEAD dot)
 - **Inline refs badges**: H (red, detached HEAD) / branches (gold) / remotes (blue) / tags (green); the currently checked-out branch pill is highlighted in bright gold (denser background + gold inset border + bold, hover tooltip "current"); a local branch and its same-named remote are merged into one pill: `⎇ main [gitee]`; with ≥2 same-named remotes the sub-badges collapse into a count badge `⎇ main [2]` (hovering anywhere on the pill shows the full remote ref list, right-click picks a remote first); remote HEAD symbolic refs (`gitee/HEAD`) are filtered by default
@@ -52,6 +52,7 @@ A standalone Git status (Git Graph) plugin for DSH: a **Git status drawer** dock
 - DSH (DeepSeek Harness) web installed and running (`dsh web`), with version `@deepseek-ai/dsh >=0.2.0-rc.2 <0.3.0-0` (hard peerDependencies constraint; v2 targets DSH 0.2 only and no longer supports 0.1 / cordis)
 - `git` CLI installed (the plugin runs all operations through the system `git`)
 - Zero third-party dependencies: zero React in the UI (the sidebar tab only borrows a mount shell from the host's `require('react')`; React is never bundled and no second instance is created), no build artifacts, zero npm packages in the Node half
+- The sidebar tab relies on the DSH 0.2 right-sidebar slot (`sidebarRightTabs`) — nothing extra to install; if the host does not provide React, the plugin falls back to the floating panel and remembers that choice
 
 ### Install the plugin
 
@@ -87,8 +88,10 @@ Replace `/path/to/dsh-git-status` with the actual plugin directory path (e.g. th
 > 📖 Full usage guide (bilingual, text version): [docs/USAGE.md#wongzexudsh-git-status-usage-guide](docs/USAGE.md#wongzexudsh-git-status-usage-guide) — UI overview, reading the graph, branch operations, conflict handling, and fetching from remotes.
 
 1. Enter any chat view;
-2. Click the **branch icon** button outside the panel's top-right corner — the "Git status" drawer expands (draggable, position remembered; the button stays glued to the panel's top-right corner, and floats at that spot to reopen once the panel is closed; a one-time hint guides first use);
-3. The drawer header toggles "All branches / Current branch" and manual refresh (↻); while open, SSE live refresh applies (10s poll fallback on disconnect);
+2. Pick the presentation under **Settings → Style Settings → Default position** (Desktop defaults to Sidebar, Web to Floating panel):
+   - **Floating panel**: click the **branch icon** button outside the panel's top-right corner — the drawer expands (draggable, position remembered; the button stays glued to the panel's top-right corner and floats at that spot to reopen once closed; a one-time hint guides first use);
+   - **Sidebar**: expand the right sidebar, then click the "Git Status" card in the guide — the panel opens as a tab alongside Files / Terminal; close it via the tab strip's × (the header close button is hidden in Sidebar mode) and reopen it from the guide; on Desktop the first entry shows a one-time hint on how to switch back to the floating panel;
+3. The header toggles "All branches / Current branch" and manual refresh (↻); while open, SSE live refresh applies (10s poll fallback on disconnect; tabs in background sessions pause automatically);
 4. Click a commit row to expand details (commit message / changed files / per-file diffs); click a file row to view that file's patch;
 5. Right-click branch badges: local — "switch to x / push to remote… / merge x / rename x / delete x (force delete) / rebase current branch onto x (red confirm, rewrites history)"; remote — "create local branch x and check out / pull x into current (default/NoFF/Squash)" (a same-named local branch triggers a three-choice dialog: check out the existing branch & fast-forward / create with a different name / cancel);
 6. Right-click a tag badge: "Create branch from x…" / "Push tag…" (one item per remote) / "Delete tag…" (local only / all remotes in one go / per-remote targeted); header "＋ New branch": type a name to create and check out (invalid names are rejected instantly);
@@ -96,7 +99,7 @@ Replace `/path/to/dsh-git-status` with the actual plugin directory path (e.g. th
 8. Header badges show unresolved conflicts / in-progress operations; on merge conflict the merge bar offers "abort merge / continue merge"; "Merge x into current…" opens a confirmation dialog first — merge commit (default) / NoFF (no fast-forward) / squash merge (custom message or fixed-text checkbox);
 9. When the repo has remotes configured, the header "⇣" button fetches all remotes at once (`git fetch --all`, prune off by default), then the graph refreshes immediately.
 
-> Tip: when the current session's workspace is not a git repo, the drawer shows a hint; switch to a session whose workspace is a git repo.
+> Tip: when the current session's workspace is not a git repo, the panel shows a hint; switch to a session whose workspace is a git repo.
 
 ### Uninstall
 
@@ -106,7 +109,9 @@ dsh plugin --profile web remove @wongzexu/dsh-git-status
 
 ### FAQ
 
-- **The drawer does not appear**: make sure you are in a chat view; the plugin is enabled in the "Plugins" panel; restart web right after a fresh install.
+- **The drawer does not appear**: make sure you are in a chat view; the plugin is enabled in the "Plugins" panel; restart web right after a fresh install; the default position may be set to Sidebar — switch it back to Floating panel under Settings → Style Settings → Default position.
+- **No "Git Status" card in the sidebar**: sidebar tabs need the right-sidebar slot from DSH ≥ 0.2; expand the right sidebar first (the guide card is in the list), then click "Git Status"; Desktop defaults to Sidebar, Web to Floating panel.
+- **Switching from Sidebar back to Floating**: Settings → Style Settings → Default position → Floating panel (in Sidebar mode the ⚙ settings entry sits in the panel header).
 - **"The current workspace is not a git repository"**: the current session's working directory is not a git repo; switch to a session in a repo directory.
 
 ## Architecture
@@ -133,7 +138,9 @@ dsh-git-status/
 
 - **Data channel**: the Node half registers `/plugins/dsh-gitstatus/*` routes (webServer); the client subscribes to SSE `/git/events` for live refresh with a 10s poll fallback
 - **git execution**: spawns the system `git` (`-C workspace --no-pager -c color.ui=false`, `GIT_OPTIONAL_LOCKS=0`, `LC_ALL=C` for stable English output, `GIT_EDITOR=true` to disable editors, 15s timeout hard kill; fetch relaxed to 120s)
-- **Layout anchor**: official DOM attributes (`data-chat-flow`), no dependency on React internals
+- **Layout anchor**: the floating panel uses official DOM attributes (`data-chat-flow`) and never depends on React internals
+- **Two presentations, one DOM**: the `docked` branch of `mountUi` mounts the same panel into the right-sidebar pane; the sidebar tab registers through the official `sidebarRightTabs` + `sidebar.right.pane.tab` slots and borrows the host React only as a mount shell
+- **Sidebar session binding & lifecycle**: the tab uses the slot-provided `sessionId` (a background session never falls back to the globally selected one); `tab.visible=false` pauses the 10s poll and SSE, `tab.signal` abort triggers idempotent cleanup; panel and popovers in Sidebar mode use DSH theme tokens
 - **Security**: routes are rooted at the session's authoritative workspace (request must carry `session=` and only `ctx.sessions.get(id).header.cwd` is trusted; missing/invalid sessions are rejected instead of falling back to another project), rejecting `..` components and out-of-bounds paths; read-only command whitelist; write routes (branch operations + fetch + push + remote/tag + stash + stage + discard + commit + **history operations**) are POST with enforced `application/json` content-type (CSRF protection), authoritative branch-name/remote/tag/stash-selector/commit-target/mainline-parent validation + argv arrays (no shell) + pre-switch guards; fetch/push timeouts relaxed (120s for slow networks and large repos)
 
 ## Development
@@ -142,6 +149,8 @@ dsh-git-status/
 node scripts/build-client.js   # rebuild the client bundle (lib/client.js) after editing src/client/index.js
 npm test                       # node:test suite (269 cases, real git fixtures, zero dependencies)
 ```
+
+> Stage the regenerated `lib/client.js` together with the source change — installs, publishing (the Actions `npm run build`) and local previews all read that artifact.
 
 Edit the Node half directly in `lib/index.mjs` (no build step); run `npm test` after changes.
 Test coverage: decoration string classification, uncommitted XY status classification, UNCOMMITTED/stash virtual row assembly, stash third parent, show details, conflict/in-progress status, branch name validation, switch guards (conflict/in-progress/other worktree/**uncommitted confirmation**: staged/unstaged/untracked counts, untracked-only pass, force bypass with changes), full CRUD/merge paths (incl. merge-conflict abort/continue, noff, squash success/custom message/conflict abort & continue), failure stderr classification, write-route CSRF (content-type enforcement) and full chains, discard-all action (staged/unstaged/untracked/ignored-preserved/unborn head, route validation + session scoping), SSE subscription (initial push/change detection/heartbeat/disconnect cleanup), fetch full chains (--all/single remote/prune semantics/failure classification/CSRF, real fetch from file:// bare repos), push full chains (set-upstream tracking / non-fast-forward → force / failure classification / CSRF), stash full chains (push/apply/pop/drop/branch/two conflict forms / CSRF), remote/tag full chains (delete remote branch incl. degraded, push/delete tag incl. sync-remote, tag name validation / CSRF), history ops full chains (rebase replay/ancestor/conflict/uncommitted, reset three modes + ancestor guard + force bypass, cherry-pick/revert -x/-n/merge mainline + conflict markers, pull --no-rebase/--no-ff/--squash/conflict, incl. CSRF).
@@ -160,6 +169,8 @@ After rebuilding the client, **refresh the browser page** to see changes (no web
 
 ## Roadmap
 
+- Sidebar tab (v2.1): two presentations + "Default position" shipped; pending real-device acceptance on Windows/macOS
+- Move the presentation preference into the DSH settings document (cross-session / cross-device sync, Gitee `IKUVI6`)
 - Optimize git status change push: fs.watch detection (currently 2s polling with state-key comparison)
 - Release form: npm live (`@wongzexu/dsh-git-status`); GitHub Release auto-publishes to npm via Actions
 

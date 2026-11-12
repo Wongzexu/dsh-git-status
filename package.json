@@ -1,6 +1,6 @@
 {
   "name": "@wongzexu/dsh-git-status",
-  "description": "Git 状态（Git Graph）：commit DAG 泳道图 + 未提交改动虚拟行/stash + 行内详情 diff + 分支操作（checkout/新建）。",
+  "description": "Git 状态（Git Graph）：DSH 右侧栏 tab 或浮窗——commit DAG 泳道图 + 未提交改动虚拟行/stash + 行内详情 diff + 分支操作（checkout/新建）。",
   "keywords": [
     "dsh-plugin",
     "dsh",
