@@ -1,6 +1,16 @@
 {
   "name": "@wongzexu/dsh-git-status",
-  "description": "Git 状态（Git Graph）：commit DAG 泳道图 + 未提交改动虚拟行/stash + 行内详情 diff + 分支操作（checkout/新建）。",
+  "description": "Git 状态（Git Graph）：DSH 右侧栏 tab 或浮窗——commit DAG 泳道图 + 未提交改动虚拟行/stash + 行内详情 diff + 分支操作（checkout/新建）。",
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "deepseek-harness",
+    "git",
+    "git-graph",
+    "commit-graph",
+    "stash",
+    "diff"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Wongzexu/dsh-git-status.git"
@@ -23,6 +33,9 @@
     "client": {
       "platform": "web"
     }
+  },
+  "engines": {
+    "dsh": ">=0.2.0-rc.2 <0.3.0-0"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh": ">=0.2.0-rc.2 <0.3.0-0"

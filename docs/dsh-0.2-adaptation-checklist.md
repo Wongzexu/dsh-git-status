@@ -112,7 +112,7 @@ for (const [name, range] of Object.entries(dependencies)) {
 | 项 | 说明 |
 | --- | --- |
 | 会话 UI 迁移 | 会话界面从 `dsh-client-ui-conversation` 迁到 `dsh-client-ui-chat`（`data-chat-flow=""` 锚点两版都在，实测命中） |
-| 新 UI 结构 | 0.2 新增 `sidebar-right` / `dockkit` / `ui-session` / `ui-open-in-app` 等；你的面板走 `document.body` 挂载 + 自身 `data-dsc-*` 命名，**未发现冲突**，但视觉层级建议在有会话时目视确认一次 |
+| 新 UI 结构 | 0.2 新增 `sidebar-right` / `dockkit` / `ui-session` / `ui-open-in-app` 等；浮窗走 `document.body` 挂载 + 自身 `data-dsc-*` 命名，**未发现冲突**，但视觉层级建议在有会话时目视确认一次。**v2.1 起侧边栏模式主动使用右侧栏 slot**（`sidebarRightTabs` + `sidebar.right.pane.tab`），因此 `sidebar-right` 从「无冲突」升级为**硬依赖**（slot 缺失或宿主无 React 时自动回退浮窗并落盘） |
 | 插件按钮显示时机 | 实测：首页/空会话下插件的按钮与面板容器已创建但 `display:none`（不挂进会话 UI）。这是既有设计，不是 0.2 回归 |
 | `config/` 目录 | 0.1 的 `config/agent-presets/**` 已从 0.2 包内移除（presets 改由包提供）。你的插件不依赖它，无影响 |
 

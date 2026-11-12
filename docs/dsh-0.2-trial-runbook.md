@@ -262,6 +262,7 @@ DSH_HOME=~/dsh02/home ~/dsh02/prefix/bin/dsh plugin --profile web \
   回归探针：`probes/git-session-fix-verify.mjs`（`ok:false` 时退出码 1）。
   注意：无头访问必须用 `dsh web` 打印的**带 token 的 URL**，裸 `127.0.0.1:3099/` 返回 401。
 - 升级后 `config/` 目录移除（presets 改由 package 提供）对启动的实际影响——本次 0.2 正常启动，说明无阻断。
+- **后续补充（2026-11）**：本插件的右侧栏 tab 形态（`sidebarRightTabs`）不在本文试跑范围内；其 API 验证与 webprobe 实测见 [desktop-rightbar-tab-evaluation.md](./desktop-rightbar-tab-evaluation.md) 第 0 / 5 节。
 
 ### 结论：升级可行性判定
 

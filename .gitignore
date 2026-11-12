@@ -14,3 +14,6 @@ webprobe-out/
 
 # 本地调试探针（webprobe 用工装，非交付物；验证流程见 docs/dsh-0.2-trial-runbook.md）
 probes/
+
+# 本次 UI 迭代的隔离预览工装（DSH home 副本 / webprobe 探针与截图）
+.probe-tmp/
