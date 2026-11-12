@@ -26,6 +26,8 @@ dsh plugin --profile web add /path/to/dsh-git-status
 
 > ⚠️ npm 上另有同名（无作用域）包 `dsh-git-status`（其他作者的 React 实现，与本插件无关）；安装请认准 **`@wongzexu/dsh-git-status`**。
 
+> 前置：DSH `@deepseek-ai/dsh >=0.2.0-rc.2 <0.3.0-0`（peerDependencies 硬约束）；侧边栏模式额外需要 0.2 的右侧栏 slot（`sidebarRightTabs`），宿主未提供时自动回退浮窗。
+
 然后：
 
 1. 重启 DSH web 服务，使插件加载生效；
@@ -259,6 +261,8 @@ dsh plugin --profile web add /path/to/dsh-git-status
 ```
 
 > ⚠️ There is a *different*, unscoped package named `dsh-git-status` on npm (a React implementation by another author, unrelated to this plugin); make sure you install **`@wongzexu/dsh-git-status`**.
+
+> Prerequisite: DSH `@deepseek-ai/dsh >=0.2.0-rc.2 <0.3.0-0` (hard peerDependencies constraint); Sidebar mode additionally needs the DSH 0.2 right-sidebar slot (`sidebarRightTabs`) and falls back to the floating panel when the host does not provide it.
 
 Then:
 

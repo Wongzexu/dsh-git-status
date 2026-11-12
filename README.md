@@ -206,7 +206,7 @@ dsh-git-status/
 ## 开发
 
 ```sh
-node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js）
+node scripts/build-client.js   # 改 src/client/index.js 后重新打包 client（lib/client.js；等价 npm run build）
 npm test                       # node:test 套件（269 用例，真实 git fixture，零依赖）
 ```
 

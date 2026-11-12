@@ -146,7 +146,7 @@ dsh-git-status/
 ## Development
 
 ```sh
-node scripts/build-client.js   # rebuild the client bundle (lib/client.js) after editing src/client/index.js
+node scripts/build-client.js   # rebuild the client bundle (lib/client.js) after editing src/client/index.js; same as npm run build
 npm test                       # node:test suite (269 cases, real git fixtures, zero dependencies)
 ```
 
